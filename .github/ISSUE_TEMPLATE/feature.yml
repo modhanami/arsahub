@@ -1,0 +1,39 @@
+name: Feature report - Frontend/Backend
+description: Suggest an idea for this project
+labels: [enhancement]
+body:
+  - type: dropdown
+    id: project-part
+    attributes:
+      label: Project Part
+      options:
+        - Frontend
+        - Backend
+      description: Please state if the issue is related to frontend or backend.
+    validations:
+      required: true
+
+  - type: textarea
+    id: changes
+    attributes:
+      label: Changes made or to be made
+      description: Please state the changes that have been made or need to be made.
+      placeholder: Typing here...
+    validations:
+      required: true
+
+  - type: textarea
+    id: testing
+    attributes:
+      label: Testing
+      description: Please state the testing that has been performed or needs to be performed.
+      placeholder: Typing here...
+    validations:
+      required: true
+
+  - type: textarea
+    id: related-prs
+    attributes:
+      label: Related PRs
+      description: Please state if there is any related PRs.
+      placeholder: Typing here...
