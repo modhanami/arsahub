@@ -51,4 +51,9 @@ class EventController(private val eventService: EventService) {
     fun joinEvent(@PathVariable eventId: Long, @RequestParam userId: Long): Event {
         return eventService.joinEvent(eventId, userId)
     }
+
+    @GetMapping("/joined")
+    fun listJoinedEvents(@RequestParam userId: Long): List<Event> {
+        return eventService.listJoinedEvents(userId)
+    }
 }

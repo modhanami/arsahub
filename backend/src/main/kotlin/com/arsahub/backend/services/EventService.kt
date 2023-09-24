@@ -13,5 +13,6 @@ interface EventService {
     fun listEvents(): List<Event>
     fun deleteEvent(eventId: Long)
     fun joinEvent(eventId: Long, userId: Long): Event
+    fun listJoinedEvents(userId: Long): List<Event>
 }
 
