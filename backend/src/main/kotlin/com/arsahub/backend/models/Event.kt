@@ -1,5 +1,6 @@
 package com.arsahub.backend.models
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import jakarta.persistence.*
 import org.hibernate.proxy.HibernateProxy
 import java.time.LocalDateTime
@@ -31,11 +32,12 @@ class Event(
     @JoinColumn(name = "organizer_id", nullable = false, insertable = false, updatable = false)
     val organizer: Organizer? = null,
 
-    @Column(name="organizer_id", nullable = false)
+    @Column(name = "organizer_id", nullable = false)
     val organizerId: Long? = null,
 
-    @ManyToMany(mappedBy = "joinedEvents", fetch = FetchType.LAZY)
-    val users: MutableSet<User> = mutableSetOf()
+    @OneToMany(mappedBy = "event")
+    @JsonIgnore
+    val participations: MutableSet<Participation> = mutableSetOf()
 ) {
     final override fun equals(other: Any?): Boolean {
         if (this === other) return true

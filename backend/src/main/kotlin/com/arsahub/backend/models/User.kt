@@ -1,5 +1,6 @@
 package com.arsahub.backend.models
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import jakarta.persistence.*
 
 @Entity
@@ -13,11 +14,7 @@ class User(
     @Column(name = "username", unique = true, nullable = false)
     val username: String,
 
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-        name = "user_events",
-        joinColumns = [JoinColumn(name = "user_id")],
-        inverseJoinColumns = [JoinColumn(name = "event_id")]
-    )
-    var joinedEvents: MutableSet<Event> = mutableSetOf()
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    @JsonIgnore
+    val participations: MutableSet<Participation> = mutableSetOf()
 )
