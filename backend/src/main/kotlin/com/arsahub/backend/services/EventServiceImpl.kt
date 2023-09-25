@@ -42,11 +42,11 @@ class EventServiceImpl(private val eventRepository: EventRepository, private val
         if (eventUpdateRequest.location != null) {
             existingEvent.location = eventUpdateRequest.location
         }
-        if (eventUpdateRequest.startDate != null) {
-            existingEvent.startDate = eventUpdateRequest.startDate
+        if (eventUpdateRequest.startTime != null) {
+            existingEvent.startTime = eventUpdateRequest.startTime
         }
-        if (eventUpdateRequest.endDate != null) {
-            existingEvent.endDate = eventUpdateRequest.endDate
+        if (eventUpdateRequest.endTime != null) {
+            existingEvent.endTime = eventUpdateRequest.endTime
         }
         return existingEvent
     }
