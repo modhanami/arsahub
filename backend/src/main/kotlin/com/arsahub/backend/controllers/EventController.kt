@@ -6,7 +6,6 @@ import com.arsahub.backend.dtos.EventUpdateRequest
 import com.arsahub.backend.models.Event
 import com.arsahub.backend.services.EventService
 import org.springframework.web.bind.annotation.*
-import java.time.LocalDateTime
 
 @RestController
 @RequestMapping("/api/events")
@@ -24,17 +23,7 @@ class EventController(private val eventService: EventService) {
 
     @GetMapping("/{eventId}")
     fun getEvent(@PathVariable eventId: Long): Event? {
-//        println("organizer: ${eventService.getEvent(eventId)?.organizer?.organizerId}")
-        val event = eventService.getEvent(eventId)
-        return Event(
-            eventId = event?.eventId,
-            title = "test",
-            description = "test",
-            location = "test",
-            startDate = LocalDateTime.now(),
-            endDate = LocalDateTime.now(),
-            organizerId=1L,
-        )
+        return eventService.getEvent(eventId)
     }
 
     @GetMapping
