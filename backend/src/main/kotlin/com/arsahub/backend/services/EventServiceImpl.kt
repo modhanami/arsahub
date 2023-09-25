@@ -5,8 +5,8 @@ import com.arsahub.backend.dtos.EventResponse
 import com.arsahub.backend.dtos.EventUpdateRequest
 import com.arsahub.backend.models.Event
 import com.arsahub.backend.models.Participation
-import com.arsahub.backend.models.ParticipationRepository
 import com.arsahub.backend.repositories.EventRepository
+import com.arsahub.backend.repositories.ParticipationRepository
 import com.arsahub.backend.repositories.UserRepository
 import jakarta.persistence.EntityNotFoundException
 import org.springframework.data.repository.findByIdOrNull
@@ -14,7 +14,11 @@ import org.springframework.stereotype.Service
 import java.time.Instant
 
 @Service
-class EventServiceImpl(private val eventRepository: EventRepository, private val userRepository: UserRepository, private val participationRepository: ParticipationRepository) :
+class EventServiceImpl(
+    private val eventRepository: EventRepository,
+    private val userRepository: UserRepository,
+    private val participationRepository: ParticipationRepository
+) :
     EventService {
 
     override fun createEvent(eventCreateRequest: EventCreateRequest): EventResponse {
@@ -81,7 +85,6 @@ class EventServiceImpl(private val eventRepository: EventRepository, private val
             Participation(
                 user = existingUser,
                 event = existingEvent,
-                pointsEarned = 0,
                 completed = false,
                 completedAt = Instant.now()
             )
