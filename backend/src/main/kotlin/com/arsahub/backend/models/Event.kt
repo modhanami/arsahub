@@ -3,7 +3,7 @@ package com.arsahub.backend.models
 import com.fasterxml.jackson.annotation.JsonIgnore
 import jakarta.persistence.*
 import org.hibernate.proxy.HibernateProxy
-import java.time.LocalDateTime
+import java.time.Instant
 
 @Entity
 @Table(name = "event")
@@ -22,11 +22,11 @@ class Event(
     @Column(name = "location")
     var location: String?,
 
-    @Column(name = "start_date", nullable = false)
-    var startDate: LocalDateTime,
+    @Column(name = "start_time", nullable = false)
+    var startTime: Instant,
 
-    @Column(name = "end_date", nullable = false)
-    var endDate: LocalDateTime,
+    @Column(name = "end_time", nullable = false)
+    var endTime: Instant,
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "organizer_id", nullable = false, insertable = false, updatable = false)
@@ -55,12 +55,12 @@ class Event(
     final override fun hashCode(): Int =
         if (this is HibernateProxy) this.hibernateLazyInitializer.persistentClass.hashCode() else javaClass.hashCode()
 
-    fun isFinished(currentDateTime: LocalDateTime): Boolean {
-        return currentDateTime.isAfter(endDate)
+    fun isFinished(currentTime: Instant): Boolean {
+        return currentTime.isAfter(endTime)
     }
 
     @Transient
     fun isValid(): Boolean {
-        return startDate.isBefore(endDate)
+        return startTime.isBefore(endTime)
     }
 }

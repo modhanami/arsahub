@@ -1,20 +1,15 @@
 package com.arsahub.backend.dtos
 
 import com.arsahub.backend.models.Event
-import com.fasterxml.jackson.annotation.JsonInclude
-import java.time.LocalDateTime
+import java.time.Instant
 
 data class EventResponse(
     val eventId: Long?,
     val title: String,
     val description: String?,
     val location: String?,
-    val startDate: LocalDateTime,
-    val endDate: LocalDateTime,
-
-    // ignore from JSON when null
-//    @JsonInclude(JsonInclude.Include.NON_NULL)
-//    val organizer: OrganizerResponse?,
+    val startTime: Instant,
+    val endTime: Instant,
 ) {
     companion object {
         fun fromEntity(event: Event): EventResponse {
@@ -23,9 +18,8 @@ data class EventResponse(
                 title = event.title,
                 description = event.description,
                 location = event.location,
-                startDate = event.startDate,
-                endDate = event.endDate,
-//                organizer = event.organizer?.let { OrganizerResponse.fromEntity(it) },
+                startTime = event.startTime,
+                endTime = event.endTime,
             )
         }
     }

@@ -1,11 +1,11 @@
 package com.arsahub.backend.dtos
 
-import java.time.LocalDateTime
+import java.time.Instant
 
 data class EventUpdateRequest(
     val title: String?,
     val description: String?,
     val location: String?,
-    val startDate: LocalDateTime?,
-    val endDate: LocalDateTime?,
+    val startTime: Instant?,
+    val endTime: Instant?,
 )
