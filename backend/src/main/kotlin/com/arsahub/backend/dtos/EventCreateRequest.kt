@@ -9,7 +9,8 @@ data class EventCreateRequest(
     val location: String?,
     val startTime: Instant,
     val endTime: Instant,
-    val organizerId: Long
+    val organizerId: Long,
+    val points: Int
 ) {
     fun toEntity() = Event(
         title = title,
@@ -17,6 +18,8 @@ data class EventCreateRequest(
         location = location,
         startTime = startTime,
         endTime = endTime,
-        organizerId = organizerId
+        organizerId = organizerId,
+        points = points,
+        completed = false,
     )
 }
