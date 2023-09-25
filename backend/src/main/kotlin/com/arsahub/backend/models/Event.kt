@@ -37,7 +37,17 @@ class Event(
 
     @OneToMany(mappedBy = "event")
     @JsonIgnore
-    val participations: MutableSet<Participation> = mutableSetOf()
+    val participations: MutableSet<Participation> = mutableSetOf(),
+
+    @Column(name = "completed")
+    var completed: Boolean = false,
+
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "completed_at")
+    var completedAt: Instant? = null,
+
+    @Column(name = "points", nullable = false)
+    val points: Int,
 ) {
     final override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -62,5 +72,14 @@ class Event(
     @Transient
     fun isValid(): Boolean {
         return startTime.isBefore(endTime)
+    }
+
+    override fun toString(): String {
+        return "Event(eventId=$eventId, title='$title', startTime=$startTime, endTime=$endTime)"
+    }
+
+    fun markAsCompleted(completedAt: Instant) {
+        completed = true
+        this.completedAt = completedAt
     }
 }

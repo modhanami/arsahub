@@ -19,13 +19,15 @@ class Participation(
     @JoinColumn(name = "event_id", nullable = false)
     val event: Event,
 
-    @Column(name = "points_earned", nullable = false)
-    val pointsEarned: Int,
-
-    @Column(nullable = false, name = "completed")
-    val completed: Boolean,
+    @Column(name = "completed")
+    var completed: Boolean = false,
 
     @Temporal(TemporalType.TIMESTAMP)
-    @Column(nullable = false, name = "completed_at")
-    val completedAt: Instant
-)
+    @Column(name = "completed_at")
+    var completedAt: Instant? = null,
+) {
+    fun markAsCompleted(completedAt: Instant) {
+        completed = true
+        this.completedAt = completedAt
+    }
+}
