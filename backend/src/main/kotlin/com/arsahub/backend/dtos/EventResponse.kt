@@ -10,6 +10,8 @@ data class EventResponse(
     val location: String?,
     val startTime: Instant,
     val endTime: Instant,
+    val organizerId: Long,
+    val points: Int,
 ) {
     companion object {
         fun fromEntity(event: Event): EventResponse {
@@ -20,6 +22,8 @@ data class EventResponse(
                 location = event.location,
                 startTime = event.startTime,
                 endTime = event.endTime,
+                organizerId = event.organizerId,
+                points = event.points,
             )
         }
     }

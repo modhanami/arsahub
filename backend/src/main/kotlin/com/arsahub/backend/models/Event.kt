@@ -11,7 +11,7 @@ class Event(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "event_id")
-    val eventId: Long? = null,
+    val eventId: Long = 0,
 
     @Column(name = "title", nullable = false)
     var title: String,
@@ -33,7 +33,7 @@ class Event(
     val organizer: Organizer? = null,
 
     @Column(name = "organizer_id", nullable = false)
-    val organizerId: Long? = null,
+    val organizerId: Long,
 
     @OneToMany(mappedBy = "event")
     @JsonIgnore

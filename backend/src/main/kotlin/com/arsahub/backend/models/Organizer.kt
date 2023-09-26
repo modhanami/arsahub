@@ -8,7 +8,7 @@ class Organizer(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "organizer_id")
-    val organizerId: Long? = null,
+    val organizerId: Long = 0,
 
     @Column(name = "name", nullable = false)
     var name: String
