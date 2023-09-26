@@ -1,5 +1,8 @@
 package com.arsahub.backend.controllers
 
+import com.arsahub.backend.dtos.OrganizerCreateRequest
+import com.arsahub.backend.dtos.OrganizerResponse
+import com.arsahub.backend.dtos.OrganizerUpdateRequest
 import com.arsahub.backend.models.Organizer
 import com.arsahub.backend.services.OrganizerService
 import org.springframework.web.bind.annotation.*
@@ -9,13 +12,16 @@ import org.springframework.web.bind.annotation.*
 class OrganizerController(private val organizerService: OrganizerService) {
 
     @PostMapping
-    fun createOrganizer(@RequestBody organizer: Organizer): Organizer {
-        return organizerService.createOrganizer(organizer)
+    fun createOrganizer(@RequestBody organizerCreateRequest: OrganizerCreateRequest): OrganizerResponse {
+        return organizerService.createOrganizer(organizerCreateRequest)
     }
 
-    @PutMapping("/{organizerId}")
-    fun updateOrganizer(@PathVariable organizerId: Long, @RequestBody updatedOrganizer: Organizer): Organizer {
-        return organizerService.updateOrganizer(organizerId, updatedOrganizer)
+    @PatchMapping("/{organizerId}")
+    fun updateOrganizer(
+        @PathVariable organizerId: Long,
+        @RequestBody organizerUpdateRequest: OrganizerUpdateRequest
+    ): OrganizerResponse {
+        return organizerService.updateOrganizer(organizerId, organizerUpdateRequest)
     }
 
     @GetMapping("/{organizerId}")
