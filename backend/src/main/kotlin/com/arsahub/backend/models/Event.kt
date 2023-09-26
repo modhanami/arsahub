@@ -49,31 +49,6 @@ class Event(
     @Column(name = "points", nullable = false)
     val points: Int,
 ) {
-    final override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other == null) return false
-        val oEffectiveClass =
-            if (other is HibernateProxy) other.hibernateLazyInitializer.persistentClass else other.javaClass
-        val thisEffectiveClass =
-            if (this is HibernateProxy) this.hibernateLazyInitializer.persistentClass else this.javaClass
-        if (thisEffectiveClass != oEffectiveClass) return false
-        other as Event
-
-        return eventId != null && eventId == other.eventId
-    }
-
-    final override fun hashCode(): Int =
-        if (this is HibernateProxy) this.hibernateLazyInitializer.persistentClass.hashCode() else javaClass.hashCode()
-
-    fun isFinished(currentTime: Instant): Boolean {
-        return currentTime.isAfter(endTime)
-    }
-
-    @Transient
-    fun isValid(): Boolean {
-        return startTime.isBefore(endTime)
-    }
-
     override fun toString(): String {
         return "Event(eventId=$eventId, title='$title', startTime=$startTime, endTime=$endTime)"
     }
