@@ -3,6 +3,7 @@ package com.arsahub.backend.schedules
 import com.arsahub.backend.models.PointHistory
 import com.arsahub.backend.repositories.EventRepository
 import com.arsahub.backend.repositories.PointHistoryRepository
+import com.arsahub.backend.repositories.UserRepository
 import jakarta.transaction.Transactional
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
@@ -11,7 +12,8 @@ import java.time.Instant
 @Component
 class EventFinishScheduler(
     private val eventRepository: EventRepository,
-    private val pointHistoryRepository: PointHistoryRepository
+    private val pointHistoryRepository: PointHistoryRepository,
+    private val userRepository: UserRepository
 ) {
 
     @Scheduled(fixedDelay = 5000, initialDelay = 0) // every 5 seconds
@@ -32,6 +34,7 @@ class EventFinishScheduler(
             println("event: ${event.eventId} has ${event.participations.size} participations")
             event.participations.map { participation ->
                 participation.markAsCompleted(currentTime)
+                participation.user.addPoints(event.points)
                 PointHistory(
                     user = participation.user,
                     event = event,
