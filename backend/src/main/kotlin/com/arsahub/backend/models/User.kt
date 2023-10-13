@@ -18,8 +18,12 @@ class User(
     @JsonIgnore
     val participations: MutableSet<Participation> = mutableSetOf(),
 
-     @Column(name = "points", nullable = false)
-     var points: Int = 0,
+    @Column(name = "points", nullable = false)
+    var points: Int = 0,
+
+//    @ManyToOne
+//    @JoinColumn(name = "role_id", nullable = false)
+//    val role: Role // Many users can have the same role
 ) {
     fun addPoints(points: Int) {
         this.points += points

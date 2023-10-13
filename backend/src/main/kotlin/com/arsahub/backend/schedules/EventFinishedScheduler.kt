@@ -16,7 +16,7 @@ class EventFinishScheduler(
     private val userRepository: UserRepository
 ) {
 
-    @Scheduled(fixedDelay = 5000, initialDelay = 0) // every 5 seconds
+//    @Scheduled(fixedDelay = 5000000) // every 5 seconds
     @Transactional
     fun markFinishedEvents() {
         val currentTime = Instant.now()

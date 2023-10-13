@@ -23,8 +23,8 @@
 //            title = "Sample Event",
 //            description = "This is a test event",
 //            location = "Test Location",
-//            startDate = LocalDateTime.of(2023, 9, 25, 10, 0), // Replace with your desired date and time
-//            endDate = LocalDateTime.of(2023, 9, 26, 16, 0),   // Replace with your desired date and time
+//            startTime = LocalDateTime.of(2023, 9, 25, 10, 0), // Replace with your desired date and time
+//            endTime = LocalDateTime.of(2023, 9, 26, 16, 0),   // Replace with your desired date and time
 //            organizerId = 1L // Replace with the ID of an existing organizer for testing
 //        )
 //    }
