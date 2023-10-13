@@ -4,6 +4,7 @@ import com.arsahub.backend.dtos.EventCreateRequest
 import com.arsahub.backend.dtos.EventResponse
 import com.arsahub.backend.dtos.EventUpdateRequest
 import com.arsahub.backend.models.Event
+import com.arsahub.backend.services.CustomUserDetails
 import com.arsahub.backend.services.EventService
 import org.springframework.web.bind.annotation.*
 
@@ -12,17 +13,25 @@ import org.springframework.web.bind.annotation.*
 class EventController(private val eventService: EventService) {
 
     @PostMapping
-    fun createEvent(@RequestBody eventCreateRequest: EventCreateRequest): EventResponse {
-        return eventService.createEvent(eventCreateRequest)
+    fun createEvent(
+        @CurrentUser user: CustomUserDetails,
+        @RequestBody eventCreateRequest: EventCreateRequest
+    ): EventResponse {
+        return eventService.createEvent(user, eventCreateRequest)
     }
 
     @PutMapping("/{eventId}")
-    fun updateEvent(@PathVariable eventId: Long, @RequestBody eventUpdateRequest: EventUpdateRequest): EventResponse {
-        return eventService.updateEvent(eventId, eventUpdateRequest)
+    fun updateEvent(
+        @CurrentUser user: CustomUserDetails,
+        @PathVariable eventId: Long,
+        @RequestBody eventUpdateRequest: EventUpdateRequest
+    ): EventResponse {
+        return eventService.updateEvent(user, eventId, eventUpdateRequest)
     }
 
     @GetMapping("/{eventId}")
-    fun getEvent(@PathVariable eventId: Long): Event? {
+    fun getEvent(@CurrentUser user: CustomUserDetails, @PathVariable eventId: Long): Event? {
+        println(user)
         return eventService.getEvent(eventId)
     }
 
@@ -32,17 +41,17 @@ class EventController(private val eventService: EventService) {
     }
 
     @DeleteMapping("/{eventId}")
-    fun deleteEvent(@PathVariable eventId: Long) {
-        eventService.deleteEvent(eventId)
+    fun deleteEvent(@CurrentUser user: CustomUserDetails, @PathVariable eventId: Long) {
+        eventService.deleteEvent(user, eventId)
     }
 
     @PostMapping("/{eventId}/join")
-    fun joinEvent(@PathVariable eventId: Long, @RequestParam userId: Long): Event {
-        return eventService.joinEvent(eventId, userId)
+    fun joinEvent(@CurrentUser user: CustomUserDetails, @PathVariable eventId: Long): Event {
+        return eventService.joinEvent(user, eventId)
     }
 
     @GetMapping("/joined")
-    fun listJoinedEvents(@RequestParam userId: Long): List<Event> {
-        return eventService.listJoinedEvents(userId)
+    fun listJoinedEvents(@CurrentUser user: CustomUserDetails): List<Event> {
+        return eventService.listJoinedEvents(user)
     }
 }

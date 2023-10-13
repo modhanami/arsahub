@@ -20,7 +20,7 @@ import java.time.Instant
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @ActiveProfiles("test-containers")
-class EventServiceImplTest {
+class EventServiceImplRepositoryTest {
     @Autowired
     lateinit var eventService: EventService
 
