@@ -16,7 +16,6 @@
 //        return CustomUserDetails(
 //            userId = user.userId,
 //            username = user.username,
-//            password = "password",
 //            authorities = listOf(user.role.toAuthority()),
 //            role = user.role
 //        )

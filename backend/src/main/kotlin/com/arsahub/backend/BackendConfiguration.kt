@@ -1,15 +1,12 @@
-//package com.arsahub.backend
-//
-//import com.google.auth.oauth2.GoogleCredentials
-//import com.google.firebase.FirebaseApp
-//import com.google.firebase.FirebaseOptions
-//import com.google.firebase.messaging.FirebaseMessaging
-//import org.springframework.context.annotation.Bean
-//import org.springframework.context.annotation.Configuration
-//
-//
-//@Configuration
-//class BackendConfiguration(private val firebaseProperties: FirebaseProperties) {
+package com.arsahub.backend
+
+import org.h2.tools.Server
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+
+
+@Configuration
+class BackendConfiguration {
 //    @Bean
 //    fun firebaseMessaging(firebaseApp: FirebaseApp): FirebaseMessaging {
 //        return FirebaseMessaging.getInstance(firebaseApp)
@@ -29,4 +26,9 @@
 //            GoogleCredentials.fromStream(it.inputStream())
 //        } ?: GoogleCredentials.getApplicationDefault()
 //    }
-//}
+
+    @Bean(initMethod = "start", destroyMethod = "stop")
+    fun h2Server(): Server {
+        return Server.createTcpServer("-tcp", "-tcpAllowOthers", "-tcpPort", "9092")
+    }
+}

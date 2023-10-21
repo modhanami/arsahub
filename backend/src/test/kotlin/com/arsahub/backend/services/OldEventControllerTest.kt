@@ -19,7 +19,7 @@
 //
 //    fun createEvent(id: Long?): Event {
 //        return Event(
-//            eventId = id,
+//            activityId = id,
 //            title = "Sample Event",
 //            description = "This is a test event",
 //            location = "Test Location",
@@ -40,15 +40,15 @@
 //    @Test
 //    fun `getEvent should return an existing event`() {
 //        // Arrange
-//        val eventId = 1L
-//        val existingEvent = TestData.createEvent(eventId)
-//        every { eventRepository.findByIdOrNull(eventId) } returns existingEvent
+//        val activityId = 1L
+//        val existingEvent = TestData.createEvent(activityId)
+//        every { eventRepository.findByIdOrNull(activityId) } returns existingEvent
 //
 //        // Act
-//        val result = eventService.getEvent(eventId)
+//        val result = eventService.getEvent(activityId)
 //
 //        // Assert
-//        verify(exactly = 1) { eventRepository.findById(eventId) }
+//        verify(exactly = 1) { eventRepository.findById(activityId) }
 //        assertEquals(existingEvent, result)
 //    }
 //
@@ -70,17 +70,17 @@
 //    @Test
 //    fun `updateEvent should update the event`() {
 //        // Arrange
-//        val eventId = 1L
-//        val existingEvent = TestData.createEvent(eventId)
-//        val updatedEvent = TestData.createEvent(eventId)
-//        every { eventRepository.findByIdOrNull(eventId) } returns existingEvent
+//        val activityId = 1L
+//        val existingEvent = TestData.createEvent(activityId)
+//        val updatedEvent = TestData.createEvent(activityId)
+//        every { eventRepository.findByIdOrNull(activityId) } returns existingEvent
 //        every { eventRepository.save(existingEvent) } returns updatedEvent
 //
 //        // Act
-//        val result = eventService.updateEvent(eventId, updatedEvent)
+//        val result = eventService.updateEvent(activityId, updatedEvent)
 //
 //        // Assert
-//        verify(exactly = 1) { eventRepository.findByIdOrNull(eventId) }
+//        verify(exactly = 1) { eventRepository.findByIdOrNull(activityId) }
 //        verify(exactly = 1) { eventRepository.save(existingEvent) }
 //        assertEquals(updatedEvent, result)
 //    }
