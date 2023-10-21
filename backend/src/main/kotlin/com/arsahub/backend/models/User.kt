@@ -14,18 +14,21 @@ class User(
     @Column(name = "username", unique = true, nullable = false)
     val username: String,
 
-    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
-    @JsonIgnore
-    val participations: MutableSet<Participation> = mutableSetOf(),
+    @Column(name = "name", nullable = false)
+    val name: String,
 
-    @Column(name = "points", nullable = false)
-    var points: Int = 0,
+    @OneToMany(mappedBy = "user")
+    @JsonIgnore
+    val members: MutableSet<Member> = mutableSetOf(),
 
 //    @ManyToOne
 //    @JoinColumn(name = "role_id", nullable = false)
 //    val role: Role // Many users can have the same role
+
+    @Column(name = "external_user_id", unique = true, nullable = false)
+    val externalUserId: String,
 ) {
-    fun addPoints(points: Int) {
-        this.points += points
+    override fun toString(): String {
+        return "User(userId=$userId, username='$username', members=$members)"
     }
 }

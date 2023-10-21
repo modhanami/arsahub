@@ -17,8 +17,8 @@ class PointHistory(
     val user: User,
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "event_id")
-    val event: Event?,
+    @JoinColumn(name = "activity_id")
+    val activity: Activity?,
 
     @Column(name = "points", nullable = false)
     val points: Int = 0,
