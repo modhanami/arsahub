@@ -1,5 +1,6 @@
 package com.arsahub.backend
 
+import com.corundumstudio.socketio.AckRequest
 import com.corundumstudio.socketio.SocketIOClient
 import com.corundumstudio.socketio.SocketIONamespace
 import com.corundumstudio.socketio.SocketIOServer
@@ -11,50 +12,55 @@ import org.springframework.stereotype.Component
 
 @Component
 class SocketIOService(private val server: SocketIOServer) {
-    private val activityNamespaces: MutableMap<Long, SocketIONamespace> = mutableMapOf()
-    private val userNamespaces: MutableMap<String, SocketIONamespace> = mutableMapOf()
+    private final val defaultNamespace: SocketIONamespace = server.addNamespace("/default")
 
     init {
-        getOrCreateNamespaceForActivity(1)
+        defaultNamespace.addConnectListener(onConnected())
+        defaultNamespace.addDisconnectListener(onDisconnected())
+        defaultNamespace.addEventListener(
+            "subscribe-activity",
+            Long::class.java
+        ) { client: SocketIOClient, data: Long, ackSender: AckRequest ->
+            println("subscribe-activity: $data")
+            client.joinRoom(getActivityRoomName(data))
+            ackSender.sendAckData("OK")
+        }
+        defaultNamespace.addEventListener(
+            "subscribe-user",
+            String::class.java
+        ) { client: SocketIOClient, data: String, ackSender: AckRequest ->
+            println("subscribe-user: $data")
+            client.joinRoom(getUserRoomName(data))
+            ackSender.sendAckData("OK")
+        }
     }
 
-    private fun createNamespaceForActivity(activityId: Long): SocketIONamespace {
-        val activityNamespace: SocketIONamespace = server.addNamespace(getNamespaceNameForActivity(activityId))
-        activityNamespace.addConnectListener(onConnected())
-        activityNamespace.addDisconnectListener(onDisconnected())
+    fun broadcastToActivityRoom(activityId: Long, eventName: String, data: Any) {
+        val activityRoom = defaultNamespace.getRoomOperations(getActivityRoomName(activityId))
 
-        return activityNamespace
+        activityRoom.sendEvent(
+            eventName, mapOf(
+                "activityId" to activityId,
+                "data" to data
+            )
+        )
     }
 
-    final fun getOrCreateNamespaceForActivity(activityId: Long): SocketIONamespace {
-        return activityNamespaces.getOrPut(activityId) { createNamespaceForActivity(activityId) }
+    fun broadcastToUserRoom(userId: String, eventName: String, data: Any) {
+        val userRoom = defaultNamespace.getRoomOperations(getUserRoomName(userId))
+        userRoom.sendEvent(
+            eventName, mapOf(
+                "userId" to userId,
+                "data" to data
+            )
+        )
     }
 
-    fun getActivityNamespace(activityId: Long): SocketIONamespace? {
-        return activityNamespaces[activityId]
-    }
-
-    final fun getOrCreateNamespaceForUser(userId: String): SocketIONamespace {
-        return userNamespaces.getOrPut(userId) { createNamespaceForUser(userId) }
-    }
-
-    fun getUserNamespace(userId: String): SocketIONamespace? {
-        return userNamespaces[userId]
-    }
-
-    private fun createNamespaceForUser(userId: String): SocketIONamespace {
-        val userNamespace: SocketIONamespace = server.addNamespace(getNamespaceNameForUser(userId))
-        userNamespace.addConnectListener(onConnected())
-        userNamespace.addDisconnectListener(onDisconnected())
-
-        return userNamespace
-    }
-
-    fun getNamespaceNameForActivity(activityId: Long): String {
+    fun getActivityRoomName(activityId: Long): String {
         return "/activities/$activityId"
     }
 
-    fun getNamespaceNameForUser(userId: String): String {
+    fun getUserRoomName(userId: String): String {
         return "/users/$userId"
     }
 

@@ -14,7 +14,7 @@ class LeaderboardServiceImpl(
 ) : LeaderboardService {
     override fun getTotalPointsLeaderboard(activityId: Long): LeaderboardResponse {
         val entries = memberRepository.findAllByActivity_ActivityId(activityId)
-            .sortedBy { it.points }
+            .sortedByDescending { it.points }
             .mapIndexed { index, member ->
                 LeaderboardResponse.Entry(
                     memberId = member.id,
