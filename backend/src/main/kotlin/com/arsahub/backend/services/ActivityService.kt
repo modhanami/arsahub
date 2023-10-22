@@ -27,8 +27,6 @@ interface ActivityService {
     fun listMembers(activityId: Long): List<MemberResponse>
     fun listActivities(): List<ActivityResponse>
     fun trigger(activityId: Long, request: ActivityController.ActivityTriggerRequest): Unit
-    fun requestWebsocketConnection(activityId: Long): String
-    fun requestUserWebsocketConnection(activityId: Long, userId: String): String
 //    fun listJoinedEvents(currentUser: CustomUserDetails): List<Activity>
 }
 
@@ -185,30 +183,16 @@ class ActivityServiceImpl(
                 memberRepository.saveAndFlush(existingMember)
 
                 val totalPointsLeaderboard = leaderboardService.getTotalPointsLeaderboard(existingActivity.activityId)
-                val activityNamespace = socketIOService.getActivityNamespace(activityId)
-                if (activityNamespace != null) {
-                    activityNamespace.broadcastOperations.sendEvent(
-                        "leaderboard-update",
-                        totalPointsLeaderboard
-                    )
-                    activityNamespace.broadcastOperations.sendEvent(
-                        "points-update",
-                        mapOf(
-                            "userId" to existingMember.user.externalUserId,
-                            "points" to existingMember.points
-                        )
-                    )
-                    println("broadcasted leaderboard update for activity $activityId")
-                }
-
-                val userNamespace = socketIOService.getUserNamespace(existingMember.user.externalUserId)
-                if (userNamespace != null) {
-                    userNamespace.broadcastOperations.sendEvent(
-                        "points-update",
-                        existingMember.points
-                    )
-                    println("broadcasted points update for user ${existingMember.user.userId}")
-                }
+                socketIOService.broadcastToActivityRoom(
+                    activityId,
+                    "leaderboard-update",
+                    totalPointsLeaderboard
+                )
+                socketIOService.broadcastToUserRoom(
+                    existingMember.user.externalUserId,
+                    "points-update",
+                    existingMember.points
+                )
             }
 
             "progress-achievement" -> {
@@ -244,15 +228,5 @@ class ActivityServiceImpl(
                 throw Exception("Invalid trigger type")
             }
         }
-    }
-
-    override fun requestWebsocketConnection(activityId: Long): String {
-        val activityNamespace = socketIOService.getOrCreateNamespaceForActivity(activityId)
-        return activityNamespace.name
-    }
-
-    override fun requestUserWebsocketConnection(activityId: Long, userId: String): String {
-        val userNamespace = socketIOService.getOrCreateNamespaceForUser(userId)
-        return userNamespace.name
     }
 }
