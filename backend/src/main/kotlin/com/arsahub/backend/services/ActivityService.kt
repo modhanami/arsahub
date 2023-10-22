@@ -1,5 +1,6 @@
 package com.arsahub.backend.services
 
+import com.arsahub.backend.SocketIOService
 import com.arsahub.backend.controllers.ActivityController
 import com.arsahub.backend.dtos.ActivityResponse
 import com.arsahub.backend.dtos.MemberResponse
@@ -26,6 +27,8 @@ interface ActivityService {
     fun listMembers(activityId: Long): List<MemberResponse>
     fun listActivities(): List<ActivityResponse>
     fun trigger(activityId: Long, request: ActivityController.ActivityTriggerRequest): Unit
+    fun requestWebsocketConnection(activityId: Long): String
+    fun requestUserWebsocketConnection(activityId: Long, userId: String): String
 //    fun listJoinedEvents(currentUser: CustomUserDetails): List<Activity>
 }
 
@@ -36,6 +39,8 @@ class ActivityServiceImpl(
     private val memberRepository: MemberRepository,
     private val achievementRepository: AchievementRepository,
     private val achievementProgressRepository: AchievementProgressRepository,
+    private val socketIOService: SocketIOService,
+    private val leaderboardService: LeaderboardService,
 ) :
     ActivityService {
 
@@ -177,7 +182,33 @@ class ActivityServiceImpl(
             "add-points" -> {
                 val points = triggerParams["points"]?.toIntOrNull() ?: throw Exception("Invalid points")
                 existingMember.points += points
-                memberRepository.save(existingMember)
+                memberRepository.saveAndFlush(existingMember)
+
+                val totalPointsLeaderboard = leaderboardService.getTotalPointsLeaderboard(existingActivity.activityId)
+                val activityNamespace = socketIOService.getActivityNamespace(activityId)
+                if (activityNamespace != null) {
+                    activityNamespace.broadcastOperations.sendEvent(
+                        "leaderboard-update",
+                        totalPointsLeaderboard
+                    )
+                    activityNamespace.broadcastOperations.sendEvent(
+                        "points-update",
+                        mapOf(
+                            "userId" to existingMember.user.externalUserId,
+                            "points" to existingMember.points
+                        )
+                    )
+                    println("broadcasted leaderboard update for activity $activityId")
+                }
+
+                val userNamespace = socketIOService.getUserNamespace(existingMember.user.externalUserId)
+                if (userNamespace != null) {
+                    userNamespace.broadcastOperations.sendEvent(
+                        "points-update",
+                        existingMember.points
+                    )
+                    println("broadcasted points update for user ${existingMember.user.userId}")
+                }
             }
 
             "progress-achievement" -> {
@@ -196,7 +227,8 @@ class ActivityServiceImpl(
                 achievementProgress.progress += progress
 
                 if (achievementProgress.progress > existingAchievement.requiredProgress) {
-                    return
+//                    return
+                    achievementProgress.progress = existingAchievement.requiredProgress
                 }
                 if (achievementProgress.progress == existingAchievement.requiredProgress) {
                     achievementProgress.completedAt = Instant.now()
@@ -205,12 +237,22 @@ class ActivityServiceImpl(
                     println("${existingMember.user.externalUserId} progress achievement ${existingAchievement.title}")
                 }
 
-                achievementProgressRepository.save(achievementProgress)
+                achievementProgressRepository.saveAndFlush(achievementProgress)
             }
 
             else -> {
                 throw Exception("Invalid trigger type")
             }
         }
+    }
+
+    override fun requestWebsocketConnection(activityId: Long): String {
+        val activityNamespace = socketIOService.getOrCreateNamespaceForActivity(activityId)
+        return activityNamespace.name
+    }
+
+    override fun requestUserWebsocketConnection(activityId: Long, userId: String): String {
+        val userNamespace = socketIOService.getOrCreateNamespaceForUser(userId)
+        return userNamespace.name
     }
 }
