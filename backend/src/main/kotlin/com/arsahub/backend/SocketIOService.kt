@@ -12,8 +12,8 @@ import org.springframework.stereotype.Component
 
 
 @Component
-class SocketIOService(private val server: SocketIOServer) {
-    private final val defaultNamespace: SocketIONamespace = server.addNamespace("/default")
+class SocketIOService(val server: SocketIOServer) {
+    private final val defaultNamespace: SocketIONamespace by lazy { server.addNamespace("/default") }
 
     init {
         defaultNamespace.addConnectListener(onConnected())
@@ -39,12 +39,14 @@ class SocketIOService(private val server: SocketIOServer) {
     interface ActivityUpdate
     data class PointsUpdate(val userId: String, val points: Int) : ActivityUpdate
     data class LeaderboardUpdate(val leaderboard: LeaderboardResponse) : ActivityUpdate
+    data class AchievementUpdate(val userId: String, val achievementId: Long, val progress: Int) : ActivityUpdate
 
     fun broadcastToActivityRoom(activityId: Long, data: ActivityUpdate) {
         val activityRoom = defaultNamespace.getRoomOperations(getActivityRoomName(activityId))
         val type = when (data) {
             is PointsUpdate -> "points-update"
             is LeaderboardUpdate -> "leaderboard-update"
+            is AchievementUpdate -> "achievement-update"
             else -> throw IllegalArgumentException("Unknown data type: ${data.javaClass}")
         }
         activityRoom.sendEvent(

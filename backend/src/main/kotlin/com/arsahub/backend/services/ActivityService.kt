@@ -26,7 +26,7 @@ interface ActivityService {
     fun addMembers(activityId: Long, request: ActivityController.ActivityAddMembersRequest): ActivityResponse
     fun listMembers(activityId: Long): List<MemberResponse>
     fun listActivities(): List<ActivityResponse>
-    fun trigger(activityId: Long, request: ActivityController.ActivityTriggerRequest): Unit
+    fun trigger(activityId: Long, request: ActivityController.ActivityTriggerRequest)
 //    fun listJoinedEvents(currentUser: CustomUserDetails): List<Activity>
 }
 
@@ -223,6 +223,15 @@ class ActivityServiceImpl(
                 }
 
                 achievementProgressRepository.saveAndFlush(achievementProgress)
+
+                socketIOService.broadcastToActivityRoom(
+                    activityId,
+                    SocketIOService.AchievementUpdate(
+                        userId = userId,
+                        achievementId = achievementId,
+                        progress = achievementProgress.progress
+                    )
+                )
             }
 
             else -> {
