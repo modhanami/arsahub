@@ -17,12 +17,13 @@ export const authOptions: AuthOptions = {
   callbacks: {
     async session(params) {
       const { token, session } = params;
-      //   console.log(`inside session callback`);
-      //   console.log(`obj: ${JSON.stringify(params, null, 2)}`);
-      //   console.log(`token: ${JSON.stringify(token, null, 2)}`);
-      //   console.log(`session: ${JSON.stringify(session, null, 2)}`);
-      if (token && session.user) {
+
+      if (token?.sub && session?.user) {
         session.user.id = token.sub;
+      }
+
+      if (token.idToken) {
+        session.idToken = token.idToken;
       }
 
       return session;
