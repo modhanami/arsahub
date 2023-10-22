@@ -185,13 +185,14 @@ class ActivityServiceImpl(
                 val totalPointsLeaderboard = leaderboardService.getTotalPointsLeaderboard(existingActivity.activityId)
                 socketIOService.broadcastToActivityRoom(
                     activityId,
-                    "leaderboard-update",
-                    totalPointsLeaderboard
+                    SocketIOService.LeaderboardUpdate(totalPointsLeaderboard)
                 )
-                socketIOService.broadcastToUserRoom(
-                    existingMember.user.externalUserId,
-                    "points-update",
-                    existingMember.points
+                socketIOService.broadcastToActivityRoom(
+                    activityId,
+                    SocketIOService.PointsUpdate(
+                        userId = userId,
+                        points = existingMember.points
+                    )
                 )
             }
 
