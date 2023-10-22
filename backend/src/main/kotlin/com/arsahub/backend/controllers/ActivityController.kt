@@ -85,4 +85,14 @@ class ActivityController(
         }
         return LeaderboardResponse(leaderboard = "total-points", entries = emptyList())
     }
+
+    @GetMapping("/{activityId}/ws-request")
+    fun requestWebsocketConnection(@PathVariable activityId: Long): String {
+        return activityService.requestWebsocketConnection(activityId)
+    }
+
+    @GetMapping("/{activityId}/user-ws-request/{userId}")
+    fun requestUserWebsocketConnection(@PathVariable activityId: Long, @PathVariable userId: String): String {
+        return activityService.requestUserWebsocketConnection(activityId, userId)
+    }
 }
