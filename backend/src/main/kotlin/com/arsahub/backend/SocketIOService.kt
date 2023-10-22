@@ -1,5 +1,6 @@
 package com.arsahub.backend
 
+import com.arsahub.backend.dtos.LeaderboardResponse
 import com.corundumstudio.socketio.AckRequest
 import com.corundumstudio.socketio.SocketIOClient
 import com.corundumstudio.socketio.SocketIONamespace
@@ -35,22 +36,21 @@ class SocketIOService(private val server: SocketIOServer) {
         }
     }
 
-    fun broadcastToActivityRoom(activityId: Long, eventName: String, data: Any) {
+    interface ActivityUpdate
+    data class PointsUpdate(val userId: String, val points: Int) : ActivityUpdate
+    data class LeaderboardUpdate(val leaderboard: LeaderboardResponse) : ActivityUpdate
+
+    fun broadcastToActivityRoom(activityId: Long, data: ActivityUpdate) {
         val activityRoom = defaultNamespace.getRoomOperations(getActivityRoomName(activityId))
-
+        val type = when (data) {
+            is PointsUpdate -> "points-update"
+            is LeaderboardUpdate -> "leaderboard-update"
+            else -> throw IllegalArgumentException("Unknown data type: ${data.javaClass}")
+        }
         activityRoom.sendEvent(
-            eventName, mapOf(
+            "activity-update", mapOf(
+                "type" to type,
                 "activityId" to activityId,
-                "data" to data
-            )
-        )
-    }
-
-    fun broadcastToUserRoom(userId: String, eventName: String, data: Any) {
-        val userRoom = defaultNamespace.getRoomOperations(getUserRoomName(userId))
-        userRoom.sendEvent(
-            eventName, mapOf(
-                "userId" to userId,
                 "data" to data
             )
         )
