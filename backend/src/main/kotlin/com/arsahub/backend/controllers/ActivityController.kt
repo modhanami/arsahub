@@ -4,6 +4,7 @@ import com.arsahub.backend.dtos.ActivityResponse
 import com.arsahub.backend.dtos.LeaderboardResponse
 import com.arsahub.backend.dtos.MemberResponse
 import com.arsahub.backend.models.Rule
+import com.arsahub.backend.models.Trigger
 import com.arsahub.backend.repositories.ActionRepository
 import com.arsahub.backend.repositories.RuleRepository
 import com.arsahub.backend.repositories.TriggerRepository
@@ -162,5 +163,32 @@ class ActivityController(
 
         return RuleResponse.fromEntity(rule)
     }
+
+    // create trigger per activity
+    data class TriggerCreateRequest(
+        val title: String,
+        val description: String?,
+        val key: String,
+    )
+
+    @PostMapping("/{activityId}/triggers")
+    fun createTrigger(
+        @PathVariable activityId: Long,
+        @RequestBody request: TriggerCreateRequest
+    ): RuleResponse.TriggerResponse {
+        val activity = activityService.getActivity(activityId) ?: throw Exception("Activity not found")
+
+        val trigger = Trigger(
+            title = request.title,
+            description = request.description,
+            key = request.key,
+            activity = activity
+        )
+
+        triggerRepository.save(trigger)
+
+        return RuleResponse.TriggerResponse.fromEntity(trigger)
+    }
+
 }
 
