@@ -5,11 +5,14 @@ import com.arsahub.backend.controllers.ActivityController
 import com.arsahub.backend.dtos.ActivityResponse
 import com.arsahub.backend.dtos.MemberResponse
 import com.arsahub.backend.models.Activity
+import com.arsahub.backend.models.RuleProgressTime
+import com.arsahub.backend.models.TriggerType
 import com.arsahub.backend.models.UserActivity
 import com.arsahub.backend.repositories.*
 import jakarta.persistence.EntityNotFoundException
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
+import java.time.Instant
 
 interface ActivityService {
     //    fun createEvent(currentUser: CustomUserDetails, eventCreateRequest: EventCreateRequest): EventResponse
@@ -40,8 +43,8 @@ class ActivityServiceImpl(
     private val achievementRepository: AchievementRepository,
     private val socketIOService: SocketIOService,
     private val leaderboardService: LeaderboardService,
-) :
-    ActivityService {
+    private val ruleProgressTimeRepository: RuleProgressTimeRepository
+) : ActivityService {
 
 
     //    override fun createEvent(currentUser: CustomUserDetails, eventCreateRequest: EventCreateRequest): EventResponse {
@@ -106,8 +109,7 @@ class ActivityServiceImpl(
 //    }
 
     override fun addMembers(
-        activityId: Long,
-        request: ActivityController.ActivityAddMembersRequest
+        activityId: Long, request: ActivityController.ActivityAddMembersRequest
     ): ActivityResponse {
         val existingEvent = activityRepository.findByIdOrNull(activityId)
             ?: throw EntityNotFoundException("Activity with ID $activityId not found")
@@ -175,22 +177,62 @@ class ActivityServiceImpl(
 
         val userId = request.userId
 
-        val existingMember = existingActivity.members.find { it.user?.externalUserId == userId }
-            ?: throw Exception("User not found")
+        val existingMember =
+            existingActivity.members.find { it.user?.externalUserId == userId } ?: throw Exception("User not found")
 
-        val trigger = triggerRepository.findByKey(request.key)
-            ?: throw Exception("Trigger not found")
+        val trigger = triggerRepository.findByKey(request.key) ?: throw Exception("Trigger not found")
 
         val actionMessages = mutableListOf<String>()
         existingActivity.rules.filter { it.trigger?.key == trigger.key }.forEach { rule ->
-            val action = rule.action
-                ?: throw Exception("Action not found")
+            val action = rule.action ?: throw Exception("Action not found")
+
+            val triggerType: TriggerType
+            try {
+                triggerType = rule.triggerType ?: throw Exception("Trigger type not found")
+            } catch (e: Exception) {
+                println("Trigger type not found")
+                return@forEach
+            }
+
+            // handle pre-built trigger types and rule user progress
+            var isProgressCompleted = false
+            when (triggerType.key) {
+                "times" -> {
+                    val expectedCount =
+                        rule.triggerTypeParams?.get("count")?.toString()?.toInt() ?: throw Exception("Count not found")
+                    var ruleProgress = ruleProgressTimeRepository.findByRuleAndUserActivity(rule, existingMember)
+                    if (ruleProgress == null) {
+                        ruleProgress = RuleProgressTime(
+                            rule = rule, userActivity = existingMember, progress = 0
+                        )
+                    } else {
+                        if (ruleProgress.completedAt != null) {
+                            return@forEach
+                        }
+                    }
+
+                    ruleProgress.progress = ruleProgress.progress?.plus(1)
+                    if (ruleProgress.progress == expectedCount) {
+                        ruleProgress.completedAt = Instant.now()
+                        isProgressCompleted = true
+                        println("User ${existingMember.user?.userId} (${existingMember.user?.externalUserId}) has completed rule ${rule.title} (${rule.id}) with progress ${ruleProgress.progress}/${expectedCount}")
+                    } else {
+                        println("User ${existingMember.user?.userId} (${existingMember.user?.externalUserId}) has progress ${ruleProgress.progress}/${expectedCount} for rule ${rule.title} (${rule.id})")
+                    }
+
+                    ruleProgressTimeRepository.save(ruleProgress)
+                }
+            }
+
+            if (!isProgressCompleted) {
+                return@forEach
+            }
 
             // handle pre-built actions
             when (action.key) {
                 "add_points" -> {
-                    val points = rule.actionParams?.get("value")?.toString()?.toInt()
-                        ?: throw Exception("Points not found")
+                    val points =
+                        rule.actionParams?.get("value")?.toString()?.toInt() ?: throw Exception("Points not found")
                     existingMember.addPoints(points)
                     userActivityRepository.save(existingMember)
 

@@ -24,9 +24,14 @@ class TriggerType(
 
     @OneToMany(mappedBy = "triggerType")
     var rules: MutableSet<Rule> = mutableSetOf(),
+
+    @NotNull
+    @Column(name = "key", nullable = false, length = Integer.MAX_VALUE)
+    var key: String? = null
 ) : AuditedEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "trigger_type_id", nullable = false)
     var id: Long? = null
+
 }

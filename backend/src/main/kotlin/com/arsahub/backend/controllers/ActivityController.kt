@@ -113,11 +113,18 @@ class ActivityController(
         val params: Map<String, String>
     )
 
+    data class RuleCondition(
+        val type: String,
+        val params: Map<String, String>,
+//        val multiple: Boolean
+    )
+
     data class RuleCreateRequest(
         val name: String,
         val description: String?,
         val trigger: TriggerDefinition,
-        val action: ActionDefinition
+        val action: ActionDefinition,
+        val condition: RuleCondition
     )
 
     @PostMapping("/{activityId}/rules")
@@ -127,8 +134,8 @@ class ActivityController(
     ): RuleResponse {
         val trigger = triggerRepository.findByKey(request.trigger.key) ?: throw Exception("Trigger not found")
         val action = actionRepository.findByKey(request.action.key) ?: throw Exception("Action not found")
-//        val triggerType =
-//            triggerTypeRepository.findByTitle(request.trigger.type) ?: throw Exception("Trigger type not found")
+        val triggerType =
+            triggerTypeRepository.findByKey(request.condition.type) ?: throw Exception("Trigger type not found")
         val activity = activityService.getActivity(activityId) ?: throw Exception("Activity not found")
 
         println("Action definition: ${request.action}")
@@ -139,14 +146,26 @@ class ActivityController(
         val factory = JsonSchemaFactory.getInstance(SpecVersionDetector.detect(schemaJsonNode))
         val config = SchemaValidatorsConfig()
         config.isTypeLoose = true
-        var schema = factory.getSchema(schemaJsonNode, config)
+        val actionSchema = factory.getSchema(schemaJsonNode, config)
         val actionDefinitionJsonNode = mapper.valueToTree<JsonNode>(request.action.params)
-        val validate = schema.validate(actionDefinitionJsonNode)
-        val passed = validate.isEmpty()
+        val validate = actionSchema.validate(actionDefinitionJsonNode)
+        val isValidAction = validate.isEmpty()
 
-        println("Action validation result: $validate (passed: $passed)")
-        if (!passed) {
+        println("Action validation result: $validate (passed: $isValidAction)")
+        if (!isValidAction) {
             throw Exception("Action definition is not valid")
+        }
+
+        // validate condition schema
+        val conditionSchemaJsonNode = mapper.valueToTree<JsonNode>(triggerType.jsonSchema)
+        val triggerTypeSchema = factory.getSchema(conditionSchemaJsonNode, config)
+        val conditionDefinitionJsonNode = mapper.valueToTree<JsonNode>(request.condition.params)
+        val conditionValidate = triggerTypeSchema.validate(conditionDefinitionJsonNode)
+        val isValidCondition = conditionValidate.isEmpty()
+
+        println("Condition validation result: $conditionValidate (passed: $isValidCondition)")
+        if (!isValidCondition) {
+            throw Exception("Condition definition is not valid")
         }
 
         val rule = Rule(
@@ -154,9 +173,10 @@ class ActivityController(
             description = request.description,
             trigger = trigger,
             action = action,
-//            triggerType = triggerType,
+            triggerType = triggerType,
             activity = activity,
             actionParams = request.action.params.toMutableMap(),
+            triggerTypeParams = request.condition.params.toMutableMap()
         )
 
         ruleRepository.save(rule)

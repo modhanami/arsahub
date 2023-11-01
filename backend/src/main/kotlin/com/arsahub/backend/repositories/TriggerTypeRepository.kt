@@ -4,5 +4,5 @@ import com.arsahub.backend.models.TriggerType
 import org.springframework.data.jpa.repository.JpaRepository
 
 interface TriggerTypeRepository : JpaRepository<TriggerType, Long> {
-    fun findByTitle(name: String): TriggerType?
+    fun findByKey(key: String): TriggerType?
 }
