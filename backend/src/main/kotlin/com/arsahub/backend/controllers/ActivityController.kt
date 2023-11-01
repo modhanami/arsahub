@@ -3,13 +3,20 @@ package com.arsahub.backend.controllers
 import com.arsahub.backend.dtos.ActivityResponse
 import com.arsahub.backend.dtos.LeaderboardResponse
 import com.arsahub.backend.dtos.MemberResponse
+import com.arsahub.backend.models.Rule
 import com.arsahub.backend.repositories.ActionRepository
 import com.arsahub.backend.repositories.RuleRepository
 import com.arsahub.backend.repositories.TriggerRepository
 import com.arsahub.backend.repositories.TriggerTypeRepository
 import com.arsahub.backend.services.ActivityService
 import com.arsahub.backend.services.LeaderboardService
+import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.networknt.schema.JsonSchemaFactory
+import com.networknt.schema.SchemaValidatorsConfig
+import com.networknt.schema.SpecVersionDetector
 import org.springframework.web.bind.annotation.*
+
 
 @RestController
 @RequestMapping("/api/activities")
@@ -95,46 +102,65 @@ class ActivityController(
     }
 
     data class TriggerDefinition(
-        val id: Long,
-        val type: String,
-        val params: Map<String, String>
+        val key: String,
+//        val type: String,
+//        val params: Map<String, String>
     )
 
-    data class EffectDefinition(
-        val id: Long,
+    data class ActionDefinition(
+        val key: String,
         val params: Map<String, String>
     )
 
     data class RuleCreateRequest(
-        val title: String,
-        val description: String,
+        val name: String,
+        val description: String?,
         val trigger: TriggerDefinition,
-        val effect: EffectDefinition
+        val action: ActionDefinition
     )
 
-//    @PostMapping("/{activityId}/rules")
-//    fun createRule(
-//        @PathVariable activityId: Long,
-//        @RequestBody request: RuleCreateRequest
-//    ): Rule? {
-//        val trigger = triggerRepository.findByIdOrNull(request.trigger.id) ?: throw Exception("Trigger not found")
-//        val effect = actionRepository.findByIdOrNull(request.effect.id) ?: throw Exception("Effect not found")
+    @PostMapping("/{activityId}/rules")
+    fun createRule(
+        @PathVariable activityId: Long,
+        @RequestBody request: RuleCreateRequest
+    ): RuleResponse {
+        val trigger = triggerRepository.findByKey(request.trigger.key) ?: throw Exception("Trigger not found")
+        val action = actionRepository.findByKey(request.action.key) ?: throw Exception("Action not found")
 //        val triggerType =
 //            triggerTypeRepository.findByTitle(request.trigger.type) ?: throw Exception("Trigger type not found")
-//        val activity = activityService.getActivity(activityId) ?: throw Exception("Activity not found")
-//
-//        val rule = Rule(
-//            title = request.title,
-//            description = request.description,
-//            trigger = trigger,
-//            effect = effect,
+        val activity = activityService.getActivity(activityId) ?: throw Exception("Activity not found")
+
+        println("Action definition: ${request.action}")
+        println("Action schema: ${action.jsonSchema}")
+
+        val mapper = ObjectMapper()
+        val schemaJsonNode = mapper.valueToTree<JsonNode>(action.jsonSchema)
+        val factory = JsonSchemaFactory.getInstance(SpecVersionDetector.detect(schemaJsonNode))
+        val config = SchemaValidatorsConfig()
+        config.isTypeLoose = true
+        var schema = factory.getSchema(schemaJsonNode, config)
+        val actionDefinitionJsonNode = mapper.valueToTree<JsonNode>(request.action.params)
+        val validate = schema.validate(actionDefinitionJsonNode)
+        val passed = validate.isEmpty()
+
+        println("Action validation result: $validate (passed: $passed)")
+        if (!passed) {
+            throw Exception("Action definition is not valid")
+        }
+
+        val rule = Rule(
+            title = request.name,
+            description = request.description,
+            trigger = trigger,
+            action = action,
 //            triggerType = triggerType,
-//            activity = activity
-//        )
-//
-////        val ruleParams =
-//
-//        return null
-//    }
+            activity = activity,
+            actionParams = request.action.params.toMutableMap(),
+        )
+
+        ruleRepository.save(rule)
+
+        return RuleResponse.fromEntity(rule)
+    }
 }
 

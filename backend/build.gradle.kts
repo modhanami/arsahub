@@ -10,6 +10,7 @@ plugins {
     kotlin("plugin.spring") version "1.8.22"
     kotlin("plugin.jpa") version "1.8.22"
     id("org.jetbrains.kotlin.plugin.allopen") version "1.9.10"
+//    kotlin("plugin.serialization") version "1.9.0"
 }
 
 group = "com.arsahub"
@@ -40,6 +41,10 @@ dependencies {
     implementation("com.h2database:h2")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0")
     implementation("com.corundumstudio.socketio:netty-socketio:2.0.3")
+    implementation("net.pwall.json:json-kotlin-schema:0.42")
+//    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+//    implementation("com.google.code.gson:gson:2.10.1")
+    implementation("com.networknt:json-schema-validator:1.0.87")
 //    implementation("com.github.gavlyukovskiy:datasource-proxy-spring-boot-starter:1.9.0")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     runtimeOnly("org.postgresql:postgresql")

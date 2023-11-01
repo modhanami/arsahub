@@ -29,9 +29,8 @@ class Rule(
     @JoinColumn(name = "trigger_id", nullable = false)
     var trigger: Trigger? = null,
 
-    @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "trigger_type_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "trigger_type_id")
     var triggerType: TriggerType? = null,
 
     @NotNull
@@ -45,16 +44,16 @@ class Rule(
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "effect_params")
-    var effectParams: MutableMap<String, Any>? = null,
+    var actionParams: MutableMap<String, Any>? = null,
 ) : AuditedEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "rule_id", nullable = false)
     var id: Long? = null
 
-    @OneToMany(mappedBy = "rule")
-    var ruleProgressStreaks: MutableSet<RuleProgressStreak> = mutableSetOf()
-
-    @OneToMany(mappedBy = "rule")
-    var ruleProgressTimes: MutableSet<RuleProgressTime> = mutableSetOf()
+//    @OneToMany(mappedBy = "rule")
+//    var ruleProgressStreaks: MutableSet<RuleProgressStreak> = mutableSetOf()
+//
+//    @OneToMany(mappedBy = "rule")
+//    var ruleProgressTimes: MutableSet<RuleProgressTime> = mutableSetOf()
 }

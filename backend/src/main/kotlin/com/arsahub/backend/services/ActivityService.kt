@@ -181,18 +181,25 @@ class ActivityServiceImpl(
         val trigger = triggerRepository.findByKey(request.key)
             ?: throw Exception("Trigger not found")
 
-        val rule = existingActivity.rules.find { it.trigger?.key == trigger.key }
-        val action = rule?.action
-            ?: throw Exception("Action not found")
+        val actionMessages = mutableListOf<String>()
+        existingActivity.rules.filter { it.trigger?.key == trigger.key }.forEach { rule ->
+            val action = rule.action
+                ?: throw Exception("Action not found")
 
-        // handle pre-built actions
-        when (action.key) {
-            "add_points" -> {
-                val points = rule.effectParams?.get("value")?.toString()?.toInt()
-                    ?: throw Exception("Points not found")
-                existingMember.addPoints(points)
-                userActivityRepository.save(existingMember)
+            // handle pre-built actions
+            when (action.key) {
+                "add_points" -> {
+                    val points = rule.actionParams?.get("value")?.toString()?.toInt()
+                        ?: throw Exception("Points not found")
+                    existingMember.addPoints(points)
+                    userActivityRepository.save(existingMember)
+
+                    actionMessages.add("User `${existingMember.user?.userId}` (${existingMember.user?.externalUserId}) received `$points` points for activity `${existingActivity.title}` (${existingActivity.activityId}) from rule `${rule.title}` (${rule.id})")
+                }
             }
         }
+
+        actionMessages.forEach { println(it) }
+
     }
 }
