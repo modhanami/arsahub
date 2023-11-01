@@ -1,7 +1,7 @@
 package com.arsahub.backend.models
 
-import com.fasterxml.jackson.annotation.JsonIgnore
 import jakarta.persistence.*
+import jakarta.validation.constraints.NotNull
 
 @Entity
 @Table(name = "user")
@@ -17,10 +17,6 @@ class User(
     @Column(name = "name", nullable = false)
     val name: String,
 
-    @OneToMany(mappedBy = "user")
-    @JsonIgnore
-    val members: MutableSet<Member> = mutableSetOf(),
-
 //    @ManyToOne
 //    @JoinColumn(name = "role_id", nullable = false)
 //    val role: Role // Many users can have the same role
@@ -28,7 +24,12 @@ class User(
     @Column(name = "external_user_id", unique = true, nullable = false)
     val externalUserId: String,
 ) {
-    override fun toString(): String {
-        return "User(userId=$userId, username='$username', members=$members)"
-    }
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "external_system_id", nullable = false)
+    var externalSystem: ExternalSystem? = null
+
+    @OneToMany(mappedBy = "user")
+    var userActivities: MutableSet<UserActivity> = mutableSetOf()
+
 }

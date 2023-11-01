@@ -4,13 +4,12 @@ import com.arsahub.backend.SocketIOService
 import com.arsahub.backend.controllers.ActivityController
 import com.arsahub.backend.dtos.ActivityResponse
 import com.arsahub.backend.dtos.MemberResponse
-import com.arsahub.backend.models.AchievementProgress
-import com.arsahub.backend.models.Member
+import com.arsahub.backend.models.Activity
+import com.arsahub.backend.models.UserActivity
 import com.arsahub.backend.repositories.*
 import jakarta.persistence.EntityNotFoundException
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
-import java.time.Instant
 
 interface ActivityService {
     //    fun createEvent(currentUser: CustomUserDetails, eventCreateRequest: EventCreateRequest): EventResponse
@@ -20,8 +19,9 @@ interface ActivityService {
 //        eventUpdateRequest: EventUpdateRequest
 //    ): EventResponse
 //
-//    fun getEvent(activityId: Long): Activity?
-//    fun listEvents(): List<Activity>
+    fun getActivity(activityId: Long): Activity?
+
+    //    fun listEvents(): List<Activity>
 //    fun deleteEvent(currentUser: CustomUserDetails, activityId: Long)
     fun addMembers(activityId: Long, request: ActivityController.ActivityAddMembersRequest): ActivityResponse
     fun listMembers(activityId: Long): List<MemberResponse>
@@ -34,15 +34,17 @@ interface ActivityService {
 class ActivityServiceImpl(
     private val activityRepository: ActivityRepository,
     private val userRepository: UserRepository,
-    private val memberRepository: MemberRepository,
+    private val userActivityRepository: UserActivityRepository,
+    private val triggerRepository: TriggerRepository,
+    private val actionRepository: ActionRepository,
     private val achievementRepository: AchievementRepository,
-    private val achievementProgressRepository: AchievementProgressRepository,
     private val socketIOService: SocketIOService,
     private val leaderboardService: LeaderboardService,
 ) :
     ActivityService {
 
-//    override fun createEvent(currentUser: CustomUserDetails, eventCreateRequest: EventCreateRequest): EventResponse {
+
+    //    override fun createEvent(currentUser: CustomUserDetails, eventCreateRequest: EventCreateRequest): EventResponse {
 //        val activityToSave = Activity(
 //            title = eventCreateRequest.title,
 //            description = eventCreateRequest.description,
@@ -88,9 +90,9 @@ class ActivityServiceImpl(
 //        return existingActivity
 //    }
 //
-//    override fun getEvent(activityId: Long): Activity? {
-//        return eventRepository.findByIdOrNull(activityId)
-//    }
+    override fun getActivity(activityId: Long): Activity? {
+        return activityRepository.findByIdOrNull(activityId)
+    }
 //
 //    override fun listEvents(): List<Activity> {
 //        return eventRepository.findAll()
@@ -110,17 +112,17 @@ class ActivityServiceImpl(
         val existingEvent = activityRepository.findByIdOrNull(activityId)
             ?: throw EntityNotFoundException("Activity with ID $activityId not found")
 
-        val existingMemberUserIds = existingEvent.members.map { it.user.externalUserId }.toSet()
+        val existingMemberUserIds = existingEvent.members.map { it.user?.externalUserId }.toSet()
         val newMemberUserIds = request.externalUserIds.filter { !existingMemberUserIds.contains(it) }
         val newMemberUsers = userRepository.findAll().filter { newMemberUserIds.contains(it.externalUserId) }
         newMemberUsers.forEach { println(it.externalUserId) }
         val newMembers = newMemberUsers.map { user ->
-            Member(
+            UserActivity(
                 user = user,
                 activity = existingEvent,
             )
         }
-        memberRepository.saveAllAndFlush(newMembers)
+        userActivityRepository.saveAllAndFlush(newMembers)
 
         return ActivityResponse.fromEntity(
             activityRepository.findByIdOrNull(activityId)
@@ -166,76 +168,30 @@ class ActivityServiceImpl(
     }
 
     override fun trigger(activityId: Long, request: ActivityController.ActivityTriggerRequest) {
+        val allActivity = activityRepository.findAll()
+        println("${allActivity.size} activities found")
         val existingActivity = activityRepository.findByIdOrNull(activityId)
             ?: throw EntityNotFoundException("Activity with ID $activityId not found")
 
-        val triggerType = request.type
-        val triggerParams = request.params
         val userId = request.userId
 
-        val existingMember = existingActivity.members.find { it.user.externalUserId == userId }
+        val existingMember = existingActivity.members.find { it.user?.externalUserId == userId }
             ?: throw Exception("User not found")
 
-        when (triggerType) {
-            "add-points" -> {
-                val points = triggerParams["points"]?.toIntOrNull() ?: throw Exception("Invalid points")
-                existingMember.points += points
-                memberRepository.saveAndFlush(existingMember)
+        val trigger = triggerRepository.findByKey(request.key)
+            ?: throw Exception("Trigger not found")
 
-                val totalPointsLeaderboard = leaderboardService.getTotalPointsLeaderboard(existingActivity.activityId)
-                socketIOService.broadcastToActivityRoom(
-                    activityId,
-                    SocketIOService.LeaderboardUpdate(totalPointsLeaderboard)
-                )
-                socketIOService.broadcastToActivityRoom(
-                    activityId,
-                    SocketIOService.PointsUpdate(
-                        userId = userId,
-                        points = existingMember.points
-                    )
-                )
-            }
+        val rule = existingActivity.rules.find { it.trigger?.key == trigger.key }
+        val action = rule?.action
+            ?: throw Exception("Action not found")
 
-            "progress-achievement" -> {
-                val achievementId =
-                    triggerParams["achievementId"]?.toLongOrNull() ?: throw Exception("Invalid achievementId")
-                val progress = triggerParams["progress"]?.toIntOrNull() ?: 1
-                val existingAchievement = achievementRepository.findByIdOrNull(achievementId)
-                    ?: throw Exception("Achievement not found")
-                // find existing achievement progress or create new one
-                val achievementProgress =
-                    existingAchievement.achievementProgresses.find { it.member == existingMember }
-                        ?: AchievementProgress(
-                            member = existingMember,
-                            achievement = existingAchievement,
-                        )
-                achievementProgress.progress += progress
-
-                if (achievementProgress.progress > existingAchievement.requiredProgress) {
-//                    return
-                    achievementProgress.progress = existingAchievement.requiredProgress
-                }
-                if (achievementProgress.progress == existingAchievement.requiredProgress) {
-                    achievementProgress.completedAt = Instant.now()
-                    println("${existingMember.user.externalUserId} completed achievement ${existingAchievement.title}")
-                } else {
-                    println("${existingMember.user.externalUserId} progress achievement ${existingAchievement.title}")
-                }
-
-                achievementProgressRepository.saveAndFlush(achievementProgress)
-
-                socketIOService.broadcastToActivityRoom(
-                    activityId,
-                    SocketIOService.AchievementUpdate(
-                        userId = userId,
-                        achievementId = achievementId,
-                        progress = achievementProgress.progress
-                    )
-                )
-            }
-
-            else -> {
-                throw Exception("Invalid trigger type")
+        // handle pre-built actions
+        when (action.key) {
+            "add_points" -> {
+                val points = rule.effectParams?.get("value")?.toString()?.toInt()
+                    ?: throw Exception("Points not found")
+                existingMember.addPoints(points)
+                userActivityRepository.save(existingMember)
             }
         }
     }

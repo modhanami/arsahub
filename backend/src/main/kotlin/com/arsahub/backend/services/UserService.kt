@@ -46,7 +46,7 @@ class UserServiceImpl(private val userRepository: UserRepository) : UserService 
     override fun register(registerRequest: RegisterRequest): LoginResponse {
         // extract sub from JWT without any validation
         val idToken = registerRequest.idToken
-        val untrustedJWT = SignedJWT.parse(idToken);
+        val untrustedJWT = SignedJWT.parse(idToken)
         val jwtClaimsSet = untrustedJWT.jwtClaimsSet
         val externalUserId = jwtClaimsSet.getStringClaim("sub")
         val username = jwtClaimsSet.getStringClaim("email")
