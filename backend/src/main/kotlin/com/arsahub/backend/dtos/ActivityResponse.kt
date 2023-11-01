@@ -21,15 +21,15 @@ data class ActivityResponse(
 }
 
 data class MemberResponse(
-    val memberId: Long,
-    val name: String,
-    val points: Int,
+    val memberId: Long?,
+    val name: String?,
+    val points: Int?,
 ) {
     companion object {
-        fun fromEntity(member: com.arsahub.backend.models.Member): MemberResponse {
+        fun fromEntity(member: com.arsahub.backend.models.UserActivity): MemberResponse {
             return MemberResponse(
                 memberId = member.id,
-                name = member.user.name,
+                name = member.user?.name,
                 points = member.points,
             )
         }

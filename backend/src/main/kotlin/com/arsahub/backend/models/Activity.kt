@@ -1,14 +1,11 @@
 package com.arsahub.backend.models
 
 import jakarta.persistence.*
+import jakarta.validation.constraints.NotNull
 
 @Entity
 @Table(name = "activity")
 class Activity(
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "activity_id")
-    val activityId: Long = 0,
 
     @Column(name = "title", nullable = false)
     var title: String,
@@ -16,17 +13,28 @@ class Activity(
     @Column(name = "description")
     var description: String?,
 
-//    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-//    @JoinColumn(name = "organizer_id", nullable = false, insertable = false, updatable = false)
-//    val organizer: Organizer? = null,
-//
-//    @Column(name = "organizer_id", nullable = false)
-//    val organizerId: Long,
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "external_system_id", nullable = false)
+    var externalSystem: ExternalSystem? = null,
 
     @OneToMany(mappedBy = "activity")
-//    @JsonIgnore
-    val members: MutableSet<Member> = mutableSetOf(),
-) {
+    var rules: MutableSet<Rule> = mutableSetOf(),
+
+    @OneToMany(mappedBy = "activity")
+    var triggers: MutableSet<Trigger> = mutableSetOf(),
+
+    @OneToMany(mappedBy = "activity")
+    var members: MutableSet<UserActivity> = mutableSetOf(),
+
+    @OneToMany(mappedBy = "activity")
+    var userActivityPointHistories: MutableSet<UserActivityPointHistory> = mutableSetOf(),
+) : AuditedEntity() {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "activity_id")
+    val activityId: Long? = null
+
     override fun toString(): String {
         return "Event(activityId=$activityId, title='$title')"
     }
