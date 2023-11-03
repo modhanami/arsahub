@@ -3,12 +3,10 @@ package com.arsahub.backend.controllers
 import com.arsahub.backend.dtos.ActivityResponse
 import com.arsahub.backend.dtos.LeaderboardResponse
 import com.arsahub.backend.dtos.MemberResponse
+import com.arsahub.backend.models.Achievement
 import com.arsahub.backend.models.Rule
 import com.arsahub.backend.models.Trigger
-import com.arsahub.backend.repositories.ActionRepository
-import com.arsahub.backend.repositories.RuleRepository
-import com.arsahub.backend.repositories.TriggerRepository
-import com.arsahub.backend.repositories.TriggerTypeRepository
+import com.arsahub.backend.repositories.*
 import com.arsahub.backend.services.ActivityService
 import com.arsahub.backend.services.LeaderboardService
 import com.fasterxml.jackson.databind.JsonNode
@@ -27,7 +25,8 @@ class ActivityController(
     private val ruleRepository: RuleRepository,
     private val triggerRepository: TriggerRepository,
     private val triggerTypeRepository: TriggerTypeRepository,
-    private val actionRepository: ActionRepository
+    private val actionRepository: ActionRepository,
+    private val achievementRepository: AchievementRepository,
 ) {
 
 //    @PostMapping
@@ -124,7 +123,7 @@ class ActivityController(
         val description: String?,
         val trigger: TriggerDefinition,
         val action: ActionDefinition,
-        val condition: RuleCondition
+        val condition: RuleCondition?
     )
 
     @PostMapping("/{activityId}/rules")
@@ -135,7 +134,8 @@ class ActivityController(
         val trigger = triggerRepository.findByKey(request.trigger.key) ?: throw Exception("Trigger not found")
         val action = actionRepository.findByKey(request.action.key) ?: throw Exception("Action not found")
         val triggerType =
-            triggerTypeRepository.findByKey(request.condition.type) ?: throw Exception("Trigger type not found")
+            request.condition?.type?.let { triggerTypeRepository.findByKey(it) }
+
         val activity = activityService.getActivity(activityId) ?: throw Exception("Activity not found")
 
         println("Action definition: ${request.action}")
@@ -156,16 +156,35 @@ class ActivityController(
             throw Exception("Action definition is not valid")
         }
 
-        // validate condition schema
-        val conditionSchemaJsonNode = mapper.valueToTree<JsonNode>(triggerType.jsonSchema)
-        val triggerTypeSchema = factory.getSchema(conditionSchemaJsonNode, config)
-        val conditionDefinitionJsonNode = mapper.valueToTree<JsonNode>(request.condition.params)
-        val conditionValidate = triggerTypeSchema.validate(conditionDefinitionJsonNode)
-        val isValidCondition = conditionValidate.isEmpty()
+        // extra validation not covered by schema, like a param must reference a valid ID of an achievement to be awarded (achievementId)
+        // checks like nullability, type, etc. are covered by the schema
+        try {
+            when (request.action.key) {
+                "unlock_achievement" -> {
+                    val achievementId = request.action.params["achievementId"]!!.toLong()
+                    val achievement = achievementRepository.findById(achievementId)
+                    if (achievement.isEmpty) {
+                        throw Exception("Achievement not found")
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            throw Exception("Action definition is not valid", e)
+        }
 
-        println("Condition validation result: $conditionValidate (passed: $isValidCondition)")
-        if (!isValidCondition) {
-            throw Exception("Condition definition is not valid")
+
+        if (triggerType != null) {
+            // validate condition schema
+            val conditionSchemaJsonNode = mapper.valueToTree<JsonNode>(triggerType.jsonSchema)
+            val triggerTypeSchema = factory.getSchema(conditionSchemaJsonNode, config)
+            val conditionDefinitionJsonNode = mapper.valueToTree<JsonNode>(request.condition.params)
+            val conditionValidate = triggerTypeSchema.validate(conditionDefinitionJsonNode)
+            val isValidCondition = conditionValidate.isEmpty()
+
+            println("Condition validation result: $conditionValidate (passed: $isValidCondition)")
+            if (!isValidCondition) {
+                throw Exception("Condition definition is not valid")
+            }
         }
 
         val rule = Rule(
@@ -176,7 +195,7 @@ class ActivityController(
             triggerType = triggerType,
             activity = activity,
             actionParams = request.action.params.toMutableMap(),
-            triggerTypeParams = request.condition.params.toMutableMap()
+            triggerTypeParams = request.condition?.params?.toMutableMap(),
         )
 
         ruleRepository.save(rule)
@@ -209,6 +228,50 @@ class ActivityController(
 
         return RuleResponse.TriggerResponse.fromEntity(trigger)
     }
+
+    data class AchievementCreateRequest(
+        val title: String,
+        val description: String?,
+        val imageUrl: String?,
+    )
+
+    data class AchievementResponse(
+        val achievementId: Long,
+        val title: String,
+        val description: String?,
+        val imageUrl: String?,
+    ) {
+        companion object {
+            fun fromEntity(achievement: Achievement): AchievementResponse {
+                return AchievementResponse(
+                    achievementId = achievement.achievementId!!,
+                    title = achievement.title,
+                    description = achievement.description,
+                    imageUrl = achievement.imageUrl,
+                )
+            }
+        }
+    }
+
+    @PostMapping("/{activityId}/achievements")
+    fun createAchievement(
+        @PathVariable activityId: Long,
+        @RequestBody request: AchievementCreateRequest
+    ): AchievementResponse {
+        val activity = activityService.getActivity(activityId) ?: throw Exception("Activity not found")
+
+        val achievement = Achievement(
+            title = request.title,
+            description = request.description,
+            imageUrl = request.imageUrl,
+            activity = activity
+        )
+
+        achievementRepository.save(achievement)
+
+        return AchievementResponse.fromEntity(achievement)
+    }
+
 
 }
 
