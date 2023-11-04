@@ -24,6 +24,9 @@ class UserActivity(
     @NotNull
     @Column(name = "points", nullable = false)
     var points: Int? = 0,
+
+    @OneToMany(mappedBy = "userActivity")
+    var userActivityAchievements: MutableSet<UserActivityAchievement> = mutableSetOf()
 ) : AuditedEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -32,5 +35,10 @@ class UserActivity(
 
     fun addPoints(points: Int) {
         this.points = this.points?.plus(points)
+    }
+
+    fun addAchievement(achievement: Achievement) {
+        val userActivityAchievement = UserActivityAchievement(achievement, this)
+        userActivityAchievements.add(userActivityAchievement)
     }
 }

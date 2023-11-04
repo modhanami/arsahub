@@ -41,6 +41,7 @@ class ActivityServiceImpl(
     private val triggerRepository: TriggerRepository,
     private val actionRepository: ActionRepository,
     private val achievementRepository: AchievementRepository,
+    private val userActivityAchievementRepository: UserActivityAchievementRepository,
     private val socketIOService: SocketIOService,
     private val leaderboardService: LeaderboardService,
     private val ruleProgressTimeRepository: RuleProgressTimeRepository
@@ -186,17 +187,14 @@ class ActivityServiceImpl(
         existingActivity.rules.filter { it.trigger?.key == trigger.key }.forEach { rule ->
             val action = rule.action ?: throw Exception("Action not found")
 
-            val triggerType: TriggerType
-            try {
-                triggerType = rule.triggerType ?: throw Exception("Trigger type not found")
-            } catch (e: Exception) {
-                println("Trigger type not found")
-                return@forEach
+            val triggerType: TriggerType? = rule.triggerType
+            if (triggerType == null) {
+                println("Trigger type not found for rule ${rule.title} (${rule.id}), repeating")
             }
 
             // handle pre-built trigger types and rule user progress
             var isProgressCompleted = false
-            when (triggerType.key) {
+            when (triggerType?.key) {
                 "times" -> {
                     val expectedCount =
                         rule.triggerTypeParams?.get("count")?.toString()?.toInt() ?: throw Exception("Count not found")
@@ -224,7 +222,7 @@ class ActivityServiceImpl(
                 }
             }
 
-            if (!isProgressCompleted) {
+            if (triggerType != null && !isProgressCompleted) {
                 return@forEach
             }
 
@@ -237,6 +235,27 @@ class ActivityServiceImpl(
                     userActivityRepository.save(existingMember)
 
                     actionMessages.add("User `${existingMember.user?.userId}` (${existingMember.user?.externalUserId}) received `$points` points for activity `${existingActivity.title}` (${existingActivity.activityId}) from rule `${rule.title}` (${rule.id})")
+                }
+
+                "unlock_achievement" -> {
+                    val achievementId =
+                        rule.actionParams?.get("achievementId")?.toString()?.toLong()
+                            ?: throw Exception("Achievement ID not found")
+                    val achievement =
+                        achievementRepository.findByIdOrNull(achievementId) ?: throw Exception("Achievement not found")
+
+                    // precondition: user must not have unlocked the achievement
+                    if (existingMember.userActivityAchievements.any { it.achievement?.achievementId == achievementId }) {
+                        actionMessages.add("User already unlocked achievement")
+                        return@forEach
+                    }
+
+                    existingMember.addAchievement(achievement)
+//                    userActivityRepository.save(existingMember)
+                    // save from the owning side
+                    userActivityAchievementRepository.saveAll(existingMember.userActivityAchievements)
+
+                    actionMessages.add("User `${existingMember.user?.userId}` (${existingMember.user?.externalUserId}) unlocked achievement `${achievement.title}` (${achievement.achievementId}) for activity `${existingActivity.title}` (${existingActivity.activityId}) from rule `${rule.title}` (${rule.id})")
                 }
             }
         }
