@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.networknt.schema.JsonSchemaFactory
 import com.networknt.schema.SchemaValidatorsConfig
 import com.networknt.schema.SpecVersionDetector
+import com.networknt.schema.ValidationMessage
 import jakarta.persistence.EntityNotFoundException
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.web.bind.annotation.*
@@ -109,7 +110,7 @@ class ActivityController(
     data class TriggerDefinition(
         val key: String,
 //        val type: String,
-//        val params: Map<String, String>
+        val params: Map<String, String>?
     )
 
     data class ActionDefinition(
@@ -143,21 +144,42 @@ class ActivityController(
 
         val activity = activityService.getActivity(activityId) ?: throw Exception("Activity not found")
 
+
+        val schemaValidatorsConfig = SchemaValidatorsConfig()
+        schemaValidatorsConfig.isTypeLoose = true
+        val validator = JsonSchemaValidator(schemaValidatorsConfig = schemaValidatorsConfig)
+
+        // trigger schema validation
+        println("Trigger definition: ${request.trigger}")
+        println("Trigger schema: ${trigger.jsonSchema}")
+        val triggerSchema = trigger.jsonSchema
+        val triggerValidationResult = if (triggerSchema != null) {
+            if (request.trigger.params == null) {
+                throw Exception("Trigger params must be provided when trigger has a schema (key: ${trigger.key})")
+            }
+
+            validator.validate(triggerSchema, request.trigger.params)
+        } else {
+            JsonSchemaValidationResult.valid()
+        }
+
+        println("Trigger validation result: ${triggerValidationResult.errors} (passed: ${triggerValidationResult.isValid})")
+        if (!triggerValidationResult.isValid) {
+            throw Exception("Trigger definition is not valid")
+        }
+
+        // action schema validation
         println("Action definition: ${request.action}")
         println("Action schema: ${action.jsonSchema}")
+        val actionSchema = action.jsonSchema
+        val actionValidationResult = if (actionSchema != null) {
+            validator.validate(actionSchema, request.action.params)
+        } else {
+            JsonSchemaValidationResult.valid()
+        }
 
-        val mapper = ObjectMapper()
-        val schemaJsonNode = mapper.valueToTree<JsonNode>(action.jsonSchema)
-        val factory = JsonSchemaFactory.getInstance(SpecVersionDetector.detect(schemaJsonNode))
-        val config = SchemaValidatorsConfig()
-        config.isTypeLoose = true
-        val actionSchema = factory.getSchema(schemaJsonNode, config)
-        val actionDefinitionJsonNode = mapper.valueToTree<JsonNode>(request.action.params)
-        val validate = actionSchema.validate(actionDefinitionJsonNode)
-        val isValidAction = validate.isEmpty()
-
-        println("Action validation result: $validate (passed: $isValidAction)")
-        if (!isValidAction) {
+        println("Action validation result: ${actionValidationResult.errors} (passed: $actionValidationResult.isValid)")
+        if (!actionValidationResult.isValid) {
             throw Exception("Action definition is not valid")
         }
 
@@ -180,14 +202,17 @@ class ActivityController(
 
         if (triggerType != null) {
             // validate condition schema
-            val conditionSchemaJsonNode = mapper.valueToTree<JsonNode>(triggerType.jsonSchema)
-            val triggerTypeSchema = factory.getSchema(conditionSchemaJsonNode, config)
-            val conditionDefinitionJsonNode = mapper.valueToTree<JsonNode>(request.condition.params)
-            val conditionValidate = triggerTypeSchema.validate(conditionDefinitionJsonNode)
-            val isValidCondition = conditionValidate.isEmpty()
+            println("Condition definition: ${request.condition}")
+            println("Condition schema: ${triggerType.jsonSchema}")
+            val conditionSchema = triggerType.jsonSchema
+            val conditionValidate = if (conditionSchema != null) {
+                validator.validate(conditionSchema, request.condition.params)
+            } else {
+                JsonSchemaValidationResult.valid()
+            }
 
-            println("Condition validation result: $conditionValidate (passed: $isValidCondition)")
-            if (!isValidCondition) {
+            println("Condition validation result: ${conditionValidate.errors} (passed: ${conditionValidate.isValid})")
+            if (!conditionValidate.isValid) {
                 throw Exception("Condition definition is not valid")
             }
         }
@@ -199,6 +224,7 @@ class ActivityController(
             action = action,
             triggerType = triggerType,
             activity = activity,
+            triggerParams = request.trigger.params?.toMutableMap(),
             actionParams = request.action.params.toMutableMap(),
             triggerTypeParams = request.condition?.params?.toMutableMap(),
         )
@@ -308,6 +334,44 @@ data class UserActivityProfileResponse(
                         ActivityController.AchievementResponse.fromEntity(achievement)
                     }
                 }
+            )
+        }
+    }
+}
+
+class JsonSchemaValidator(
+    private val objectMapper: ObjectMapper = ObjectMapper(),
+    private val schemaValidatorsConfig: SchemaValidatorsConfig = SchemaValidatorsConfig()
+) {
+
+    fun validate(jsonSchema: JsonNode, jsonNode: JsonNode): JsonSchemaValidationResult {
+        val factory = JsonSchemaFactory.getInstance(SpecVersionDetector.detect(jsonSchema))
+
+        val schema = factory.getSchema(jsonSchema, schemaValidatorsConfig)
+        val errors = schema.validate(jsonNode)
+
+        return JsonSchemaValidationResult(
+            isValid = errors.isEmpty(),
+            errors = errors
+        )
+    }
+
+    fun validate(jsonSchema: MutableMap<String, Any>, json: Map<String, String>): JsonSchemaValidationResult {
+        val jsonSchemaJsonNode = objectMapper.valueToTree<JsonNode>(jsonSchema)
+        val jsonNode = objectMapper.valueToTree<JsonNode>(json)
+        return validate(jsonSchemaJsonNode, jsonNode)
+    }
+}
+
+data class JsonSchemaValidationResult(
+    val isValid: Boolean,
+    val errors: Set<ValidationMessage>
+) {
+    companion object {
+        fun valid(): JsonSchemaValidationResult {
+            return JsonSchemaValidationResult(
+                isValid = true,
+                errors = emptySet()
             )
         }
     }

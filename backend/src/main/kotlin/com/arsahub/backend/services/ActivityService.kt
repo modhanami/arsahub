@@ -283,7 +283,40 @@ class ActivityServiceImpl(
             )
         }
 
-        actionMessages.forEach { println(it) }
+        // find all rules with points_reached as a trigger to activate the corresponding actions
+        if (request.key != "points_reached") {
+            existingActivity.rules.filter { it.trigger?.key == "points_reached" }.forEach { rule ->
+                val value = rule.triggerParams?.get("value")?.toString()?.toInt()
+                    ?: throw Exception("Value not found for rule ${rule.title} (${rule.id})")
 
+                if ((existingMember.points ?: 0) < value) {
+                    return@forEach
+                }
+
+                // check if the rule has already been activated from rule_progress_time
+                if (ruleProgressTimeRepository.findByRuleAndUserActivity(rule, existingMember) != null) {
+                    return@forEach
+                }
+
+                println("User reached ${existingMember.points} points, activating rule ${rule.title} (${rule.id})")
+
+                trigger(
+                    activityId,
+                    ActivityController.ActivityTriggerRequest(
+                        key = "points_reached",
+                        params = emptyMap(),
+                        userId = userId
+                    )
+                )
+
+                // mark the rule as activated for the user
+                val ruleProgress = RuleProgressTime(
+                    rule = rule, userActivity = existingMember, progress = 1, completedAt = Instant.now()
+                )
+                ruleProgressTimeRepository.save(ruleProgress)
+            }
+        }
+
+        actionMessages.forEach { println(it) }
     }
 }

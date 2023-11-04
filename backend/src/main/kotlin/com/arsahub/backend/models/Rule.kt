@@ -45,6 +45,10 @@ class Rule(
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "effect_params")
     var actionParams: MutableMap<String, Any>? = null,
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "trigger_params")
+    var triggerParams: MutableMap<String, Any>? = null
 ) : AuditedEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -3,6 +3,8 @@ package com.arsahub.backend.models
 import jakarta.persistence.*
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
+import org.hibernate.annotations.JdbcTypeCode
+import org.hibernate.type.SqlTypes
 
 @Entity
 @Table(name = "`trigger`")
@@ -27,7 +29,11 @@ class Trigger(
 
     @NotNull
     @Column(name = "key", nullable = false, length = Integer.MAX_VALUE)
-    var key: String? = null
+    var key: String? = null,
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "json_schema")
+    var jsonSchema: MutableMap<String, Any>? = null
 ) : AuditedEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
