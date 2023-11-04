@@ -9,6 +9,7 @@ plugins {
     kotlin("jvm") version "1.8.22"
     kotlin("plugin.spring") version "1.8.22"
     kotlin("plugin.jpa") version "1.8.22"
+    id("org.jetbrains.kotlin.plugin.allopen") version "1.9.10"
 }
 
 group = "com.arsahub"
@@ -31,15 +32,23 @@ repositories {
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-web")
+//    implementation("org.springframework.boot:spring-boot-starter-security")
+//    implementation("org.springframework.security:spring-security-oauth2-resource-server")
+    implementation("org.springframework.security:spring-security-oauth2-jose")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
-    implementation("com.h2database:h2:2.1.214")
+    implementation("com.h2database:h2")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0")
+    implementation("com.corundumstudio.socketio:netty-socketio:2.0.3")
+//    implementation("com.github.gavlyukovskiy:datasource-proxy-spring-boot-starter:1.9.0")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
-//    developmentOnly("org.springframework.boot:spring-boot-docker-compose")
     runtimeOnly("org.postgresql:postgresql")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-starter-actuator")
+//    testImplementation("org.springframework.security:spring-security-test")
+    testImplementation("io.mockk:mockk:1.13.8")
+    testImplementation("org.testcontainers:postgresql")
 }
 
 tasks.withType<KotlinCompile> {
@@ -59,3 +68,6 @@ hibernate {
     }
 }
 
+allOpen {
+    annotation("jakarta.persistence.Entity")
+}
