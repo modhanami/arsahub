@@ -4,10 +4,7 @@ import com.arsahub.backend.SocketIOService
 import com.arsahub.backend.controllers.ActivityController
 import com.arsahub.backend.dtos.ActivityResponse
 import com.arsahub.backend.dtos.MemberResponse
-import com.arsahub.backend.models.Activity
-import com.arsahub.backend.models.RuleProgressTime
-import com.arsahub.backend.models.TriggerType
-import com.arsahub.backend.models.UserActivity
+import com.arsahub.backend.models.*
 import com.arsahub.backend.repositories.*
 import jakarta.persistence.EntityNotFoundException
 import org.springframework.data.repository.findByIdOrNull
@@ -183,6 +180,9 @@ class ActivityServiceImpl(
 
         val trigger = triggerRepository.findByKey(request.key) ?: throw Exception("Trigger not found")
 
+        var isPointsUpdated = false
+        var unlockedAchievement: Achievement? = null
+
         val actionMessages = mutableListOf<String>()
         existingActivity.rules.filter { it.trigger?.key == trigger.key }.forEach { rule ->
             val action = rule.action ?: throw Exception("Action not found")
@@ -233,6 +233,7 @@ class ActivityServiceImpl(
                         rule.actionParams?.get("value")?.toString()?.toInt() ?: throw Exception("Points not found")
                     existingMember.addPoints(points)
                     userActivityRepository.save(existingMember)
+                    isPointsUpdated = true
 
                     actionMessages.add("User `${existingMember.user?.userId}` (${existingMember.user?.externalUserId}) received `$points` points for activity `${existingActivity.title}` (${existingActivity.activityId}) from rule `${rule.title}` (${rule.id})")
                 }
@@ -251,13 +252,35 @@ class ActivityServiceImpl(
                     }
 
                     existingMember.addAchievement(achievement)
-//                    userActivityRepository.save(existingMember)
                     // save from the owning side
                     userActivityAchievementRepository.saveAll(existingMember.userActivityAchievements)
+                    unlockedAchievement = achievement
 
                     actionMessages.add("User `${existingMember.user?.userId}` (${existingMember.user?.externalUserId}) unlocked achievement `${achievement.title}` (${achievement.achievementId}) for activity `${existingActivity.title}` (${existingActivity.activityId}) from rule `${rule.title}` (${rule.id})")
                 }
             }
+        }
+
+        if (isPointsUpdated) {
+            socketIOService.broadcastToActivityRoom(
+                activityId,
+                SocketIOService.PointsUpdate(
+                    userId = userId,
+                    points = existingMember.points ?: 0
+                )
+            )
+        }
+
+        unlockedAchievement?.let { achievement ->
+            socketIOService.broadcastToActivityRoom(
+                activityId,
+                SocketIOService.AchievementUnlock(
+                    userId = userId,
+                    achievement = ActivityController.AchievementResponse.fromEntity(
+                        achievement
+                    )
+                )
+            )
         }
 
         actionMessages.forEach { println(it) }

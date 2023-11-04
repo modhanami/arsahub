@@ -1,5 +1,6 @@
 package com.arsahub.backend
 
+import com.arsahub.backend.controllers.ActivityController
 import com.arsahub.backend.dtos.LeaderboardResponse
 import com.corundumstudio.socketio.AckRequest
 import com.corundumstudio.socketio.SocketIOClient
@@ -39,14 +40,15 @@ class SocketIOService(val server: SocketIOServer) {
     interface ActivityUpdate
     data class PointsUpdate(val userId: String, val points: Int) : ActivityUpdate
     data class LeaderboardUpdate(val leaderboard: LeaderboardResponse) : ActivityUpdate
-    data class AchievementUpdate(val userId: String, val achievementId: Long, val progress: Int) : ActivityUpdate
+    data class AchievementUnlock(val userId: String, val achievement: ActivityController.AchievementResponse) :
+        ActivityUpdate
 
     fun broadcastToActivityRoom(activityId: Long, data: ActivityUpdate) {
         val activityRoom = defaultNamespace.getRoomOperations(getActivityRoomName(activityId))
         val type = when (data) {
             is PointsUpdate -> "points-update"
             is LeaderboardUpdate -> "leaderboard-update"
-            is AchievementUpdate -> "achievement-update"
+            is AchievementUnlock -> "achievement-unlock"
             else -> throw IllegalArgumentException("Unknown data type: ${data.javaClass}")
         }
         activityRoom.sendEvent(
@@ -56,6 +58,7 @@ class SocketIOService(val server: SocketIOServer) {
                 "data" to data
             )
         )
+        println("broadcastToActivityRoom: $activityId, $data")
     }
 
     fun getActivityRoomName(activityId: Long): String {
