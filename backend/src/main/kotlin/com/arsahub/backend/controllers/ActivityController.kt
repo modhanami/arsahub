@@ -3,9 +3,11 @@ package com.arsahub.backend.controllers
 import com.arsahub.backend.dtos.ActivityResponse
 import com.arsahub.backend.dtos.LeaderboardResponse
 import com.arsahub.backend.dtos.MemberResponse
+import com.arsahub.backend.dtos.UserResponse
 import com.arsahub.backend.models.Achievement
 import com.arsahub.backend.models.Rule
 import com.arsahub.backend.models.Trigger
+import com.arsahub.backend.models.UserActivity
 import com.arsahub.backend.repositories.*
 import com.arsahub.backend.services.ActivityService
 import com.arsahub.backend.services.LeaderboardService
@@ -14,6 +16,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.networknt.schema.JsonSchemaFactory
 import com.networknt.schema.SchemaValidatorsConfig
 import com.networknt.schema.SpecVersionDetector
+import jakarta.persistence.EntityNotFoundException
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.web.bind.annotation.*
 
 
@@ -21,6 +25,7 @@ import org.springframework.web.bind.annotation.*
 @RequestMapping("/api/activities")
 class ActivityController(
     private val activityService: ActivityService,
+    private val activityRepository: ActivityRepository,
     private val leaderboardService: LeaderboardService,
     private val ruleRepository: RuleRepository,
     private val triggerRepository: TriggerRepository,
@@ -273,5 +278,37 @@ class ActivityController(
     }
 
 
+    @GetMapping("/{activityId}/profile")
+    fun getUserActivityProfile(
+        @PathVariable activityId: Long,
+        @RequestParam userId: String
+    ): UserActivityProfileResponse {
+        val existingActivity = activityRepository.findByIdOrNull(activityId)
+            ?: throw EntityNotFoundException("Activity with ID $activityId not found")
+
+        val existingMember = existingActivity.members.find { it.user?.externalUserId == userId }
+            ?: throw EntityNotFoundException("User with ID $userId not found")
+
+        return UserActivityProfileResponse.fromEntity(existingMember)
+    }
 }
 
+data class UserActivityProfileResponse(
+    val user: UserResponse?,
+    val points: Int,
+    val achievements: List<ActivityController.AchievementResponse>
+) {
+    companion object {
+        fun fromEntity(userActivity: UserActivity): UserActivityProfileResponse {
+            return UserActivityProfileResponse(
+                user = userActivity.user?.let { UserResponse.fromEntity(it) },
+                points = userActivity.points ?: 0,
+                achievements = userActivity.userActivityAchievements.mapNotNull {
+                    it.achievement?.let { achievement ->
+                        ActivityController.AchievementResponse.fromEntity(achievement)
+                    }
+                }
+            )
+        }
+    }
+}
