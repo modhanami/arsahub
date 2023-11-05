@@ -2,6 +2,7 @@ package com.arsahub.backend.services
 
 import com.arsahub.backend.SocketIOService
 import com.arsahub.backend.controllers.ActivityController
+import com.arsahub.backend.dtos.ActivityCreateRequest
 import com.arsahub.backend.dtos.ActivityResponse
 import com.arsahub.backend.dtos.MemberResponse
 import com.arsahub.backend.models.*
@@ -12,8 +13,9 @@ import org.springframework.stereotype.Service
 import java.time.Instant
 
 interface ActivityService {
-    //    fun createEvent(currentUser: CustomUserDetails, eventCreateRequest: EventCreateRequest): EventResponse
-//    fun updateEvent(
+    fun createActivity(activityCreateRequest: ActivityCreateRequest): ActivityResponse
+
+    //    fun updateEvent(
 //        currentUser: CustomUserDetails,
 //        activityId: Long,
 //        eventUpdateRequest: EventUpdateRequest
@@ -44,18 +46,16 @@ class ActivityServiceImpl(
     private val ruleProgressTimeRepository: RuleProgressTimeRepository
 ) : ActivityService {
 
+    override fun createActivity(activityCreateRequest: ActivityCreateRequest): ActivityResponse {
+        val activityToSave = Activity(
+            title = activityCreateRequest.title,
+            description = activityCreateRequest.description,
+        )
+        val savedActivity = activityRepository.save(activityToSave)
+        return ActivityResponse.fromEntity(savedActivity)
+    }
 
-    //    override fun createEvent(currentUser: CustomUserDetails, eventCreateRequest: EventCreateRequest): EventResponse {
-//        val activityToSave = Activity(
-//            title = eventCreateRequest.title,
-//            description = eventCreateRequest.description,
-//            points = eventCreateRequest.points,
-//            organizerId = currentUser.userId
-//        )
-//        val savedEvent = eventRepository.save(activityToSave)
-//        return EventResponse.fromEntity(savedEvent)
-//    }
-//
+    //
 //    override fun updateEvent(
 //        currentUser: CustomUserDetails,
 //        activityId: Long,

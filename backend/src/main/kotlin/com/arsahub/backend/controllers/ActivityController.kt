@@ -1,9 +1,6 @@
 package com.arsahub.backend.controllers
 
-import com.arsahub.backend.dtos.ActivityResponse
-import com.arsahub.backend.dtos.LeaderboardResponse
-import com.arsahub.backend.dtos.MemberResponse
-import com.arsahub.backend.dtos.UserResponse
+import com.arsahub.backend.dtos.*
 import com.arsahub.backend.models.Achievement
 import com.arsahub.backend.models.Rule
 import com.arsahub.backend.models.Trigger
@@ -35,13 +32,12 @@ class ActivityController(
     private val achievementRepository: AchievementRepository,
 ) {
 
-//    @PostMapping
-//    fun createEvent(
-//        @CurrentUser user: CustomUserDetails,
-//        @RequestBody eventCreateRequest: EventCreateRequest
-//    ): EventResponse {
-//        return eventService.createEvent(user, eventCreateRequest)
-//    }
+    @PostMapping
+    fun createEvent(
+        @RequestBody activityCreateRequest: ActivityCreateRequest
+    ): ActivityResponse {
+        return activityService.createActivity(activityCreateRequest)
+    }
 //
 //    fun canCreateEvent(user: CustomUserDetails): Boolean {
 //        return user.isOrganizer()

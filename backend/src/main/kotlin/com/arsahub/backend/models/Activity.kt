@@ -14,8 +14,8 @@ class Activity(
     var description: String?,
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "external_system_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "external_system_id")
     var externalSystem: ExternalSystem? = null,
 
     @OneToMany(mappedBy = "activity")
