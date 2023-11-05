@@ -61,6 +61,24 @@ class SocketIOService(val server: SocketIOServer) {
         println("broadcastToActivityRoom: $activityId, $data")
     }
 
+    fun broadcastToUserRoom(userId: String, data: ActivityUpdate) {
+        val userRoom = defaultNamespace.getRoomOperations(getUserRoomName(userId))
+        val type = when (data) {
+            is PointsUpdate -> "points-update"
+            is LeaderboardUpdate -> "leaderboard-update"
+            is AchievementUnlock -> "achievement-unlock"
+            else -> throw IllegalArgumentException("Unknown data type: ${data.javaClass}")
+        }
+        userRoom.sendEvent(
+            "user-update", mapOf(
+                "type" to type,
+                "userId" to userId,
+                "data" to data
+            )
+        )
+        println("broadcastToUserRoom: $userId, $data")
+    }
+
     fun getActivityRoomName(activityId: Long): String {
         return "/activities/$activityId"
     }

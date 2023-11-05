@@ -269,11 +269,27 @@ class ActivityServiceImpl(
                     points = existingMember.points ?: 0
                 )
             )
+            socketIOService.broadcastToUserRoom(
+                userId,
+                SocketIOService.PointsUpdate(
+                    userId = userId,
+                    points = existingMember.points ?: 0
+                )
+            )
         }
 
         unlockedAchievement?.let { achievement ->
             socketIOService.broadcastToActivityRoom(
                 activityId,
+                SocketIOService.AchievementUnlock(
+                    userId = userId,
+                    achievement = ActivityController.AchievementResponse.fromEntity(
+                        achievement
+                    )
+                )
+            )
+            socketIOService.broadcastToUserRoom(
+                userId,
                 SocketIOService.AchievementUnlock(
                     userId = userId,
                     achievement = ActivityController.AchievementResponse.fromEntity(
