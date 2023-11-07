@@ -230,6 +230,14 @@ class ActivityController(
         return RuleResponse.fromEntity(rule)
     }
 
+    @GetMapping("/{activityId}/rules")
+    fun getRules(@PathVariable activityId: Long): List<RuleResponse> {
+        val activity = activityRepository.findByIdOrNull(activityId)
+            ?: throw EntityNotFoundException("Activity with ID $activityId not found")
+
+        return activity.rules.map { RuleResponse.fromEntity(it) }
+    }
+
     // create trigger per activity
     data class TriggerCreateRequest(
         val title: String,
@@ -241,7 +249,7 @@ class ActivityController(
     fun createTrigger(
         @PathVariable activityId: Long,
         @RequestBody request: TriggerCreateRequest
-    ): RuleResponse.TriggerResponse {
+    ): TriggerResponse {
         val activity = activityService.getActivity(activityId) ?: throw Exception("Activity not found")
 
         val trigger = Trigger(
@@ -253,7 +261,15 @@ class ActivityController(
 
         triggerRepository.save(trigger)
 
-        return RuleResponse.TriggerResponse.fromEntity(trigger)
+        return TriggerResponse.fromEntity(trigger)
+    }
+
+    @GetMapping("/{activityId}/triggers")
+    fun getTriggers(@PathVariable activityId: Long): List<TriggerResponse> {
+        val activity = activityRepository.findByIdOrNull(activityId)
+            ?: throw EntityNotFoundException("Activity with ID $activityId not found")
+
+        return activity.triggers.map { TriggerResponse.fromEntity(it) }
     }
 
     data class AchievementCreateRequest(
@@ -313,7 +329,70 @@ class ActivityController(
 
         return UserActivityProfileResponse.fromEntity(existingMember)
     }
+
+    @GetMapping("/actions")
+    fun getActions(): List<ActionResponse> {
+        return actionRepository.findAll().map { ActionResponse.fromEntity(it) }
+    }
+
 }
+//
+//data class RuleResponse(
+//    val id: Long,
+//    val title: String,
+//    val description: String?,
+//    val trigger: TriggerResponse,
+//    val action: ActionResponse,
+//) {
+//    companion object {
+//        fun fromEntity(rule: Rule): RuleResponse {
+//            return RuleResponse(
+//                id = rule.id!!,
+//                title = rule.title!!,
+//                description = rule.description,
+//                trigger = TriggerResponse.fromEntity(rule.trigger!!),
+//                action = ActionResponse.fromEntity(rule.action!!),
+//            )
+//        }
+//    }
+//}
+//
+//data class TriggerResponse(
+//    val id: Long,
+//    val title: String,
+//    val description: String?,
+//    val key: String,
+//) {
+//    companion object {
+//        fun fromEntity(trigger: Trigger): TriggerResponse {
+//            return TriggerResponse(
+//                id = trigger.id!!,
+//                title = trigger.title!!,
+//                description = trigger.description,
+//                key = trigger.key!!,
+//            )
+//        }
+//    }
+//}
+//
+//data class ActionResponse(
+//    val id: Long,
+//    val title: String,
+//    val description: String?,
+//    val key: String,
+//) {
+//    companion object {
+//        fun fromEntity(action: com.arsahub.backend.models.Action): ActionResponse {
+//            return ActionResponse(
+//                id = action.id!!,
+//                title = action.title!!,
+//                description = action.description,
+//                key = action.key!!,
+//            )
+//        }
+//    }
+//}
+
 
 data class UserActivityProfileResponse(
     val user: UserResponse?,

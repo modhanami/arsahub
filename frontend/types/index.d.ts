@@ -23,3 +23,8 @@ export type SidebarNavItem = {
       items: NavLink[];
     }
 );
+
+export type DashboardConfig = {
+  mainNav: MainNavItem[];
+  sidebarNav: SidebarNavItem[];
+};

@@ -3,7 +3,7 @@ package com.arsahub.backend.dtos
 import com.arsahub.backend.models.Activity
 
 data class ActivityResponse(
-    val activityId: Long?,
+    val id: Long?,
     val title: String,
     val description: String?,
     val members: List<MemberResponse> = listOf(),
@@ -11,7 +11,7 @@ data class ActivityResponse(
     companion object {
         fun fromEntity(activity: Activity): ActivityResponse {
             return ActivityResponse(
-                activityId = activity.activityId,
+                id = activity.activityId,
                 title = activity.title,
                 description = activity.description,
                 members = activity.members.map { MemberResponse.fromEntity(it) }

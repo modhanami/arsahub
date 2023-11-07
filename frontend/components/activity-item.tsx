@@ -15,7 +15,7 @@ export function ActivityItem({ activity }: ActivityItemProps) {
     <div className="flex items-center justify-between p-4">
       <div className="grid gap-1">
         <Link
-          href={`/editor/${activity.id}`}
+          href={`/activity/${activity.id}`}
           className="font-semibold hover:underline"
         >
           {activity.title}

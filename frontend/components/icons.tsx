@@ -25,6 +25,7 @@ import {
   X,
   Cuboid,
   type IconNode as LucideIcon,
+  ScrollText,
 } from "lucide-react";
 
 export type Icon = LucideIcon;
@@ -71,4 +72,5 @@ export const Icons = {
   ),
   twitter: Twitter,
   check: Check,
+  rule: ScrollText,
 };
