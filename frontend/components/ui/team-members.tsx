@@ -32,12 +32,6 @@ import { useEffect, useState } from "react";
 //     description: null,
 //     imageUrl: null
 //   }
-interface AchievementResponse {
-  achievementId: number;
-  title: string;
-  description: string;
-  imageUrl: string;
-}
 
 interface UserProfileProps {
   name: string;
@@ -58,7 +52,7 @@ export function UserProfile({
   console.log(achievements);
 
   return (
-    <Card>
+    <Card className="max-w-md">
       <CardHeader>
         <CardTitle>User Profile</CardTitle>
         <CardDescription></CardDescription>
@@ -123,20 +117,20 @@ export function UserProfile({
           </div>
         </div>
 
-        <div className="flex items-center space-x-4">
-          <p className="text-sm font-medium leading-none">Achievements</p>
-        </div>
-        <div className="flex items-center space-x-4">
-          {achievements?.map((achievement) => (
-            <div
-              className="flex items-center space-x-4"
-              key={achievement.achievementId}
-            >
-              <p className="text-sm font-medium leading-none">
-                {achievement.title}
-              </p>
-            </div>
-          ))}
+        <div>
+          <p className="font-semibold mb-2">All Achievements</p>
+          <ul className="space-y-1 list-disc list-inside text-muted-foreground">
+            {achievements?.length > 0
+              ? achievements.map((achievement) => (
+                  <li
+                    className="text-sm font-medium "
+                    key={achievement.achievementId}
+                  >
+                    {achievement.title}
+                  </li>
+                ))
+              : "No achievements :("}
+          </ul>
         </div>
       </CardContent>
     </Card>
@@ -149,12 +143,13 @@ interface UserProfileRealTimeProps {
 }
 
 import { io } from "socket.io-client";
+import { AchievementResponse } from "../../hooks/api";
 
 export function UserProfileRealTime({
   userId,
   ...props
 }: UserProfileRealTimeProps & UserProfileProps) {
-  const [points, setPoints] = useState(0);
+  const [points, setPoints] = useState(props.points);
 
   useEffect(() => {
     const socket = io("http://localhost:9097/default");

@@ -34,21 +34,7 @@ import { useParams } from "next/navigation";
 import { RuleCreateButton } from "./rule-create-button";
 import { DialogHeader } from "./ui/dialog";
 import { toast } from "./ui/use-toast";
-
-interface Trigger {
-  title: string;
-  description: string;
-  key: string;
-  id: number;
-}
-
-interface Action {
-  title: string;
-  description: string;
-  key: string;
-  id: number;
-  jsonSchema: Record<string, unknown>;
-}
+import { Action, Trigger } from "../hooks/api";
 
 type FormData = z.infer<typeof ruleCreateSchema>;
 export function CreateRuleForm() {

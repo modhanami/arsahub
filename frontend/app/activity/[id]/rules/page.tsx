@@ -5,6 +5,7 @@ import { RuleCreateButton } from "../../../../components/rule-create-button";
 import { RuleItem } from "../../../../components/rule-item";
 import { DashboardShell } from "../../../../components/shell";
 import { toast } from "../../../../components/ui/use-toast";
+import { fetchRules } from "../../../../lib/api";
 
 export interface Rule {
   id: number;
@@ -16,18 +17,7 @@ export default async function RulesPage({
 }: {
   params: { id: string };
 }) {
-  const response = await fetch(
-    `http://localhost:8080/api/activities/${params.id}/rules`,
-    {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      next: {
-        tags: [`rules`],
-      },
-    }
-  );
+  const response = await fetchRules(Number(params.id));
 
   if (!response?.ok) {
     return toast({

@@ -47,6 +47,11 @@ function createSideNavItems(id: string): SidebarNavItem[] {
       icon: "rule",
     },
     {
+      title: "Playground",
+      href: `/activity/${id}/playground`,
+      icon: "playground",
+    },
+    {
       title: "Settings",
       href: `/activity/${id}/settings`,
       icon: "settings",
