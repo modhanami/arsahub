@@ -8,7 +8,6 @@ import { ActivityItem } from "@/components/activity-item";
 import { DashboardShell } from "@/components/shell";
 import {
   CardWithForm,
-  DemoCreateAccount,
 } from "../../components/create-activity";
 import { toast } from "../../components/ui/use-toast";
 

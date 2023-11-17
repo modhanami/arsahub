@@ -4,13 +4,13 @@ export const dashboardConfig: DashboardConfig = {
   mainNav: [
     {
       title: "Home 👽",
-      href: "/dashboard",
+      href: "/overview",
     },
   ],
   sidebarNav: [
     {
-      title: "Activities",
-      href: "/dashboard",
+      title: "Overview",
+      href: "/overview",
       icon: "activity",
     },
     // {
@@ -20,7 +20,7 @@ export const dashboardConfig: DashboardConfig = {
     // },
     {
       title: "Settings",
-      href: "/dashboard/settings",
+      href: "/overview/settings",
       icon: "settings",
     },
   ],
