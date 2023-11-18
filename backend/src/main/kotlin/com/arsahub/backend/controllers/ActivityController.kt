@@ -124,7 +124,10 @@ class ActivityController(
     )
 
     data class RuleCreateRequest(
-        val name: String,
+        @field:Size(min = 4, max = 200, message = "Name must be between 4 and 200 characters")
+        @field:NotBlank(message = "Name is required")
+        val name: String?, // TODO: remove nullability and actually customize jackson-module-kotlin with the Jackson2ObjectMapperBuilderCustomizer
+        @field:Size(max = 500)
         val description: String?,
         val trigger: TriggerDefinition,
         val action: ActionDefinition,
@@ -133,8 +136,7 @@ class ActivityController(
 
     @PostMapping("/{activityId}/rules")
     fun createRule(
-        @PathVariable activityId: Long,
-        @RequestBody request: RuleCreateRequest
+        @PathVariable activityId: Long, @Valid @RequestBody request: RuleCreateRequest
     ): RuleResponse {
         val trigger = triggerRepository.findByKey(request.trigger.key) ?: throw Exception("Trigger not found")
         val action = actionRepository.findByKey(request.action.key) ?: throw Exception("Action not found")
