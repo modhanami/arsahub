@@ -15,6 +15,9 @@ import com.networknt.schema.SchemaValidatorsConfig
 import com.networknt.schema.SpecVersionDetector
 import com.networknt.schema.ValidationMessage
 import jakarta.persistence.EntityNotFoundException
+import jakarta.validation.Valid
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.Size
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.web.bind.annotation.*
 
