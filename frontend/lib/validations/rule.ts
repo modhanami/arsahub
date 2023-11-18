@@ -15,8 +15,14 @@ const achievementUnlockSchema = z.object({
 });
 
 export const ruleCreateSchema = z.object({
-  name: z.string(),
-  description: z.string().optional(),
+  name: z
+    .string()
+    .min(4, { message: "Must be between 4 and 200 characters" })
+    .max(200, { message: "Must be between 4 and 200 characters" }),
+  description: z
+    .string()
+    .max(200, { message: "Must not be more than 500 characters" })
+    .optional(),
   trigger: z.object({
     key: z.string(),
   }),

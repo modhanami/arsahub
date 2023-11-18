@@ -44,9 +44,6 @@ export function CreateRuleForm() {
     defaultValues: {
       name: "New rule",
       description: "New rule",
-      trigger: {
-        key: "share_activity",
-      },
     },
   });
   const [isCreating, setIsCreating] = React.useState(false);
