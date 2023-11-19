@@ -31,13 +31,15 @@ import * as z from "zod";
 import { ruleCreateSchema } from "../lib/validations/rule";
 
 import { useParams } from "next/navigation";
+import { useActions, useTriggers } from "../hooks/api";
 import { RuleCreateButton } from "./rule-create-button";
 import { DialogHeader } from "./ui/dialog";
 import { toast } from "./ui/use-toast";
-import { Action, Trigger } from "../hooks/api";
+import { DevTool } from "@hookform/devtools";
 
 type FormData = z.infer<typeof ruleCreateSchema>;
 export function CreateRuleForm() {
+  const { id }: { id: string } = useParams();
   const router = useRouter();
   const form = useForm<FormData>({
     resolver: zodResolver(ruleCreateSchema),
@@ -48,82 +50,9 @@ export function CreateRuleForm() {
   });
   const [isCreating, setIsCreating] = React.useState(false);
   const [isOpen, setIsOpen] = React.useState(false);
-  const triggers = useTriggers();
+  const triggers = useTriggers(Number(id));
   const actions = useActions();
-  // console.log(triggers);
-  const { id }: { id: string } = useParams();
-
-  function useTriggers() {
-    const [triggers, setTriggers] = React.useState<Trigger[]>([]);
-
-    React.useEffect(() => {
-      async function fetchTriggers() {
-        const response = await fetch(
-          `http://localhost:8080/api/activities/${id}/triggers`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            next: {
-              tags: ["triggers"],
-            },
-          }
-        );
-
-        if (!response?.ok) {
-          return toast({
-            title: "Something went wrong.",
-            description: "Your activity was not created. Please try again.",
-            variant: "destructive",
-          });
-        }
-
-        const triggers: Trigger[] = await response.json();
-        setTriggers(triggers);
-      }
-
-      fetchTriggers();
-    }, []);
-
-    return triggers;
-  }
-
-  function useActions() {
-    const [actions, setActions] = React.useState<Action[]>([]);
-
-    React.useEffect(() => {
-      async function fetchActions() {
-        const response = await fetch(
-          `http://localhost:8080/api/activities/actions`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            next: {
-              tags: ["actions"],
-            },
-          }
-        );
-
-        if (!response?.ok) {
-          return toast({
-            title: "Something went wrong.",
-            description: "Your activity was not created. Please try again.",
-            variant: "destructive",
-          });
-        }
-
-        const actions: Action[] = await response.json();
-        setActions(actions);
-      }
-
-      fetchActions();
-    }, []);
-
-    return actions;
-  }
+  const [selectedTrigger, setSelectedTrigger] = React.useState(null);
 
   async function onSubmit(values: FormData) {
     console.log("submit", values);
@@ -152,12 +81,56 @@ export function CreateRuleForm() {
     }
 
     toast({
-      title: "Activity created.",
+      title: "Rule created successfully.",
       description: "Your rule was created successfully.",
     });
 
     router.refresh();
   }
+
+  function renderTriggerParamsFields(triggerSchema: Record<string, any>) {
+    return Object.keys(triggerSchema?.properties || {}).map((paramName) => {
+      const paramSchema = triggerSchema.properties[paramName];
+      const paramKey = `trigger.params.${paramName}`;
+      const paramValue = form.watch(paramKey);
+      const paramNameCapitalized =
+        paramName.charAt(0).toUpperCase() + paramName.slice(1);
+
+      // Render form fields based on schema type (e.g., 'number', 'string', 'boolean', etc.)
+      switch (paramSchema.type) {
+        case "number":
+          return (
+            <FormField
+              control={form.control}
+              name={paramKey}
+              key={paramName}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{paramNameCapitalized}</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder={paramNameCapitalized}
+                      type="number"
+                      value={paramValue}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          );
+
+        // Add cases for other types as needed
+        default:
+          return null;
+      }
+    });
+  }
+
+  const triggerSchema = triggers.find(
+    (trigger) => trigger.key === form.watch("trigger.key")
+  )?.jsonSchema;
 
   return (
     <>
@@ -170,7 +143,7 @@ export function CreateRuleForm() {
             <CardTitle>Create rule</CardTitle>
           </DialogHeader>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-2">
               <FormField
                 control={form.control}
                 name="name"
@@ -205,7 +178,7 @@ export function CreateRuleForm() {
                 control={form.control}
                 name="trigger.key"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="mt-4">
                     <FormLabel>Trigger</FormLabel>
                     <FormControl>
                       <Select
@@ -236,11 +209,15 @@ export function CreateRuleForm() {
                 )}
               />
 
+              {triggerSchema &&
+                // Render trigger params fields conditionally when trigger is selected
+                renderTriggerParamsFields(triggerSchema)}
+
               <FormField
                 control={form.control}
                 name="action.key"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="mt-4">
                     <FormLabel>Action</FormLabel>
                     <FormControl>
                       <Select
@@ -319,6 +296,7 @@ export function CreateRuleForm() {
           </Form>
         </DialogContent>
       </Dialog>
+      <DevTool control={form.control} placement="top-left" />
     </>
   );
 }

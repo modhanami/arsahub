@@ -3,7 +3,6 @@ package com.arsahub.backend.controllers
 import com.arsahub.backend.dtos.*
 import com.arsahub.backend.models.Achievement
 import com.arsahub.backend.models.Rule
-import com.arsahub.backend.models.Trigger
 import com.arsahub.backend.models.UserActivity
 import com.arsahub.backend.repositories.*
 import com.arsahub.backend.services.ActivityService
@@ -250,33 +249,6 @@ class ActivityController(
         val key: String,
     )
 
-    @PostMapping("/{activityId}/triggers")
-    fun createTrigger(
-        @PathVariable activityId: Long,
-        @RequestBody request: TriggerCreateRequest
-    ): TriggerResponse {
-        val activity = activityService.getActivity(activityId) ?: throw Exception("Activity not found")
-
-        val trigger = Trigger(
-            title = request.title,
-            description = request.description,
-            key = request.key,
-            activity = activity
-        )
-
-        triggerRepository.save(trigger)
-
-        return TriggerResponse.fromEntity(trigger)
-    }
-
-    @GetMapping("/{activityId}/triggers")
-    fun getTriggers(@PathVariable activityId: Long): List<TriggerResponse> {
-        val activity = activityRepository.findByIdOrNull(activityId)
-            ?: throw EntityNotFoundException("Activity with ID $activityId not found")
-
-        return activity.triggers.map { TriggerResponse.fromEntity(it) }
-    }
-
     data class AchievementCreateRequest(
         val title: String,
         val description: String?,
@@ -339,6 +311,7 @@ class ActivityController(
     fun getActions(): List<ActionResponse> {
         return actionRepository.findAll().map { ActionResponse.fromEntity(it) }
     }
+
 
 }
 //
@@ -440,6 +413,11 @@ class JsonSchemaValidator(
         val jsonSchemaJsonNode = objectMapper.valueToTree<JsonNode>(jsonSchema)
         val jsonNode = objectMapper.valueToTree<JsonNode>(json)
         return validate(jsonSchemaJsonNode, jsonNode)
+    }
+
+    fun convertJsonStringToMap(json: String): Map<String, Any> {
+        val typeRef = object : com.fasterxml.jackson.core.type.TypeReference<Map<String, Any>>() {}
+        return objectMapper.readValue(json, typeRef)
     }
 }
 

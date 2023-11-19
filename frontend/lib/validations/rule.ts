@@ -25,6 +25,7 @@ export const ruleCreateSchema = z.object({
     .optional(),
   trigger: z.object({
     key: z.string(),
+    params: z.object({}).passthrough().optional(),
   }),
   action: z.discriminatedUnion("key", [
     pointsAddSchema,

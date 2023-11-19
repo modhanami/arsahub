@@ -26,7 +26,10 @@ class UserActivity(
     var points: Int? = 0,
 
     @OneToMany(mappedBy = "userActivity")
-    var userActivityAchievements: MutableSet<UserActivityAchievement> = mutableSetOf()
+    var userActivityAchievements: MutableSet<UserActivityAchievement> = mutableSetOf(),
+
+    @OneToMany(mappedBy = "userActivity")
+    var userActivityProgresses: MutableSet<UserActivityProgress> = mutableSetOf()
 ) : AuditedEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

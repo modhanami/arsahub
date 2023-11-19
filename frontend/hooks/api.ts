@@ -95,7 +95,7 @@ export function useTriggers(activityId: number) {
   React.useEffect(() => {
     async function fetchTriggers() {
       const response = await fetch(
-        `http://localhost:8080/api/activities/${activityId}/triggers`,
+        `http://localhost:8080/api/integrations/triggers`,
         {
           method: "GET",
           headers: {
@@ -122,6 +122,41 @@ export function useTriggers(activityId: number) {
   }, [activityId]);
 
   return triggers;
+}
+
+export function useActions() {
+  const [actions, setActions] = React.useState<Action[]>([]);
+
+  React.useEffect(() => {
+    async function fetchActions() {
+      const response = await fetch(
+        `http://localhost:8080/api/activities/actions`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          next: {
+            tags: ["actions"],
+          },
+        }
+      );
+
+      if (!response?.ok) {
+        return toast({
+          title: "Something went wrong.",
+          description: "Your activity was not created. Please try again.",
+          variant: "destructive",
+        });
+      }
+
+      return response.json();
+    }
+
+    fetchActions().then((actions) => setActions(actions));
+  }, []);
+
+  return actions;
 }
 
 // rule

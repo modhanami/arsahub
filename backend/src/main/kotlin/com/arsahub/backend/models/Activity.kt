@@ -22,9 +22,6 @@ class Activity(
     var rules: MutableSet<Rule> = mutableSetOf(),
 
     @OneToMany(mappedBy = "activity")
-    var triggers: MutableSet<Trigger> = mutableSetOf(),
-
-    @OneToMany(mappedBy = "activity")
     var members: MutableSet<UserActivity> = mutableSetOf(),
 
     @OneToMany(mappedBy = "activity")
