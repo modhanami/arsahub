@@ -19,11 +19,6 @@ class Trigger(
     @Column(name = "description")
     var description: String? = null,
 
-    @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "activity_id", nullable = false)
-    var activity: Activity? = null,
-
     @OneToMany(mappedBy = "trigger")
     var rules: MutableSet<Rule> = mutableSetOf(),
 

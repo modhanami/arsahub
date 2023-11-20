@@ -3,7 +3,6 @@ package com.arsahub.backend.controllers
 import com.arsahub.backend.dtos.*
 import com.arsahub.backend.models.Achievement
 import com.arsahub.backend.models.Rule
-import com.arsahub.backend.models.Trigger
 import com.arsahub.backend.models.UserActivity
 import com.arsahub.backend.repositories.*
 import com.arsahub.backend.services.ActivityService
@@ -15,6 +14,9 @@ import com.networknt.schema.SchemaValidatorsConfig
 import com.networknt.schema.SpecVersionDetector
 import com.networknt.schema.ValidationMessage
 import jakarta.persistence.EntityNotFoundException
+import jakarta.validation.Valid
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.Size
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.web.bind.annotation.*
 
@@ -121,7 +123,10 @@ class ActivityController(
     )
 
     data class RuleCreateRequest(
-        val name: String,
+        @field:Size(min = 4, max = 200, message = "Name must be between 4 and 200 characters")
+        @field:NotBlank(message = "Name is required")
+        val name: String?, // TODO: remove nullability and actually customize jackson-module-kotlin with the Jackson2ObjectMapperBuilderCustomizer
+        @field:Size(max = 500)
         val description: String?,
         val trigger: TriggerDefinition,
         val action: ActionDefinition,
@@ -130,8 +135,7 @@ class ActivityController(
 
     @PostMapping("/{activityId}/rules")
     fun createRule(
-        @PathVariable activityId: Long,
-        @RequestBody request: RuleCreateRequest
+        @PathVariable activityId: Long, @Valid @RequestBody request: RuleCreateRequest
     ): RuleResponse {
         val trigger = triggerRepository.findByKey(request.trigger.key) ?: throw Exception("Trigger not found")
         val action = actionRepository.findByKey(request.action.key) ?: throw Exception("Action not found")
@@ -245,33 +249,6 @@ class ActivityController(
         val key: String,
     )
 
-    @PostMapping("/{activityId}/triggers")
-    fun createTrigger(
-        @PathVariable activityId: Long,
-        @RequestBody request: TriggerCreateRequest
-    ): TriggerResponse {
-        val activity = activityService.getActivity(activityId) ?: throw Exception("Activity not found")
-
-        val trigger = Trigger(
-            title = request.title,
-            description = request.description,
-            key = request.key,
-            activity = activity
-        )
-
-        triggerRepository.save(trigger)
-
-        return TriggerResponse.fromEntity(trigger)
-    }
-
-    @GetMapping("/{activityId}/triggers")
-    fun getTriggers(@PathVariable activityId: Long): List<TriggerResponse> {
-        val activity = activityRepository.findByIdOrNull(activityId)
-            ?: throw EntityNotFoundException("Activity with ID $activityId not found")
-
-        return activity.triggers.map { TriggerResponse.fromEntity(it) }
-    }
-
     data class AchievementCreateRequest(
         val title: String,
         val description: String?,
@@ -334,6 +311,7 @@ class ActivityController(
     fun getActions(): List<ActionResponse> {
         return actionRepository.findAll().map { ActionResponse.fromEntity(it) }
     }
+
 
 }
 //
@@ -435,6 +413,11 @@ class JsonSchemaValidator(
         val jsonSchemaJsonNode = objectMapper.valueToTree<JsonNode>(jsonSchema)
         val jsonNode = objectMapper.valueToTree<JsonNode>(json)
         return validate(jsonSchemaJsonNode, jsonNode)
+    }
+
+    fun convertJsonStringToMap(json: String): Map<String, Any> {
+        val typeRef = object : com.fasterxml.jackson.core.type.TypeReference<Map<String, Any>>() {}
+        return objectMapper.readValue(json, typeRef)
     }
 }
 

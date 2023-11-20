@@ -44,7 +44,8 @@ data class TriggerResponse(
     val title: String? = null,
     val description: String? = null,
     val key: String? = null,
-    val id: Long? = null
+    val id: Long? = null,
+    val jsonSchema: Map<String, Any>? = null
 ) {
     companion object {
         fun fromEntity(trigger: com.arsahub.backend.models.Trigger): TriggerResponse {
@@ -54,7 +55,8 @@ data class TriggerResponse(
                 title = trigger.title,
                 description = trigger.description,
                 key = trigger.key,
-                id = trigger.id
+                id = trigger.id,
+                jsonSchema = trigger.jsonSchema
             )
         }
     }
