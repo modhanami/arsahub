@@ -55,6 +55,15 @@ export default function Page({ params }: { params: { id: string } }) {
           </CardFooter>
         </Card>
       </div>
+
+      <div className="mt-10 flex-grow mb-10">
+        <Card className="mx-auto">
+          <CardHeader>
+            <CardTitle>Members</CardTitle>
+            <CardDescription>Edit your activity</CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
     </>
   );
 }
