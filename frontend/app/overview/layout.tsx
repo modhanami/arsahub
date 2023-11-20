@@ -42,7 +42,7 @@ export default async function OverviewLayout({
           {children}
         </main>
       </div>
-      <SiteFooter className="border-t" />
+      {/* <SiteFooter className="border-t" /> */}
     </div>
   )
 }
