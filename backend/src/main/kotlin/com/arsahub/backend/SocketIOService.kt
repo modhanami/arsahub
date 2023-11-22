@@ -1,7 +1,9 @@
 package com.arsahub.backend
 
-import com.arsahub.backend.controllers.ActivityController
-import com.arsahub.backend.dtos.LeaderboardResponse
+import com.arsahub.backend.dtos.AchievementUnlock
+import com.arsahub.backend.dtos.ActivityUpdate
+import com.arsahub.backend.dtos.LeaderboardUpdate
+import com.arsahub.backend.dtos.PointsUpdate
 import com.corundumstudio.socketio.AckRequest
 import com.corundumstudio.socketio.SocketIOClient
 import com.corundumstudio.socketio.SocketIONamespace
@@ -36,12 +38,6 @@ class SocketIOService(val server: SocketIOServer) {
             ackSender.sendAckData("OK")
         }
     }
-
-    interface ActivityUpdate
-    data class PointsUpdate(val userId: String, val points: Int) : ActivityUpdate
-    data class LeaderboardUpdate(val leaderboard: LeaderboardResponse) : ActivityUpdate
-    data class AchievementUnlock(val userId: String, val achievement: ActivityController.AchievementResponse) :
-        ActivityUpdate
 
     fun broadcastToActivityRoom(activityId: Long, data: ActivityUpdate) {
         val activityRoom = defaultNamespace.getRoomOperations(getActivityRoomName(activityId))

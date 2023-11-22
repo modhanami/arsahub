@@ -2,10 +2,7 @@ package com.arsahub.backend.services
 
 import com.arsahub.backend.SocketIOService
 import com.arsahub.backend.controllers.ActivityController
-import com.arsahub.backend.dtos.ActivityCreateRequest
-import com.arsahub.backend.dtos.ActivityResponse
-import com.arsahub.backend.dtos.ActivityUpdateRequest
-import com.arsahub.backend.dtos.MemberResponse
+import com.arsahub.backend.dtos.*
 import com.arsahub.backend.models.*
 import com.arsahub.backend.repositories.*
 import jakarta.persistence.EntityNotFoundException
@@ -21,14 +18,10 @@ interface ActivityService {
     ): ActivityResponse
 
     fun getActivity(activityId: Long): Activity?
-
-    //    fun listEvents(): List<Activity>
-//    fun deleteEvent(currentUser: CustomUserDetails, activityId: Long)
     fun addMembers(activityId: Long, request: ActivityController.ActivityAddMembersRequest): ActivityResponse
     fun listMembers(activityId: Long): List<MemberResponse>
     fun listActivities(): List<ActivityResponse>
-    fun trigger(activityId: Long, request: ActivityController.ActivityTriggerRequest)
-//    fun listJoinedEvents(currentUser: CustomUserDetails): List<Activity>
+    fun trigger(activityId: Long, request: ActivityTriggerRequest)
 }
 
 @Service
@@ -37,11 +30,9 @@ class ActivityServiceImpl(
     private val userRepository: UserRepository,
     private val userActivityRepository: UserActivityRepository,
     private val triggerRepository: TriggerRepository,
-    private val actionRepository: ActionRepository,
     private val achievementRepository: AchievementRepository,
     private val userActivityAchievementRepository: UserActivityAchievementRepository,
     private val socketIOService: SocketIOService,
-    private val leaderboardService: LeaderboardService,
     private val ruleProgressTimeRepository: RuleProgressTimeRepository
 ) : ActivityService {
 
@@ -65,56 +56,9 @@ class ActivityServiceImpl(
         return ActivityResponse.fromEntity(updatedActivity)
     }
 
-    //
-//    override fun updateEvent(
-//        currentUser: CustomUserDetails,
-//        activityId: Long,
-//        eventUpdateRequest: EventUpdateRequest
-//    ): EventResponse {
-//        println("updateEvent")
-//        val existingEvent = eventRepository.findByIdOrNull(activityId)
-//            ?: throw EntityNotFoundException("Activity with ID $activityId not found")
-//
-//        if (!canUpdateEvent(currentUser, existingEvent)) {
-//            throw AccessDeniedException("Cannot update event with ID $activityId")
-//        }
-//
-//        val updatedEvent = updateEvent(existingEvent, eventUpdateRequest)
-//        return EventResponse.fromEntity(eventRepository.save(updatedEvent))
-//    }
-//
-//    fun canUpdateEvent(currentUser: CustomUserDetails, activity: Activity): Boolean {
-//        if (currentUser.isAdmin()) {
-//            return true
-//        }
-//        return activity.organizer?.organizerId == currentUser.userId
-//    }
-//
-//
-//    private fun updateEvent(existingActivity: Activity, eventUpdateRequest: EventUpdateRequest): Activity {
-//        if (eventUpdateRequest.title != null) {
-//            existingActivity.title = eventUpdateRequest.title
-//        }
-//        if (eventUpdateRequest.description != null) {
-//            existingActivity.description = eventUpdateRequest.description
-//        }
-//        return existingActivity
-//    }
-//
     override fun getActivity(activityId: Long): Activity? {
         return activityRepository.findByIdOrNull(activityId)
     }
-//
-//    override fun listEvents(): List<Activity> {
-//        return eventRepository.findAll()
-//    }
-//
-//    override fun deleteEvent(currentUser: CustomUserDetails, activityId: Long) {
-//        if (!eventRepository.existsById(activityId)) {
-//            throw EntityNotFoundException("Activity with ID $activityId not found")
-//        }
-//        eventRepository.deleteById(activityId)
-//    }
 
     override fun addMembers(
         activityId: Long, request: ActivityController.ActivityAddMembersRequest
@@ -140,7 +84,6 @@ class ActivityServiceImpl(
         )
     }
 
-    //    get all member of an activity
     override fun listMembers(activityId: Long): List<MemberResponse> {
         val existingEvent = activityRepository.findByIdOrNull(activityId)
             ?: throw EntityNotFoundException("Activity with ID $activityId not found")
@@ -148,36 +91,11 @@ class ActivityServiceImpl(
         return existingEvent.members.map { MemberResponse.fromEntity(it) }.toList()
     }
 
-//    override fun listJoinedEvents(currentUser: CustomUserDetails): List<Activity> {
-//        val existingUser = userRepository.findByIdOrNull(currentUser.userId)
-//            ?: throw EntityNotFoundException("User with ID ${currentUser.userId} not found")
-//
-//        return existingUser.members.map { it.activity }
-//    }
-//
-//    override fun releasePoints(
-//        user: CustomUserDetails,
-//        activityId: Long,
-//        request: ActivityController.EventReleasePointsRequest
-//    ): Activity {
-//        val existingEvent = eventRepository.findByIdOrNull(activityId)
-//            ?: throw EntityNotFoundException("Activity with ID $activityId not found")
-//
-//        val existingMemberUsers = existingEvent.members.map { it.user }
-//        val mapOfExistingMemberUsers = existingMemberUsers.associateBy { it.userId }
-//        request.userIds.forEach {
-//            mapOfExistingMemberUsers[it]?.addPoints(existingEvent.points)
-//        }
-//
-//        return memberRepository.saveAllAndFlush(existingEvent.members).firstOrNull()?.activity
-//            ?: throw EntityNotFoundException("Activity with ID $activityId not found")
-//     }
-
     override fun listActivities(): List<ActivityResponse> {
         return activityRepository.findAll().map { ActivityResponse.fromEntity(it) }
     }
 
-    override fun trigger(activityId: Long, request: ActivityController.ActivityTriggerRequest) {
+    override fun trigger(activityId: Long, request: ActivityTriggerRequest) {
         val allActivity = activityRepository.findAll()
         println("${allActivity.size} activities found")
         val existingActivity = activityRepository.findByIdOrNull(activityId)
@@ -274,14 +192,14 @@ class ActivityServiceImpl(
         if (isPointsUpdated) {
             socketIOService.broadcastToActivityRoom(
                 activityId,
-                SocketIOService.PointsUpdate(
+                PointsUpdate(
                     userId = userId,
                     points = existingMember.points ?: 0
                 )
             )
             socketIOService.broadcastToUserRoom(
                 userId,
-                SocketIOService.PointsUpdate(
+                PointsUpdate(
                     userId = userId,
                     points = existingMember.points ?: 0
                 )
@@ -291,18 +209,18 @@ class ActivityServiceImpl(
         unlockedAchievement?.let { achievement ->
             socketIOService.broadcastToActivityRoom(
                 activityId,
-                SocketIOService.AchievementUnlock(
+                AchievementUnlock(
                     userId = userId,
-                    achievement = ActivityController.AchievementResponse.fromEntity(
+                    achievement = AchievementResponse.fromEntity(
                         achievement
                     )
                 )
             )
             socketIOService.broadcastToUserRoom(
                 userId,
-                SocketIOService.AchievementUnlock(
+                AchievementUnlock(
                     userId = userId,
-                    achievement = ActivityController.AchievementResponse.fromEntity(
+                    achievement = AchievementResponse.fromEntity(
                         achievement
                     )
                 )
@@ -328,7 +246,7 @@ class ActivityServiceImpl(
 
                 trigger(
                     activityId,
-                    ActivityController.ActivityTriggerRequest(
+                    ActivityTriggerRequest(
                         key = "points_reached",
                         params = emptyMap(),
                         userId = userId

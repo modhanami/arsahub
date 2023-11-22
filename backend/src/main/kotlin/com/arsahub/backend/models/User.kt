@@ -17,10 +17,6 @@ class User(
     @Column(name = "name", nullable = false)
     val name: String,
 
-//    @ManyToOne
-//    @JoinColumn(name = "role_id", nullable = false)
-//    val role: Role // Many users can have the same role
-
     @Column(name = "external_user_id", unique = true, nullable = false)
     val externalUserId: String,
 ) {

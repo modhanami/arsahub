@@ -3,16 +3,12 @@ package com.arsahub.backend.controllers
 import com.arsahub.backend.dtos.*
 import com.arsahub.backend.models.Achievement
 import com.arsahub.backend.models.Rule
-import com.arsahub.backend.models.UserActivity
 import com.arsahub.backend.repositories.*
 import com.arsahub.backend.services.ActivityService
 import com.arsahub.backend.services.LeaderboardService
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.networknt.schema.JsonSchemaFactory
+import com.arsahub.backend.utils.JsonSchemaValidationResult
+import com.arsahub.backend.utils.JsonSchemaValidator
 import com.networknt.schema.SchemaValidatorsConfig
-import com.networknt.schema.SpecVersionDetector
-import com.networknt.schema.ValidationMessage
 import jakarta.persistence.EntityNotFoundException
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
@@ -48,36 +44,11 @@ class ActivityController(
     ): ActivityResponse {
         return activityService.updateActivity(activityId, activityUpdateRequest)
     }
-    
-//
-//    fun canCreateEvent(user: CustomUserDetails): Boolean {
-//        return user.isOrganizer()
-//    }
 
-//    @PutMapping("/{activityId}")
-//    fun updateEvent(
-//        @CurrentUser user: CustomUserDetails,
-//        @PathVariable activityId: Long,
-//        @RequestBody eventUpdateRequest: EventUpdateRequest
-//    ): EventResponse {
-//        return eventService.updateEvent(user, activityId, eventUpdateRequest)
-//    }
-
-    //    @GetMapping("/{activityId}")
-//    fun getEvent(@CurrentUser user: CustomUserDetails, @PathVariable activityId: Long): Activity? {
-//        println(user)
-//        return eventService.getEvent(activityId)
-//    }
-//
     @GetMapping
     fun listActivities(): List<ActivityResponse> {
         return activityService.listActivities()
     }
-
-//    @DeleteMapping("/{activityId}")
-//    fun deleteEvent(@CurrentUser user: CustomUserDetails, @PathVariable activityId: Long) {
-//        eventService.deleteEvent(user, activityId)
-//    }
 
     data class ActivityAddMembersRequest(val externalUserIds: List<String>)
 
@@ -86,26 +57,16 @@ class ActivityController(
         return activityService.addMembers(activityId, request)
     }
 
-//    @GetMapping("/joined")
-//    fun listJoinedEvents(@CurrentUser user: CustomUserDetails): List<Activity> {
-//        return activityService.listJoinedEvents(user)
-//    }
-
-    //    listMembers
     @GetMapping("/{activityId}/members")
     fun listMembers(@PathVariable activityId: Long): List<MemberResponse> {
         return activityService.listMembers(activityId)
     }
-
-    //    trigger the defined effect
-    data class ActivityTriggerRequest(val key: String, val params: Map<String, String>, val userId: String)
 
     @PostMapping("/{activityId}/trigger")
     fun trigger(@RequestBody request: ActivityTriggerRequest, @PathVariable activityId: Long) {
         return activityService.trigger(activityId, request)
     }
 
-    // leaderboard
     @GetMapping("/{activityId}/leaderboard")
     fun leaderboard(@PathVariable activityId: Long, @RequestParam type: String): LeaderboardResponse {
         if (type == "total-points") {
@@ -116,7 +77,6 @@ class ActivityController(
 
     data class TriggerDefinition(
         val key: String,
-//        val type: String,
         val params: Map<String, String>?
     )
 
@@ -128,7 +88,6 @@ class ActivityController(
     data class RuleCondition(
         val type: String,
         val params: Map<String, String>,
-//        val multiple: Boolean
     )
 
     data class RuleCreateRequest(
@@ -251,40 +210,6 @@ class ActivityController(
         return activity.rules.map { RuleResponse.fromEntity(it) }
     }
 
-    data class AchievementCreateRequest(
-        @field:Size(min = 4, max = 200, message = "Title must be between 4 and 200 characters")
-        @field:NotBlank(message = "Title is required")
-        val title: String?,
-        @field:Size(max = 500, message = "Description cannot be longer than 500 characters")
-        val description: String?,
-    )
-
-    data class AchievementUpdateRequest(
-        @field:Size(min = 4, max = 200, message = "Title must be between 4 and 200 characters")
-        @field:NotBlank(message = "Title is required")
-        val title: String?,
-        @field:Size(max = 500, message = "Description cannot be longer than 500 characters")
-        val description: String?,
-    )
-
-    data class AchievementResponse(
-        val achievementId: Long,
-        val title: String,
-        val description: String?,
-        val imageUrl: String?,
-    ) {
-        companion object {
-            fun fromEntity(achievement: Achievement): AchievementResponse {
-                return AchievementResponse(
-                    achievementId = achievement.achievementId!!,
-                    title = achievement.title,
-                    description = achievement.description,
-                    imageUrl = achievement.imageUrl,
-                )
-            }
-        }
-    }
-
     @PostMapping("/{activityId}/achievements")
     fun createAchievement(
         @PathVariable activityId: Long,
@@ -343,125 +268,4 @@ class ActivityController(
         return actionRepository.findAll().map { ActionResponse.fromEntity(it) }
     }
 
-
-}
-//
-//data class RuleResponse(
-//    val id: Long,
-//    val title: String,
-//    val description: String?,
-//    val trigger: TriggerResponse,
-//    val action: ActionResponse,
-//) {
-//    companion object {
-//        fun fromEntity(rule: Rule): RuleResponse {
-//            return RuleResponse(
-//                id = rule.id!!,
-//                title = rule.title!!,
-//                description = rule.description,
-//                trigger = TriggerResponse.fromEntity(rule.trigger!!),
-//                action = ActionResponse.fromEntity(rule.action!!),
-//            )
-//        }
-//    }
-//}
-//
-//data class TriggerResponse(
-//    val id: Long,
-//    val title: String,
-//    val description: String?,
-//    val key: String,
-//) {
-//    companion object {
-//        fun fromEntity(trigger: Trigger): TriggerResponse {
-//            return TriggerResponse(
-//                id = trigger.id!!,
-//                title = trigger.title!!,
-//                description = trigger.description,
-//                key = trigger.key!!,
-//            )
-//        }
-//    }
-//}
-//
-//data class ActionResponse(
-//    val id: Long,
-//    val title: String,
-//    val description: String?,
-//    val key: String,
-//) {
-//    companion object {
-//        fun fromEntity(action: com.arsahub.backend.models.Action): ActionResponse {
-//            return ActionResponse(
-//                id = action.id!!,
-//                title = action.title!!,
-//                description = action.description,
-//                key = action.key!!,
-//            )
-//        }
-//    }
-//}
-
-
-data class UserActivityProfileResponse(
-    val user: UserResponse?,
-    val points: Int,
-    val achievements: List<ActivityController.AchievementResponse>
-) {
-    companion object {
-        fun fromEntity(userActivity: UserActivity): UserActivityProfileResponse {
-            return UserActivityProfileResponse(
-                user = userActivity.user?.let { UserResponse.fromEntity(it) },
-                points = userActivity.points ?: 0,
-                achievements = userActivity.userActivityAchievements.mapNotNull {
-                    it.achievement?.let { achievement ->
-                        ActivityController.AchievementResponse.fromEntity(achievement)
-                    }
-                }
-            )
-        }
-    }
-}
-
-class JsonSchemaValidator(
-    private val objectMapper: ObjectMapper = ObjectMapper(),
-    private val schemaValidatorsConfig: SchemaValidatorsConfig = SchemaValidatorsConfig()
-) {
-
-    fun validate(jsonSchema: JsonNode, jsonNode: JsonNode): JsonSchemaValidationResult {
-        val factory = JsonSchemaFactory.getInstance(SpecVersionDetector.detect(jsonSchema))
-
-        val schema = factory.getSchema(jsonSchema, schemaValidatorsConfig)
-        val errors = schema.validate(jsonNode)
-
-        return JsonSchemaValidationResult(
-            isValid = errors.isEmpty(),
-            errors = errors
-        )
-    }
-
-    fun validate(jsonSchema: MutableMap<String, Any>, json: Map<String, String>): JsonSchemaValidationResult {
-        val jsonSchemaJsonNode = objectMapper.valueToTree<JsonNode>(jsonSchema)
-        val jsonNode = objectMapper.valueToTree<JsonNode>(json)
-        return validate(jsonSchemaJsonNode, jsonNode)
-    }
-
-    fun convertJsonStringToMap(json: String): Map<String, Any> {
-        val typeRef = object : com.fasterxml.jackson.core.type.TypeReference<Map<String, Any>>() {}
-        return objectMapper.readValue(json, typeRef)
-    }
-}
-
-data class JsonSchemaValidationResult(
-    val isValid: Boolean,
-    val errors: Set<ValidationMessage>
-) {
-    companion object {
-        fun valid(): JsonSchemaValidationResult {
-            return JsonSchemaValidationResult(
-                isValid = true,
-                errors = emptySet()
-            )
-        }
-    }
 }
