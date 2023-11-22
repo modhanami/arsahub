@@ -126,7 +126,7 @@ class ActivityController(
         @field:Size(min = 4, max = 200, message = "Name must be between 4 and 200 characters")
         @field:NotBlank(message = "Name is required")
         val name: String?, // TODO: remove nullability and actually customize jackson-module-kotlin with the Jackson2ObjectMapperBuilderCustomizer
-        @field:Size(max = 500)
+        @field:Size(max = 500, message = "Description cannot be longer than 500 characters")
         val description: String?,
         val trigger: TriggerDefinition,
         val action: ActionDefinition,
@@ -241,13 +241,6 @@ class ActivityController(
 
         return activity.rules.map { RuleResponse.fromEntity(it) }
     }
-
-    // create trigger per activity
-    data class TriggerCreateRequest(
-        val title: String,
-        val description: String?,
-        val key: String,
-    )
 
     data class AchievementCreateRequest(
         val title: String,

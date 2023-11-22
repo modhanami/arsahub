@@ -10,6 +10,9 @@ import com.arsahub.backend.repositories.*
 import com.arsahub.backend.services.ActivityService
 import com.networknt.schema.SchemaValidatorsConfig
 import jakarta.persistence.EntityNotFoundException
+import jakarta.validation.Valid
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.Size
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.web.bind.annotation.*
 import java.time.Instant
@@ -153,13 +156,17 @@ class IntegrationController(
     )
 
     data class TriggerCreateRequest(
-        val title: String,
-        val description: String,
-        val key: String
+        @field:Size(min = 4, max = 200, message = "Title must be between 4 and 200 characters")
+        @field:NotBlank(message = "Title is required")
+        val title: String?,
+        @field:Size(max = 500, message = "Description cannot be longer than 500 characters")
+        val description: String?,
+        @field:NotBlank(message = "Key is required")
+        val key: String?
     )
 
     @PostMapping("/triggers")
-    fun createTrigger(@RequestBody request: TriggerCreateRequest): TriggerResponse {
+    fun createTrigger(@Valid @RequestBody request: TriggerCreateRequest): TriggerResponse {
         val trigger = Trigger(
             title = request.title,
             description = request.description,
