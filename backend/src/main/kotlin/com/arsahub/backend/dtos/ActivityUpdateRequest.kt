@@ -3,7 +3,7 @@ package com.arsahub.backend.dtos
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
 
-data class ActivityCreateRequest(
+data class ActivityUpdateRequest(
     @field:Size(min = 4, max = 200, message = "Title must be between 4 and 200 characters")
     @field:NotBlank(message = "Title is required")
     val title: String?,

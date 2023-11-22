@@ -36,10 +36,19 @@ class ActivityController(
 
     @PostMapping
     fun createEvent(
-        @RequestBody activityCreateRequest: ActivityCreateRequest
+        @Valid @RequestBody activityCreateRequest: ActivityCreateRequest
     ): ActivityResponse {
         return activityService.createActivity(activityCreateRequest)
     }
+
+    @PutMapping("/{activityId}")
+    fun updateEvent(
+        @PathVariable activityId: Long,
+        @Valid @RequestBody activityUpdateRequest: ActivityUpdateRequest
+    ): ActivityResponse {
+        return activityService.updateActivity(activityId, activityUpdateRequest)
+    }
+    
 //
 //    fun canCreateEvent(user: CustomUserDetails): Boolean {
 //        return user.isOrganizer()

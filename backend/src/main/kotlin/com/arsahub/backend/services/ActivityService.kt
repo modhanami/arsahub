@@ -4,6 +4,7 @@ import com.arsahub.backend.SocketIOService
 import com.arsahub.backend.controllers.ActivityController
 import com.arsahub.backend.dtos.ActivityCreateRequest
 import com.arsahub.backend.dtos.ActivityResponse
+import com.arsahub.backend.dtos.ActivityUpdateRequest
 import com.arsahub.backend.dtos.MemberResponse
 import com.arsahub.backend.models.*
 import com.arsahub.backend.repositories.*
@@ -14,13 +15,11 @@ import java.time.Instant
 
 interface ActivityService {
     fun createActivity(activityCreateRequest: ActivityCreateRequest): ActivityResponse
+    fun updateActivity(
+        activityId: Long,
+        activityUpdateRequest: ActivityUpdateRequest
+    ): ActivityResponse
 
-    //    fun updateEvent(
-//        currentUser: CustomUserDetails,
-//        activityId: Long,
-//        eventUpdateRequest: EventUpdateRequest
-//    ): EventResponse
-//
     fun getActivity(activityId: Long): Activity?
 
     //    fun listEvents(): List<Activity>
@@ -48,11 +47,22 @@ class ActivityServiceImpl(
 
     override fun createActivity(activityCreateRequest: ActivityCreateRequest): ActivityResponse {
         val activityToSave = Activity(
-            title = activityCreateRequest.title,
+            title = activityCreateRequest.title!!,
             description = activityCreateRequest.description,
         )
         val savedActivity = activityRepository.save(activityToSave)
         return ActivityResponse.fromEntity(savedActivity)
+    }
+
+    override fun updateActivity(activityId: Long, activityUpdateRequest: ActivityUpdateRequest): ActivityResponse {
+        val existingActivity = activityRepository.findByIdOrNull(activityId)
+            ?: throw EntityNotFoundException("Activity with ID $activityId not found")
+
+        existingActivity.title = activityUpdateRequest.title!!
+        existingActivity.description = activityUpdateRequest.description
+
+        val updatedActivity = activityRepository.save(existingActivity)
+        return ActivityResponse.fromEntity(updatedActivity)
     }
 
     //
