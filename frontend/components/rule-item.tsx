@@ -9,14 +9,16 @@ interface RuleItemProps {
 
 export function RuleItem({ rule: rule }: RuleItemProps) {
   return (
-    <div className="flex items-center justify-between p-4">
-      <div className="grid gap-1">
-        <Link href={`/`} className="font-semibold hover:underline">
+    <div className="flex items-center justify-between p-4 ">
+      <div className="grid gap-1 max-w-lg">
+        <Link href={`/`} className="font-semibold hover:underline break-words ">
           {rule.title}
         </Link>
-        <div>
-          <p className="text-sm text-muted-foreground">{rule.description}</p>
-        </div>
+        <p>
+          <p className="text-sm  text-muted-foreground break-words">
+            {rule.description}
+          </p>
+        </p>
       </div>
     </div>
   );

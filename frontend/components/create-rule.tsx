@@ -296,7 +296,6 @@ export function CreateRuleForm() {
           </Form>
         </DialogContent>
       </Dialog>
-      <DevTool control={form.control} placement="top-left" />
     </>
   );
 }
