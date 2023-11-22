@@ -243,9 +243,19 @@ class ActivityController(
     }
 
     data class AchievementCreateRequest(
-        val title: String,
+        @field:Size(min = 4, max = 200, message = "Title must be between 4 and 200 characters")
+        @field:NotBlank(message = "Title is required")
+        val title: String?,
+        @field:Size(max = 500, message = "Description cannot be longer than 500 characters")
         val description: String?,
-        val imageUrl: String?,
+    )
+
+    data class AchievementUpdateRequest(
+        @field:Size(min = 4, max = 200, message = "Title must be between 4 and 200 characters")
+        @field:NotBlank(message = "Title is required")
+        val title: String?,
+        @field:Size(max = 500, message = "Description cannot be longer than 500 characters")
+        val description: String?,
     )
 
     data class AchievementResponse(
@@ -269,16 +279,35 @@ class ActivityController(
     @PostMapping("/{activityId}/achievements")
     fun createAchievement(
         @PathVariable activityId: Long,
-        @RequestBody request: AchievementCreateRequest
+        @Valid @RequestBody request: AchievementCreateRequest
     ): AchievementResponse {
         val activity = activityService.getActivity(activityId) ?: throw Exception("Activity not found")
 
         val achievement = Achievement(
-            title = request.title,
+            title = request.title!!,
             description = request.description,
-            imageUrl = request.imageUrl,
             activity = activity
         )
+
+        achievementRepository.save(achievement)
+
+        return AchievementResponse.fromEntity(achievement)
+    }
+
+    @PutMapping("/{activityId}/achievements/{achievementId}")
+    fun updateAchievement(
+        @PathVariable activityId: Long,
+        @PathVariable achievementId: Long,
+        @Valid @RequestBody request: AchievementUpdateRequest
+    ): AchievementResponse {
+        val activity = activityService.getActivity(activityId) ?: throw Exception("Activity not found")
+
+        val achievement =
+            achievementRepository.findById(achievementId).orElseThrow { Exception("Achievement not found") }
+
+        achievement.title = request.title!!
+        achievement.description = request.description
+        achievement.activity = activity
 
         achievementRepository.save(achievement)
 
