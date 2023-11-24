@@ -1,7 +1,6 @@
 package com.arsahub.backend.controllers
 
-import com.arsahub.backend.dtos.ActivityCreateRequest
-import com.arsahub.backend.dtos.TriggerCreateRequest
+import com.arsahub.backend.dtos.*
 import com.arsahub.backend.models.Activity
 import com.arsahub.backend.models.User
 import com.arsahub.backend.repositories.UserActivityRepository
@@ -102,14 +101,14 @@ class ActivityControllerTest {
         // create rule for activity
         activityServiceImpl.createRule(
             1,
-            ActivityController.RuleCreateRequest(
+            RuleCreateRequest(
                 title = "Rule 1",
                 description = "Rule 1",
-                trigger = ActivityController.TriggerDefinition(
+                trigger = TriggerDefinition(
                     key = "activity_shared",
                 ),
 
-                action = ActivityController.ActionDefinition(
+                action = ActionDefinition(
                     key = "add_points",
                     params = mapOf("value" to "10")
                 ),

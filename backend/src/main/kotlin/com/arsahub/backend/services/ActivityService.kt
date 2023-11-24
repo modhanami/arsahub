@@ -26,7 +26,7 @@ interface ActivityService {
     fun listActivities(): List<ActivityResponse>
     fun trigger(activityId: Long, request: ActivityTriggerRequest)
     fun createRule(
-        activityId: Long, request: ActivityController.RuleCreateRequest
+        activityId: Long, request: RuleCreateRequest
     ): Rule
 }
 
@@ -273,7 +273,7 @@ class ActivityServiceImpl(
     }
 
     override fun createRule(
-        activityId: Long, request: ActivityController.RuleCreateRequest
+        activityId: Long, request: RuleCreateRequest
     ): Rule {
         val trigger = triggerRepository.findByKey(request.trigger.key) ?: throw Exception("Trigger not found")
         val action = actionRepository.findByKey(request.action.key) ?: throw Exception("Action not found")

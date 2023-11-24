@@ -11,14 +11,21 @@ import com.arsahub.backend.services.ActivityService
 import com.arsahub.backend.services.IntegrationService
 import com.arsahub.backend.utils.JsonSchemaValidator
 import com.networknt.schema.SchemaValidatorsConfig
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.media.Content
+import io.swagger.v3.oas.annotations.media.Schema
+import io.swagger.v3.oas.annotations.responses.ApiResponse
+import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.persistence.EntityNotFoundException
 import jakarta.validation.Valid
 import org.springframework.data.repository.findByIdOrNull
+import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
 import java.time.Instant
 
 @RestController
 @RequestMapping("/api/integrations")
+@Tag(name = "Integration API", description = "API for integration developers")
 class IntegrationController(
     private val customUnitRepository: CustomUnitRepository,
     private val triggerRepository: TriggerRepository,
@@ -28,6 +35,24 @@ class IntegrationController(
     private val activityService: ActivityService,
     private val integrationService: IntegrationService,
 ) {
+    @Operation(
+        summary = "Create a custom unit (globally)", // TODO: make custom unit scoped to integration
+        description = "Create a custom unit that can be used in activities and rules. Following triggers will be created automatically: {custom_unit_key}_reached",
+        responses = [
+            ApiResponse(
+                responseCode = "201",
+            ),
+            ApiResponse(
+                responseCode = "400",
+                content = [Content(schema = Schema(implementation = ApiValidationError::class))]
+            ),
+            ApiResponse(
+                responseCode = "409",
+                description = "Custom unit with the same key already exists",
+                content = [Content(schema = Schema(implementation = ApiError::class))]
+            )
+        ]
+    )
     @PostMapping("/custom-units")
     fun createCustomUnit(
         @RequestBody request: CustomUnitCreateRequest
@@ -36,14 +61,12 @@ class IntegrationController(
         if (existingCustomUnit != null) {
             throw ConflictException("Custom unit with key ${request.key} already exists")
         }
-
         val customUnit = CustomUnit(
             name = request.name,
             key = request.key,
         )
 
         customUnitRepository.save(customUnit)
-
         val triggerSchema = """
         {
             "type": "object",
@@ -58,11 +81,9 @@ class IntegrationController(
             }
         }
     """.trimIndent()
-
         val schemaValidatorsConfig = SchemaValidatorsConfig()
         schemaValidatorsConfig.isTypeLoose = true
         val validator = JsonSchemaValidator(schemaValidatorsConfig = schemaValidatorsConfig)
-
         val trigger = Trigger(
             title = "${customUnit.name} reached",
             description = "Triggered when ${customUnit.name} reached a certain value",
@@ -81,21 +102,33 @@ class IntegrationController(
         val userId: String,
     )
 
+    @Operation(
+        summary = "Increment a custom unit for a user in an activity",
+        responses = [
+            ApiResponse(
+                responseCode = "200",
+            ),
+            ApiResponse(
+                responseCode = "400",
+                content = [Content(schema = Schema(implementation = ApiValidationError::class))]
+            ),
+            ApiResponse(
+                responseCode = "404",
+                content = [Content(schema = Schema(implementation = ApiError::class))]
+            )
+        ]
+    )
     @PostMapping("/{activityId}/increment-unit")
     fun incrementUnit(
         @PathVariable activityId: Long,
         @RequestBody request: IncrementUnitRequest
     ) {
-
         val customUnit = customUnitRepository.findByKey(request.unitKey)
             ?: throw EntityNotFoundException("Custom unit with key ${request.unitKey} not found")
-
         val activity = activityRepository.findByIdOrNull(activityId)
             ?: throw EntityNotFoundException("Activity with ID $activityId not found")
-
         val userActivity = activity.members.find { it.user?.externalUserId == request.userId }
             ?: throw EntityNotFoundException("User with ID ${request.userId} not found")
-
         var currentProgress = userActivity.userActivityProgresses.find { it.customUnit?.key == request.unitKey }
         if (currentProgress != null) {
             currentProgress.progressValue = currentProgress.progressValue?.plus(request.amount)
@@ -113,7 +146,6 @@ class IntegrationController(
 
             println("Created progress ${customUnit.name} for user ${userActivity.user?.externalUserId} in activity ${activity.title} with value ${request.amount}")
         }
-
         val matchingRules = activity.rules.filter { it.trigger?.key == "${customUnit.key}_reached" }
         println("Found ${matchingRules.size} rules for ${customUnit.name} reached")
         matchingRules.forEach { rule ->
@@ -124,7 +156,6 @@ class IntegrationController(
                 println("Skipping rule ${rule.title} (${rule.id}) for user ${userActivity.user?.externalUserId} in activity ${activity.title} because progress is ${currentProgress.progressValue} and value is $value")
                 return@forEach
             }
-
             // check if the rule has already been activated from rule_progress_time
             if (ruleProgressTimeRepository.findByRuleAndUserActivity(rule, userActivity) != null) {
                 println("Skipping rule ${rule.title} (${rule.id}) for user ${userActivity.user?.externalUserId} in activity ${activity.title} because it has already been activated")
@@ -141,7 +172,6 @@ class IntegrationController(
                     userId = request.userId
                 )
             )
-
             // mark the rule as activated for the user
             val ruleProgress = RuleProgressTime(
                 rule = rule, userActivity = userActivity, progress = 1, completedAt = Instant.now()
@@ -151,11 +181,33 @@ class IntegrationController(
         }
     }
 
+    @Operation(
+        summary = "Create a trigger (globally)", // TODO: make trigger scoped to integration
+        responses = [
+            ApiResponse(
+                responseCode = "201",
+            ),
+            ApiResponse(
+                responseCode = "400",
+                content = [Content(schema = Schema(implementation = ApiValidationError::class))]
+            )
+        ]
+    )
     @PostMapping("/triggers")
+    @ResponseStatus(HttpStatus.CREATED)
     fun createTrigger(@Valid @RequestBody request: TriggerCreateRequest): TriggerResponse {
         return integrationService.createTrigger(request)
     }
 
+    @Operation(
+        summary = "Get all triggers",
+        responses = [
+            ApiResponse(
+                responseCode = "200",
+                content = [Content(schema = Schema(implementation = TriggerResponse::class))]
+            )
+        ]
+    )
     @GetMapping("/triggers")
     fun getTriggers(): List<TriggerResponse> {
         return integrationService.getTriggers().map { TriggerResponse.fromEntity(it) }

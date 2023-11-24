@@ -45,6 +45,7 @@ dependencies {
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0")
     implementation("com.corundumstudio.socketio:netty-socketio:2.0.3")
     implementation("net.pwall.json:json-kotlin-schema:0.42")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0")
 //    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
 //    implementation("com.google.code.gson:gson:2.10.1")
     implementation("com.networknt:json-schema-validator:1.0.87")
