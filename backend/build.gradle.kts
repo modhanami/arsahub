@@ -2,13 +2,12 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     java
-    id("org.springframework.boot") version "3.1.3"
+    id("org.springframework.boot") version "3.2.0"
     id("io.spring.dependency-management") version "1.1.3"
     id("org.hibernate.orm") version "6.2.7.Final"
-    id("org.graalvm.buildtools.native") version "0.9.24"
-    kotlin("jvm") version "1.8.22"
-    kotlin("plugin.spring") version "1.8.22"
-    kotlin("plugin.jpa") version "1.8.22"
+    kotlin("jvm") version "1.9.20"
+    kotlin("plugin.spring") version "1.9.20"
+    kotlin("plugin.jpa") version "1.9.20"
     id("org.jetbrains.kotlin.plugin.allopen") version "1.9.10"
 //    kotlin("plugin.serialization") version "1.9.0"
 }
@@ -28,6 +27,9 @@ configurations {
 
 repositories {
     mavenCentral()
+    maven { url = uri("https://repo.spring.io/milestone") }
+    maven { url = uri("https://repo.spring.io/snapshot") }
+    gradlePluginPortal()
 }
 
 dependencies {
