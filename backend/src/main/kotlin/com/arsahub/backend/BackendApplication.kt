@@ -8,6 +8,7 @@ import org.springframework.boot.context.event.ApplicationReadyEvent
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan
 import org.springframework.boot.runApplication
 import org.springframework.context.annotation.Bean
+import org.springframework.context.event.ContextClosedEvent
 import org.springframework.context.event.EventListener
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing
 import org.springframework.scheduling.annotation.EnableScheduling
@@ -35,9 +36,14 @@ class BackendApplication {
 
     @EventListener(ApplicationReadyEvent::class)
     fun startup() {
-        val socketIOServer = socketIOServer()
-        socketIOServer.start()
+        socketIOServer().start()
     }
+
+    @EventListener(ContextClosedEvent::class)
+    fun shutdown() {
+        socketIOServer().stop()
+    }
+
 }
 
 fun main(args: Array<String>) {

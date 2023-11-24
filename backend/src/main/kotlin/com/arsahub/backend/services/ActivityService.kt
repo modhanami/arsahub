@@ -5,13 +5,16 @@ import com.arsahub.backend.controllers.ActivityController
 import com.arsahub.backend.dtos.*
 import com.arsahub.backend.models.*
 import com.arsahub.backend.repositories.*
+import com.arsahub.backend.utils.JsonSchemaValidationResult
+import com.arsahub.backend.utils.JsonSchemaValidator
+import com.networknt.schema.SchemaValidatorsConfig
 import jakarta.persistence.EntityNotFoundException
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import java.time.Instant
 
 interface ActivityService {
-    fun createActivity(activityCreateRequest: ActivityCreateRequest): ActivityResponse
+    fun createActivity(activityCreateRequest: ActivityCreateRequest): Activity
     fun updateActivity(
         activityId: Long,
         activityUpdateRequest: ActivityUpdateRequest
@@ -19,9 +22,12 @@ interface ActivityService {
 
     fun getActivity(activityId: Long): Activity?
     fun addMembers(activityId: Long, request: ActivityController.ActivityAddMembersRequest): ActivityResponse
-    fun listMembers(activityId: Long): List<MemberResponse>
+    fun listMembers(activityId: Long): List<UserActivity>
     fun listActivities(): List<ActivityResponse>
     fun trigger(activityId: Long, request: ActivityTriggerRequest)
+    fun createRule(
+        activityId: Long, request: ActivityController.RuleCreateRequest
+    ): Rule
 }
 
 @Service
@@ -33,16 +39,18 @@ class ActivityServiceImpl(
     private val achievementRepository: AchievementRepository,
     private val userActivityAchievementRepository: UserActivityAchievementRepository,
     private val socketIOService: SocketIOService,
-    private val ruleProgressTimeRepository: RuleProgressTimeRepository
+    private val ruleProgressTimeRepository: RuleProgressTimeRepository,
+    private val actionRepository: ActionRepository,
+    private val triggerTypeRepository: TriggerTypeRepository,
+    private val ruleRepository: RuleRepository
 ) : ActivityService {
 
-    override fun createActivity(activityCreateRequest: ActivityCreateRequest): ActivityResponse {
+    override fun createActivity(activityCreateRequest: ActivityCreateRequest): Activity {
         val activityToSave = Activity(
             title = activityCreateRequest.title!!,
             description = activityCreateRequest.description,
         )
-        val savedActivity = activityRepository.save(activityToSave)
-        return ActivityResponse.fromEntity(savedActivity)
+        return activityRepository.save(activityToSave)
     }
 
     override fun updateActivity(activityId: Long, activityUpdateRequest: ActivityUpdateRequest): ActivityResponse {
@@ -84,11 +92,11 @@ class ActivityServiceImpl(
         )
     }
 
-    override fun listMembers(activityId: Long): List<MemberResponse> {
+    override fun listMembers(activityId: Long): List<UserActivity> {
         val existingEvent = activityRepository.findByIdOrNull(activityId)
             ?: throw EntityNotFoundException("Activity with ID $activityId not found")
 
-        return existingEvent.members.map { MemberResponse.fromEntity(it) }.toList()
+        return existingEvent.members.toList()
     }
 
     override fun listActivities(): List<ActivityResponse> {
@@ -262,5 +270,103 @@ class ActivityServiceImpl(
         }
 
         actionMessages.forEach { println(it) }
+    }
+
+    override fun createRule(
+        activityId: Long, request: ActivityController.RuleCreateRequest
+    ): Rule {
+        val trigger = triggerRepository.findByKey(request.trigger.key) ?: throw Exception("Trigger not found")
+        val action = actionRepository.findByKey(request.action.key) ?: throw Exception("Action not found")
+        val triggerType =
+            request.condition?.type?.let { triggerTypeRepository.findByKey(it) }
+
+        val activity = getActivity(activityId) ?: throw Exception("Activity not found")
+
+
+        val schemaValidatorsConfig = SchemaValidatorsConfig()
+        schemaValidatorsConfig.isTypeLoose = true
+        val validator = JsonSchemaValidator(schemaValidatorsConfig = schemaValidatorsConfig)
+
+        // trigger schema validation
+        println("Trigger definition: ${request.trigger}")
+        println("Trigger schema: ${trigger.jsonSchema}")
+        val triggerSchema = trigger.jsonSchema
+        val triggerValidationResult = if (triggerSchema != null) {
+            if (request.trigger.params == null) {
+                throw Exception("Trigger params must be provided when trigger has a schema (key: ${trigger.key})")
+            }
+
+            validator.validate(triggerSchema, request.trigger.params)
+        } else {
+            JsonSchemaValidationResult.valid()
+        }
+
+        println("Trigger validation result: ${triggerValidationResult.errors} (passed: ${triggerValidationResult.isValid})")
+        if (!triggerValidationResult.isValid) {
+            throw Exception("Trigger definition is not valid")
+        }
+
+        // action schema validation
+        println("Action definition: ${request.action}")
+        println("Action schema: ${action.jsonSchema}")
+        val actionSchema = action.jsonSchema
+        val actionValidationResult = if (actionSchema != null) {
+            validator.validate(actionSchema, request.action.params)
+        } else {
+            JsonSchemaValidationResult.valid()
+        }
+
+        println("Action validation result: ${actionValidationResult.errors} (passed: $actionValidationResult.isValid)")
+        if (!actionValidationResult.isValid) {
+            throw Exception("Action definition is not valid")
+        }
+
+        // extra validation not covered by schema, like a param must reference a valid ID of an achievement to be awarded (achievementId)
+        // checks like nullability, type, etc. are covered by the schema
+        try {
+            when (request.action.key) {
+                "unlock_achievement" -> {
+                    val achievementId = request.action.params["achievementId"]!!.toLong()
+                    val achievement = achievementRepository.findById(achievementId)
+                    if (achievement.isEmpty) {
+                        throw Exception("Achievement not found")
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            throw Exception("Action definition is not valid", e)
+        }
+
+
+        if (triggerType != null) {
+            // validate condition schema
+            println("Condition definition: ${request.condition}")
+            println("Condition schema: ${triggerType.jsonSchema}")
+            val conditionSchema = triggerType.jsonSchema
+            val conditionValidate = if (conditionSchema != null) {
+                validator.validate(conditionSchema, request.condition.params)
+            } else {
+                JsonSchemaValidationResult.valid()
+            }
+
+            println("Condition validation result: ${conditionValidate.errors} (passed: ${conditionValidate.isValid})")
+            if (!conditionValidate.isValid) {
+                throw Exception("Condition definition is not valid")
+            }
+        }
+
+        val rule = Rule(
+            title = request.title,
+            description = request.description,
+            trigger = trigger,
+            action = action,
+            triggerType = triggerType,
+            activity = activity,
+            triggerParams = request.trigger.params?.toMutableMap(),
+            actionParams = request.action.params.toMutableMap(),
+            triggerTypeParams = request.condition?.params?.toMutableMap(),
+        )
+
+        return ruleRepository.save(rule)
     }
 }

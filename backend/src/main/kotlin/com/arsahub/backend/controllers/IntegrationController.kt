@@ -8,6 +8,7 @@ import com.arsahub.backend.models.Trigger
 import com.arsahub.backend.models.UserActivityProgress
 import com.arsahub.backend.repositories.*
 import com.arsahub.backend.services.ActivityService
+import com.arsahub.backend.services.IntegrationService
 import com.arsahub.backend.utils.JsonSchemaValidator
 import com.networknt.schema.SchemaValidatorsConfig
 import jakarta.persistence.EntityNotFoundException
@@ -25,6 +26,7 @@ class IntegrationController(
     private val userActivityProgressRepository: UserActivityProgressRepository,
     private val ruleProgressTimeRepository: RuleProgressTimeRepository,
     private val activityService: ActivityService,
+    private val integrationService: IntegrationService,
 ) {
     @PostMapping("/custom-units")
     fun createCustomUnit(
@@ -151,17 +153,12 @@ class IntegrationController(
 
     @PostMapping("/triggers")
     fun createTrigger(@Valid @RequestBody request: TriggerCreateRequest): TriggerResponse {
-        val trigger = Trigger(
-            title = request.title,
-            description = request.description,
-            key = request.key
-        )
-        return TriggerResponse.fromEntity(triggerRepository.save(trigger))
+        return integrationService.createTrigger(request)
     }
 
     @GetMapping("/triggers")
     fun getTriggers(): List<TriggerResponse> {
-        return triggerRepository.findAll().map { TriggerResponse.fromEntity(it) }
+        return integrationService.getTriggers().map { TriggerResponse.fromEntity(it) }
     }
 
 }
