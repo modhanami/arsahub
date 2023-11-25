@@ -47,7 +47,6 @@ class ActivityServiceImpl(
     private val userActivityRepository: UserActivityRepository,
     private val triggerRepository: TriggerRepository,
     private val achievementRepository: AchievementRepository,
-    private val userActivityAchievementRepository: UserActivityAchievementRepository,
     private val socketIOService: SocketIOService,
     private val ruleProgressTimeRepository: RuleProgressTimeRepository,
     private val actionRepository: ActionRepository,

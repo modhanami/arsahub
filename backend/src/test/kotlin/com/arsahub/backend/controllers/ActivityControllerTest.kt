@@ -5,7 +5,6 @@ import com.arsahub.backend.dtos.*
 import com.arsahub.backend.models.Achievement
 import com.arsahub.backend.models.Activity
 import com.arsahub.backend.models.User
-import com.arsahub.backend.repositories.UserActivityRepository
 import com.arsahub.backend.repositories.UserRepository
 import com.arsahub.backend.services.ActivityServiceImpl
 import com.arsahub.backend.services.IntegrationService
@@ -111,9 +110,6 @@ class ActivityControllerTest {
         ).update()
 
     }
-
-    @Autowired
-    private lateinit var userActivityRepository: UserActivityRepository
 
     @Autowired
     private lateinit var integrationService: IntegrationService

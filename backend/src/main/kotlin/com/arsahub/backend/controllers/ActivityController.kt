@@ -2,7 +2,9 @@ package com.arsahub.backend.controllers
 
 import com.arsahub.backend.dtos.*
 import com.arsahub.backend.dtos.ApiValidationError
-import com.arsahub.backend.repositories.*
+import com.arsahub.backend.repositories.AchievementRepository
+import com.arsahub.backend.repositories.ActionRepository
+import com.arsahub.backend.repositories.ActivityRepository
 import com.arsahub.backend.services.ActivityService
 import com.arsahub.backend.services.LeaderboardService
 import io.swagger.v3.oas.annotations.Operation
@@ -24,9 +26,6 @@ class ActivityController(
     private val activityService: ActivityService,
     private val activityRepository: ActivityRepository,
     private val leaderboardService: LeaderboardService,
-    private val ruleRepository: RuleRepository,
-    private val triggerRepository: TriggerRepository,
-    private val triggerTypeRepository: TriggerTypeRepository,
     private val actionRepository: ActionRepository,
     private val achievementRepository: AchievementRepository,
 ) {
