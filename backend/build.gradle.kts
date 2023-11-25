@@ -9,6 +9,7 @@ plugins {
     kotlin("plugin.spring") version "1.9.20"
     kotlin("plugin.jpa") version "1.9.20"
     id("org.jetbrains.kotlin.plugin.allopen") version "1.9.10"
+    id("com.google.cloud.tools.jib") version "3.4.0"
 //    kotlin("plugin.serialization") version "1.9.0"
 }
 
@@ -89,4 +90,11 @@ hibernate {
 allOpen {
     annotation("jakarta.persistence.Entity")
     annotation("jakarta.persistence.MappedSuperclass")
+}
+
+jib {
+    to {
+        image = "modhanami/arsahub-backend-dev"
+        setCredHelper("wincred")
+    }
 }
