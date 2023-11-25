@@ -356,7 +356,7 @@ class ActivityServiceImpl(
         }
 
         val rule = Rule(
-            title = request.title,
+            title = request.name,
             description = request.description,
             trigger = trigger,
             action = action,
