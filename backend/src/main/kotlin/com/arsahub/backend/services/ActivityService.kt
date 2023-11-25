@@ -136,39 +136,39 @@ class ActivityServiceImpl(
                 println("Trigger type not found for rule ${rule.title} (${rule.id}), repeating")
             }
 
-            // handle pre-built trigger types and rule user progress
-            var isProgressCompleted = false
-            when (triggerType?.key) {
-                "times" -> {
-                    val expectedCount =
-                        rule.triggerTypeParams?.get("count")?.toString()?.toInt() ?: throw Exception("Count not found")
-                    var ruleProgress = ruleProgressTimeRepository.findByRuleAndUserActivity(rule, existingMember)
-                    if (ruleProgress == null) {
-                        ruleProgress = RuleProgressTime(
-                            rule = rule, userActivity = existingMember, progress = 0
-                        )
-                    } else {
-                        if (ruleProgress.completedAt != null) {
-                            return@forEach
-                        }
-                    }
-
-                    ruleProgress.progress = ruleProgress.progress?.plus(1)
-                    if (ruleProgress.progress == expectedCount) {
-                        ruleProgress.completedAt = Instant.now()
-                        isProgressCompleted = true
-                        println("User ${existingMember.user?.userId} (${existingMember.user?.externalUserId}) has completed rule ${rule.title} (${rule.id}) with progress ${ruleProgress.progress}/${expectedCount}")
-                    } else {
-                        println("User ${existingMember.user?.userId} (${existingMember.user?.externalUserId}) has progress ${ruleProgress.progress}/${expectedCount} for rule ${rule.title} (${rule.id})")
-                    }
-
-                    ruleProgressTimeRepository.save(ruleProgress)
-                }
-            }
-
-            if (triggerType != null && !isProgressCompleted) {
-                return@forEach
-            }
+//            // handle pre-built trigger types and rule user progress
+//            var isProgressCompleted = false
+//            when (triggerType?.key) {
+//                "times" -> {
+//                    val expectedCount =
+//                        rule.triggerTypeParams?.get("count")?.toString()?.toInt() ?: throw Exception("Count not found")
+//                    var ruleProgress = ruleProgressTimeRepository.findByRuleAndUserActivity(rule, existingMember)
+//                    if (ruleProgress == null) {
+//                        ruleProgress = RuleProgressTime(
+//                            rule = rule, userActivity = existingMember, progress = 0
+//                        )
+//                    } else {
+//                        if (ruleProgress.completedAt != null) {
+//                            return@forEach
+//                        }
+//                    }
+//
+//                    ruleProgress.progress = ruleProgress.progress?.plus(1)
+//                    if (ruleProgress.progress == expectedCount) {
+//                        ruleProgress.completedAt = Instant.now()
+//                        isProgressCompleted = true
+//                        println("User ${existingMember.user?.userId} (${existingMember.user?.externalUserId}) has completed rule ${rule.title} (${rule.id}) with progress ${ruleProgress.progress}/${expectedCount}")
+//                    } else {
+//                        println("User ${existingMember.user?.userId} (${existingMember.user?.externalUserId}) has progress ${ruleProgress.progress}/${expectedCount} for rule ${rule.title} (${rule.id})")
+//                    }
+//
+//                    ruleProgressTimeRepository.save(ruleProgress)
+//                }
+//            }
+//
+//            if (triggerType != null && !isProgressCompleted) {
+//                return@forEach
+//            }
 
             // handle pre-built actions
             when (action.key) {
@@ -285,8 +285,8 @@ class ActivityServiceImpl(
     ): Rule {
         val trigger = triggerRepository.findByKey(request.trigger.key) ?: throw Exception("Trigger not found")
         val action = actionRepository.findByKey(request.action.key) ?: throw Exception("Action not found")
-        val triggerType =
-            request.condition?.type?.let { triggerTypeRepository.findByKey(it) }
+//        val triggerType = request.condition?.type?.let { triggerTypeRepository.findByKey(it) }
+        val triggerType = null
 
         val activity = getActivity(activityId) ?: throw Exception("Activity not found")
 
@@ -346,22 +346,22 @@ class ActivityServiceImpl(
         }
 
 
-        if (triggerType != null) {
-            // validate condition schema
-            println("Condition definition: ${request.condition}")
-            println("Condition schema: ${triggerType.jsonSchema}")
-            val conditionSchema = triggerType.jsonSchema
-            val conditionValidate = if (conditionSchema != null) {
-                validator.validate(conditionSchema, request.condition.params)
-            } else {
-                JsonSchemaValidationResult.valid()
-            }
-
-            println("Condition validation result: ${conditionValidate.errors} (passed: ${conditionValidate.isValid})")
-            if (!conditionValidate.isValid) {
-                throw Exception("Condition definition is not valid")
-            }
-        }
+//        if (triggerType != null) {
+//            // validate condition schema
+//            println("Condition definition: ${request.condition}")
+//            println("Condition schema: ${triggerType.jsonSchema}")
+//            val conditionSchema = triggerType.jsonSchema
+//            val conditionValidate = if (conditionSchema != null) {
+//                validator.validate(conditionSchema, request.condition.params)
+//            } else {
+//                JsonSchemaValidationResult.valid()
+//            }
+//
+//            println("Condition validation result: ${conditionValidate.errors} (passed: ${conditionValidate.isValid})")
+//            if (!conditionValidate.isValid) {
+//                throw Exception("Condition definition is not valid")
+//            }
+//        }
 
         val rule = Rule(
             title = request.name,
