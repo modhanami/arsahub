@@ -1,21 +1,20 @@
 package com.arsahub.backend.controllers
 
+import com.arsahub.backend.SocketIOService
 import com.arsahub.backend.models.CustomUnit
 import com.arsahub.backend.repositories.CustomUnitRepository
-import com.github.dockerjava.api.model.ExposedPort
-import com.github.dockerjava.api.model.HostConfig
-import com.github.dockerjava.api.model.PortBinding
-import com.github.dockerjava.api.model.Ports
+import com.corundumstudio.socketio.SocketIOServer
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.devtools.restart.RestartScope
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.mock.mockito.MockBean
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection
 import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
-import org.springframework.test.context.DynamicPropertyRegistry
-import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -32,36 +31,26 @@ import org.testcontainers.junit.jupiter.Testcontainers
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
 class IntegrationControllerTest {
-
     @Autowired
     private lateinit var customUnitRepository: CustomUnitRepository
 
     @Autowired
     private lateinit var mockMvc: MockMvc
 
+    @MockBean
+    @Suppress("unused")
+    private lateinit var socketIoServer: SocketIOServer // no-op
+
+    @MockBean
+    @Suppress("unused")
+    private lateinit var socketIOService: SocketIOService // no-op
+
     companion object {
         @Container
-        val postgres = PostgreSQLContainer<Nothing>("postgres:16-alpine").apply {
-            withDatabaseName("arsahub")
-            withUsername("user")
-            withPassword("password")
-            withCreateContainerCmdModifier { cmd ->
-                cmd.withHostConfig(
-                    HostConfig.newHostConfig().withPortBindings(
-                        PortBinding(Ports.Binding.bindPort(5437), ExposedPort(5432))
-                    )
-                )
-            }
-            withReuse(true)
-        }
-
-        @JvmStatic
-        @DynamicPropertySource
-        fun properties(registry: DynamicPropertyRegistry) {
-            registry.add("spring.datasource.url", postgres::getJdbcUrl)
-            registry.add("spring.datasource.username", postgres::getUsername)
-            registry.add("spring.datasource.password", postgres::getPassword)
-        }
+        @get:RestartScope
+        @ServiceConnection
+        @Suppress("unused")
+        val postgres = PostgreSQLContainer<Nothing>("postgres:16-alpine")
     }
 
     @BeforeEach
@@ -84,8 +73,10 @@ class IntegrationControllerTest {
                     }
                 """
             )
-        ).andExpect(status().is2xxSuccessful).andExpect(jsonPath("$.name").value("Steps"))
-            .andExpect(jsonPath("$.key").value("steps")).andExpect(jsonPath("$.id").isNumber)
+        ).andExpect(status().is2xxSuccessful)
+            .andExpect(jsonPath("$.name").value("Steps"))
+            .andExpect(jsonPath("$.key").value("steps"))
+            .andExpect(jsonPath("$.id").isNumber)
     }
 
     @Test

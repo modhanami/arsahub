@@ -9,8 +9,11 @@ import com.arsahub.backend.utils.JsonSchemaValidationResult
 import com.arsahub.backend.utils.JsonSchemaValidator
 import com.networknt.schema.SchemaValidatorsConfig
 import jakarta.persistence.EntityNotFoundException
+import jakarta.validation.Valid
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.RequestBody
 import java.time.Instant
 
 interface ActivityService {
@@ -28,6 +31,11 @@ interface ActivityService {
     fun createRule(
         activityId: Long, request: RuleCreateRequest
     ): Rule
+
+    fun createAchievement(
+        @PathVariable activityId: Long,
+        @Valid @RequestBody request: AchievementCreateRequest
+    ): Achievement
 }
 
 @Service
@@ -369,4 +377,21 @@ class ActivityServiceImpl(
 
         return ruleRepository.save(rule)
     }
+
+    override fun createAchievement(
+        activityId: Long,
+        request: AchievementCreateRequest
+    ): Achievement {
+        val activity = getActivity(activityId) ?: throw Exception("Activity not found")
+        val achievement = Achievement(
+            title = request.title!!,
+            description = request.description,
+            activity = activity
+        )
+
+        achievementRepository.save(achievement)
+
+        return achievement
+    }
+
 }

@@ -2,7 +2,6 @@ package com.arsahub.backend.controllers
 
 import com.arsahub.backend.dtos.*
 import com.arsahub.backend.dtos.ApiValidationError
-import com.arsahub.backend.models.Achievement
 import com.arsahub.backend.repositories.*
 import com.arsahub.backend.services.ActivityService
 import com.arsahub.backend.services.LeaderboardService
@@ -236,16 +235,7 @@ class ActivityController(
         @PathVariable activityId: Long,
         @Valid @RequestBody request: AchievementCreateRequest
     ): AchievementResponse {
-        val activity = activityService.getActivity(activityId) ?: throw Exception("Activity not found")
-        val achievement = Achievement(
-            title = request.title!!,
-            description = request.description,
-            activity = activity
-        )
-
-        achievementRepository.save(achievement)
-
-        return AchievementResponse.fromEntity(achievement)
+        return activityService.createAchievement(activityId, request).let { AchievementResponse.fromEntity(it) }
     }
 
     @Operation(
