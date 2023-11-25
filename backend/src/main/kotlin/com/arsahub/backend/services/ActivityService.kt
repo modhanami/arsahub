@@ -5,6 +5,8 @@ import com.arsahub.backend.controllers.ActivityController
 import com.arsahub.backend.dtos.*
 import com.arsahub.backend.models.*
 import com.arsahub.backend.repositories.*
+import com.arsahub.backend.services.actionhandlers.ActionHandlerRegistry
+import com.arsahub.backend.services.actionhandlers.ActionResult
 import com.arsahub.backend.utils.JsonSchemaValidationResult
 import com.arsahub.backend.utils.JsonSchemaValidator
 import com.networknt.schema.SchemaValidatorsConfig
@@ -49,8 +51,8 @@ class ActivityServiceImpl(
     private val socketIOService: SocketIOService,
     private val ruleProgressTimeRepository: RuleProgressTimeRepository,
     private val actionRepository: ActionRepository,
-    private val triggerTypeRepository: TriggerTypeRepository,
-    private val ruleRepository: RuleRepository
+    private val ruleRepository: RuleRepository,
+    private val actionHandlerRegistry: ActionHandlerRegistry
 ) : ActivityService {
 
     override fun createActivity(activityCreateRequest: ActivityCreateRequest): Activity {
@@ -112,25 +114,16 @@ class ActivityServiceImpl(
     }
 
     override fun trigger(activityId: Long, request: ActivityTriggerRequest) {
-        val allActivity = activityRepository.findAll()
-        println("${allActivity.size} activities found")
         val existingActivity = activityRepository.findByIdOrNull(activityId)
             ?: throw EntityNotFoundException("Activity with ID $activityId not found")
-
         val userId = request.userId
 
-        val existingMember =
+        val member =
             existingActivity.members.find { it.user?.externalUserId == userId } ?: throw Exception("User not found")
 
         val trigger = triggerRepository.findByKey(request.key) ?: throw Exception("Trigger not found")
 
-        var isPointsUpdated = false
-        var unlockedAchievement: Achievement? = null
-
-        val actionMessages = mutableListOf<String>()
         existingActivity.rules.filter { it.trigger?.key == trigger.key }.forEach { rule ->
-            val action = rule.action ?: throw Exception("Action not found")
-
             val triggerType: TriggerType? = rule.triggerType
             if (triggerType == null) {
                 println("Trigger type not found for rule ${rule.title} (${rule.id}), repeating")
@@ -170,77 +163,50 @@ class ActivityServiceImpl(
 //                return@forEach
 //            }
 
-            // handle pre-built actions
-            when (action.key) {
-                "add_points" -> {
-                    val points =
-                        rule.actionParams?.get("value")?.toString()?.toInt() ?: throw Exception("Points not found")
-                    existingMember.addPoints(points)
-                    userActivityRepository.save(existingMember)
-                    isPointsUpdated = true
-
-                    actionMessages.add("User `${existingMember.user?.userId}` (${existingMember.user?.externalUserId}) received `$points` points for activity `${existingActivity.title}` (${existingActivity.activityId}) from rule `${rule.title}` (${rule.id})")
+            when (val actionResult = actionHandlerRegistry.handleAction(rule, member)) {
+                is ActionResult.AchievementUpdate -> {
+                    val (achievement) = actionResult
+                    socketIOService.broadcastToActivityRoom(
+                        activityId,
+                        AchievementUnlock(
+                            userId = userId,
+                            achievement = AchievementResponse.fromEntity(
+                                achievement
+                            )
+                        )
+                    )
+                    socketIOService.broadcastToUserRoom(
+                        userId,
+                        AchievementUnlock(
+                            userId = userId,
+                            achievement = AchievementResponse.fromEntity(
+                                achievement
+                            )
+                        )
+                    )
                 }
 
-                "unlock_achievement" -> {
-                    val achievementId =
-                        rule.actionParams?.get("achievementId")?.toString()?.toLong()
-                            ?: throw Exception("Achievement ID not found")
-                    val achievement =
-                        achievementRepository.findByIdOrNull(achievementId) ?: throw Exception("Achievement not found")
-
-                    // precondition: user must not have unlocked the achievement
-                    if (existingMember.userActivityAchievements.any { it.achievement?.achievementId == achievementId }) {
-                        actionMessages.add("User already unlocked achievement")
-                        return@forEach
-                    }
-
-                    existingMember.addAchievement(achievement)
-                    // save from the owning side
-                    userActivityAchievementRepository.saveAll(existingMember.userActivityAchievements)
-                    unlockedAchievement = achievement
-
-                    actionMessages.add("User `${existingMember.user?.userId}` (${existingMember.user?.externalUserId}) unlocked achievement `${achievement.title}` (${achievement.achievementId}) for activity `${existingActivity.title}` (${existingActivity.activityId}) from rule `${rule.title}` (${rule.id})")
+                is ActionResult.PointsUpdate -> {
+                    val (_, newPoints, _) = actionResult
+                    socketIOService.broadcastToActivityRoom(
+                        activityId,
+                        PointsUpdate(
+                            userId = userId,
+                            points = newPoints
+                        )
+                    )
+                    socketIOService.broadcastToUserRoom(
+                        userId,
+                        PointsUpdate(
+                            userId = userId,
+                            points = newPoints
+                        )
+                    )
                 }
+
+                is ActionResult.Nothing -> {}
             }
-        }
 
-        if (isPointsUpdated) {
-            socketIOService.broadcastToActivityRoom(
-                activityId,
-                PointsUpdate(
-                    userId = userId,
-                    points = existingMember.points ?: 0
-                )
-            )
-            socketIOService.broadcastToUserRoom(
-                userId,
-                PointsUpdate(
-                    userId = userId,
-                    points = existingMember.points ?: 0
-                )
-            )
-        }
-
-        unlockedAchievement?.let { achievement ->
-            socketIOService.broadcastToActivityRoom(
-                activityId,
-                AchievementUnlock(
-                    userId = userId,
-                    achievement = AchievementResponse.fromEntity(
-                        achievement
-                    )
-                )
-            )
-            socketIOService.broadcastToUserRoom(
-                userId,
-                AchievementUnlock(
-                    userId = userId,
-                    achievement = AchievementResponse.fromEntity(
-                        achievement
-                    )
-                )
-            )
         }
 
         // find all rules with points_reached as a trigger to activate the corresponding actions
@@ -249,16 +215,16 @@ class ActivityServiceImpl(
                 val value = rule.triggerParams?.get("value")?.toString()?.toInt()
                     ?: throw Exception("Value not found for rule ${rule.title} (${rule.id})")
 
-                if ((existingMember.points ?: 0) < value) {
+                if ((member.points ?: 0) < value) {
                     return@forEach
                 }
 
                 // check if the rule has already been activated from rule_progress_time
-                if (ruleProgressTimeRepository.findByRuleAndUserActivity(rule, existingMember) != null) {
+                if (ruleProgressTimeRepository.findByRuleAndUserActivity(rule, member) != null) {
                     return@forEach
                 }
 
-                println("User reached ${existingMember.points} points, activating rule ${rule.title} (${rule.id})")
+                println("User reached ${member.points} points, activating rule ${rule.title} (${rule.id})")
 
                 trigger(
                     activityId,
@@ -271,13 +237,11 @@ class ActivityServiceImpl(
 
                 // mark the rule as activated for the user
                 val ruleProgress = RuleProgressTime(
-                    rule = rule, userActivity = existingMember, progress = 1, completedAt = Instant.now()
+                    rule = rule, userActivity = member, progress = 1, completedAt = Instant.now()
                 )
                 ruleProgressTimeRepository.save(ruleProgress)
             }
         }
-
-        actionMessages.forEach { println(it) }
     }
 
     override fun createRule(
