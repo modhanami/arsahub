@@ -5,6 +5,7 @@ import com.arsahub.backend.dtos.TriggerCreateRequest
 import com.arsahub.backend.dtos.TriggerResponse
 import com.arsahub.backend.exceptions.ConflictException
 import com.arsahub.backend.models.ExternalSystem
+import com.arsahub.backend.models.IntegrationTemplate
 import com.arsahub.backend.models.Trigger
 import com.arsahub.backend.repositories.ExternalSystemRepository
 import com.arsahub.backend.repositories.IntegrationTemplateRepository
@@ -22,6 +23,7 @@ class IntegrationService(
 
 ) {
     fun createTrigger(request: TriggerCreateRequest): TriggerResponse {
+        // TODO: enforce unique key per integration
         val trigger = Trigger(
             title = request.title,
             description = request.description,
@@ -75,5 +77,8 @@ class IntegrationService(
         return externalSystemRepository.findAllByCreatedBy(user)
     }
 
+    fun listIntegrationTemplates(): List<IntegrationTemplate> {
+        return integrationTemplateRepository.findAll()
+    }
 }
 

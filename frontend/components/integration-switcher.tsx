@@ -22,18 +22,25 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
+import { DevTool } from "@hookform/devtools";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CheckIcon, ChevronsUpDown, PlusCircleIcon } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Integration, useIntegrations } from "../hooks/api";
+import {
+  Integration,
+  useIntegrationTemplates,
+  useIntegrations,
+} from "../hooks/api";
 import { integrationCreateSchema } from "../lib/validations/integration";
 import {
   Form,
@@ -57,6 +64,8 @@ export default function IntegrationsSwitcher({
   className,
 }: IntegrationSwitcherProps) {
   const { data: integrations, loading, refetch } = useIntegrations(1); // TODO: for testing, replace with the userId from the session
+  const integrationTemplates = useIntegrationTemplates();
+
   const { integrationId }: { id: string; integrationId: string } = useParams();
 
   console.log(
@@ -98,6 +107,11 @@ export default function IntegrationsSwitcher({
 
     setIsCreating(true);
 
+    const templateId = values.templateId;
+    console.log(
+      "🚀 ~ file: integration-switcher.tsx:114 ~ onSubmit ~ templateId:",
+      templateId
+    );
     const response = await fetch(`http://localhost:8080/api/integrations`, {
       method: "POST",
       headers: {
@@ -106,6 +120,7 @@ export default function IntegrationsSwitcher({
       body: JSON.stringify({
         name: values.name,
         createdBy: 1, // TODO: for testing, replace with the userId from the session
+        templateId: templateId === 0 ? null : templateId,
       }),
     });
 
@@ -217,7 +232,7 @@ export default function IntegrationsSwitcher({
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-2">
             <FormField
               control={form.control}
               name="name"
@@ -231,6 +246,85 @@ export default function IntegrationsSwitcher({
                 </FormItem>
               )}
             />
+
+            <FormField
+              control={form.control}
+              name="templateId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Template</FormLabel>
+                  <FormControl>
+                    <RadioGroup onValueChange={field.onChange}>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="0" id="none" />
+                        <div>
+                          <Label htmlFor="none">None</Label>
+                          <p className="text-sm text-muted-foreground">
+                            Start from scratch
+                          </p>
+                        </div>
+                      </div>
+                      {integrationTemplates?.map((template) => {
+                        const templateIdString = template.id.toString();
+                        return (
+                          <div
+                            className="flex items-center space-x-2"
+                            key={templateIdString}
+                          >
+                            <RadioGroupItem
+                              value={templateIdString}
+                              id={templateIdString}
+                            />
+                            <div>
+                              <Label htmlFor={templateIdString}>
+                                {template.name}
+                              </Label>
+                              <p className="text-sm text-muted-foreground">
+                                {template.description}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </RadioGroup>
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            {/* show what's included in the template */}
+            {form.watch("templateId") &&
+              Number(form.watch("templateId")) !== 0 && (
+                <div className="border border-border rounded-md p-4">
+                  <h3 className="text-lg font-semibold">
+                    What&apos;s included
+                  </h3>
+                  <div className="mt-4 text-md">
+                    <ul className="list-disc list-inside">
+                      <li>
+                        Triggers:
+                        <ul className="list-disc list-inside mt-2 mb-4">
+                          {integrationTemplates
+                            ?.find(
+                              (template) =>
+                                template.id === Number(form.watch("templateId"))
+                            )
+                            ?.triggerTemplates.map((triggerTemplate) => (
+                              <li
+                                key={triggerTemplate.id}
+                                className="ml-4 text-sm text-muted-foreground leading-6"
+                              >
+                                {triggerTemplate.title} ({triggerTemplate.key})
+                              </li>
+                            ))}
+                        </ul>
+                      </li>
+                      <li>Rules</li>
+                    </ul>
+                  </div>
+                </div>
+              )}
+
             <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 mt-8">
               <Button
                 variant="outline"

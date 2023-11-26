@@ -288,4 +288,24 @@ class IntegrationController(
 //    ): RuleTemplateResponse {
 //        return integrationService.createRuleTemplate(request).let { RuleTemplateResponse.fromEntity(it) }
 //    }
+
+    @Operation(
+        summary = "List integration templates",
+        responses = [
+            ApiResponse(
+                responseCode = "200",
+                content = [Content(schema = Schema(implementation = IntegrationTemplateResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "409",
+                description = "Integration with this name already exists",
+                content = [Content(schema = Schema(implementation = ApiError::class))]
+            )
+        ]
+    )
+    @GetMapping("/templates")
+    fun listIntegrationTemplates(
+    ): List<IntegrationTemplateResponse> {
+        return integrationService.listIntegrationTemplates().map { IntegrationTemplateResponse.fromEntity(it) }
+    }
 }

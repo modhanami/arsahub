@@ -328,11 +328,12 @@ async function fetchIntegrations(userId: number) {
   );
 
   if (!response?.ok) {
-    return toast({
+    toast({
       title: "Something went wrong.",
       description: "Integrations could not be fetched.",
       variant: "destructive",
     });
+    return null;
   }
 
   return response.json();
@@ -344,6 +345,9 @@ export function useIntegrations(userId: number) {
 
   React.useEffect(() => {
     fetchIntegrations(userId).then((integrations) => {
+      if (!integrations) {
+        return;
+      }
       setIntegrations(integrations);
       setLoading(false); // Set loading to false once data is fetched.
     });
@@ -352,10 +356,63 @@ export function useIntegrations(userId: number) {
   function refetch() {
     setLoading(true);
     fetchIntegrations(userId).then((integrations) => {
+      if (!integrations) {
+        return;
+      }
       setIntegrations(integrations);
       setLoading(false);
     });
   }
 
   return { loading, data: integrations, refetch };
+}
+
+type TriggerTemplate = Trigger;
+
+export interface IntegrationTemplate {
+  id: number;
+  name: string;
+  description: string;
+  triggerTemplates: TriggerTemplate[];
+}
+
+export function useIntegrationTemplates() {
+  const [templates, setTemplates] = React.useState<IntegrationTemplate[]>([]);
+
+  React.useEffect(() => {
+    async function fetchTemplates() {
+      const response = await fetch(
+        `http://localhost:8080/api/integrations/templates`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          next: {
+            tags: [`templates`],
+          },
+        }
+      );
+
+      if (!response?.ok) {
+        toast({
+          title: "Something went wrong.",
+          description: "Integration templates could not be fetched.",
+          variant: "destructive",
+        });
+        return null;
+      }
+
+      return response.json();
+    }
+
+    fetchTemplates().then((templates) => {
+      if (!templates) {
+        return;
+      }
+      setTemplates(templates);
+    });
+  }, []);
+
+  return templates;
 }
