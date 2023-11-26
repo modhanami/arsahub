@@ -7,6 +7,7 @@ import com.arsahub.backend.exceptions.ConflictException
 import com.arsahub.backend.models.ExternalSystem
 import com.arsahub.backend.models.Trigger
 import com.arsahub.backend.repositories.ExternalSystemRepository
+import com.arsahub.backend.repositories.IntegrationTemplateRepository
 import com.arsahub.backend.repositories.TriggerRepository
 import com.arsahub.backend.repositories.UserRepository
 import org.springframework.stereotype.Service
@@ -16,7 +17,9 @@ import java.util.*
 class IntegrationService(
     private val triggerRepository: TriggerRepository,
     private val externalSystemRepository: ExternalSystemRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val integrationTemplateRepository: IntegrationTemplateRepository
+
 ) {
     fun createTrigger(request: TriggerCreateRequest): TriggerResponse {
         val trigger = Trigger(
@@ -36,7 +39,7 @@ class IntegrationService(
 
         // name should be unique for each user
         externalSystemRepository.findByTitleAndCreatedBy(request.name, user)?.let {
-            throw ConflictException("Integration with this name already exists")
+            throw ConflictException("Integration with this name already exists for this user")
         }
 
         val integration = ExternalSystem(
@@ -44,12 +47,33 @@ class IntegrationService(
             createdBy = user,
             apiKey = UUID.randomUUID()
         )
-        return externalSystemRepository.save(integration)
+        val savedIntegration = externalSystemRepository.save(integration)
+
+        if (request.templateId == null) {
+            return savedIntegration
+        }
+
+        println("Populating for template ${request.templateId}")
+        val template =
+            integrationTemplateRepository.findById(request.templateId).orElseThrow { Exception("Template not found") }
+        template.triggerTemplates.forEach {
+            val trigger = Trigger(
+                title = it.title,
+                description = it.description,
+                key = it.key,
+                integration = savedIntegration
+            )
+            triggerRepository.save(trigger)
+            println("Created trigger ${it.title} for integration ${savedIntegration.title} (${savedIntegration.id})")
+        }
+
+        return savedIntegration
     }
 
     fun listIntegrations(userId: Long): List<ExternalSystem> {
         val user = userRepository.findById(userId).orElseThrow { Exception("User not found") }
         return externalSystemRepository.findAllByCreatedBy(user)
     }
+
 }
 

@@ -2,25 +2,19 @@ package com.arsahub.backend.models
 
 import jakarta.persistence.*
 import jakarta.validation.constraints.NotNull
-import jakarta.validation.constraints.Size
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 
 @Entity
-@Table(name = "`trigger`")
-class Trigger(
+@Table(name = "trigger_template", schema = "public")
+class TriggerTemplate(
 
-    @Size(max = 255)
     @NotNull
-    @Column(name = "title", nullable = false)
+    @Column(name = "title", nullable = false, length = Integer.MAX_VALUE)
     var title: String? = null,
 
-    @Size(max = 255)
-    @Column(name = "description")
+    @Column(name = "description", length = Integer.MAX_VALUE)
     var description: String? = null,
-
-    @OneToMany(mappedBy = "trigger")
-    var rules: MutableSet<Rule> = mutableSetOf(),
 
     @NotNull
     @Column(name = "key", nullable = false, length = Integer.MAX_VALUE)
@@ -32,13 +26,13 @@ class Trigger(
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "integration_id", nullable = false)
-    var integration: ExternalSystem? = null
-    
-) : AuditedEntity() {
+    @JoinColumn(name = "integration_template_id", nullable = false)
+    var integrationTemplate: IntegrationTemplate? = null,
+
+    ) {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "trigger_id", nullable = false)
+    @Column(name = "trigger_template_id", nullable = false)
     var id: Long? = null
 
 }

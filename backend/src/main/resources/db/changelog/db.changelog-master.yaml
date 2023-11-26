@@ -3,3 +3,5 @@ databaseChangeLog:
       file: db/changelog/2023/11/22-01-init-changelog.sql
   - include:
       file: db/changelog/2023/11/26-01-add-created-by-column-to-external-system.sql
+  - include:
+      file: db/changelog/2023/11/26-01-add-integration-template.sql

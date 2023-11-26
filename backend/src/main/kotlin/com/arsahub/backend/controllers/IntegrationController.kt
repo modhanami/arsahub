@@ -254,4 +254,38 @@ class IntegrationController(
         return integrationService.listIntegrations(userId).map { IntegrationResponse.fromEntity(it) }
     }
 
+//    data class RuleTemplateCreateRequest(
+//        // same as RuleCreateRequest, without the unused `condition` field
+//        @field:Size(min = 4, max = 200, message = "Name must be between 4 and 200 characters")
+//        @field:NotBlank(message = "Name is required")
+//        val name: String?, // TODO: remove nullability and actually customize jackson-module-kotlin with the Jackson2ObjectMapperBuilderCustomizer
+//        @field:Size(max = 500, message = "Description cannot be longer than 500 characters")
+//        val description: String?,
+//        val trigger: TriggerDefinition,
+//        val action: ActionDefinition,
+//    )
+//
+//    @Operation(
+//        summary = "Create a rule template",
+//        responses = [
+//            ApiResponse(
+//                responseCode = "201",
+//            ),
+//            ApiResponse(
+//                responseCode = "400",
+//                content = [Content(schema = Schema(implementation = ApiValidationError::class))]
+//            ),
+//            ApiResponse(
+//                responseCode = "404",
+//                description = "Activity not found", content = [Content()]
+//            )
+//        ]
+//    )
+//    @PostMapping("/rule-templates")
+//    @ResponseStatus(HttpStatus.CREATED)
+//    fun createRuleTemplate(
+//        @PathVariable activityId: Long, @Valid @RequestBody request: RuleTemplateCreateRequest
+//    ): RuleTemplateResponse {
+//        return integrationService.createRuleTemplate(request).let { RuleTemplateResponse.fromEntity(it) }
+//    }
 }
