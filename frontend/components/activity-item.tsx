@@ -12,11 +12,11 @@ interface ActivityItemProps {
 
 export function ActivityItem({ activity }: ActivityItemProps) {
   return (
-    <div className="flex items-center justify-between p-4">
+    <div className="flex items-center justify-between px-4 py-8">
       <div className="grid gap-1">
         <Link
           href={`/activity/${activity.id}`}
-          className="font-semibold hover:underline"
+          className="font-semibold text-xl hover:underline"
         >
           {activity.title}
         </Link>

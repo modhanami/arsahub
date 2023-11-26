@@ -10,74 +10,86 @@ import { getCurrentUser } from "@/lib/session";
 import React, { useState, useEffect } from "react";
 
 export default function Overview() {
-  const [activities, setActivities] = useState([]);
+  // const [activities, setActivities] = useState([]);
 
-  const fetchData = async () => {
-    const url = "http://localhost:8080/api/activities";
-    const response = await fetch(url);
+  // const fetchData = async () => {
+  //   const url = "http://localhost:8080/api/activities";
+  //   const response = await fetch(url);
 
-    if (!response?.ok) {
-      return toast({
-        title: "Something went wrong.",
-        description: "Your activity was not created. Please try again.",
-        variant: "destructive",
-      });
+  //   if (!response?.ok) {
+  //     return toast({
+  //       title: "Something went wrong.",
+  //       description: "Your activity was not created. Please try again.",
+  //       variant: "destructive",
+  //     });
+  //   }
+
+  //   const data = await response.json();
+  //   setActivities(data);
+  // };
+
+  // useEffect(() => {
+  //   fetchData();
+
+  //   // fetch data every 5 seconds
+  //   const intervalId = setInterval(() => {
+  //     fetchData();
+  //   }, 5000);
+
+  //   return () => clearInterval(intervalId);
+  // }, []);
+
+  const activities = [
+    {
+      id: "1",
+      title: "Activity 1",
+      description: "Activity 1 description",
+      members: [
+        {
+          id: "1",
+          name: "User 1",
+        },
+        {
+          id: "2",
+          name: "User 2",
+        },
+      ],
+    },
+    {
+      id: "2",
+      title: "Activity 2",
+      description: "Activity 2 description",
+      members: [
+        {
+          id: "1",
+          name: "User 1",
+        },
+        {
+          id: "2",
+          name: "User 2",
+        },
+      ],
+    },
+    {
+      id: "3",
+      title: "Activity 3",
+      description: "Activity 3 description",
+      members: [
+        {
+          id: "1",
+          name: "User 1",
+        },
+        {
+          id: "2",
+          name: "User 2",
+        },
+      ],
     }
-
-    const data = await response.json();
-    setActivities(data);
-  };
-
-  useEffect(() => {
-    fetchData();
-
-    // fetch data every 5 seconds
-    const intervalId = setInterval(() => {
-      fetchData();
-    }, 5000);
-
-    return () => clearInterval(intervalId);
-  }, []);
-
-  // const activities = [
-  //   {
-  //     id: "1",
-  //     title: "Activity 1",
-  //     description: "Activity 1 description",
-  //     members: [
-  //       {
-  //         id: "1",
-  //         name: "User 1",
-  //       },
-  //       {
-  //         id: "2",
-  //         name: "User 2",
-  //       },
-  //     ],
-  //   },
-  //   {
-  //     id: "2",
-  //     title: "Activity 2",
-  //     description: "Activity 2 description",
-  //     members: [
-  //       {
-  //         id: "1",
-  //         name: "User 1",
-  //       },
-  //       {
-  //         id: "2",
-  //         name: "User 2",
-  //       },
-  //     ],
-  //   },
-  // ];
+  ];
 
   return (
     <DashboardShell>
-      <DashboardHeader
-        heading="Activities"
-        text="Create and manage activities."
-      >
+      <DashboardHeader heading="Activities"text="Create and manage activities.">
         <CardWithForm />
       </DashboardHeader>
       <div>
@@ -96,7 +108,7 @@ export default function Overview() {
             <EmptyPlaceholder.Description>
               You don&apos;t have any activities yet. Start creating content.
             </EmptyPlaceholder.Description>
-            <ActivityCreateButton variant="outline" />
+            {/* <ActivityCreateButton variant="outline" /> */}
           </EmptyPlaceholder>
         )}
       </div>

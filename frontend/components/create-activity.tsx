@@ -92,68 +92,66 @@ export function CardWithForm() {
   }
 
   return (
-    <>
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogTrigger asChild>
-          <ActivityCreateButton />
-        </DialogTrigger>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <CardTitle>Create activity</CardTitle>
-            {/* <DialogTitle>Are you sure absolutely sure?</DialogTitle> */}
-          </DialogHeader>
-          {/* <CardDescription>Deploy your new activity in one-click.</CardDescription> */}
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)}>
-              {/* <Card className="w-[350px]"> */}
-              {/* <CardContent> */}
-              <FormField
-                control={form.control}
-                name="title"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Title</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Name of your activity" {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      {/* This is your public display name. */}
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Description of your activity"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      {/* This is your public display name. */}
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div className="flex justify-between mt-8">
-                <DialogClose asChild>
-                  <Button variant="outline" type="button">
-                    Cancel
-                  </Button>
-                </DialogClose>
-                <Button type="submit">Create</Button>
-              </div>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
-    </>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <ActivityCreateButton />
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <CardTitle>Create activity</CardTitle>
+          {/* <DialogTitle>Are you sure absolutely sure?</DialogTitle> */}
+        </DialogHeader>
+        {/* <CardDescription>Deploy your new activity in one-click.</CardDescription> */}
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)}>
+            {/* <Card className="w-[350px]"> */}
+            {/* <CardContent> */}
+            <FormField
+              control={form.control}
+              name="title"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Title</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Name of your activity" {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    {/* This is your public display name. */}
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Description</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Description of your activity"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    {/* This is your public display name. */}
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className="flex justify-between mt-8">
+              <DialogClose asChild>
+                <Button variant="outline" type="button">
+                  Cancel
+                </Button>
+              </DialogClose>
+              <Button type="submit">Create</Button>
+            </div>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
   );
 }
