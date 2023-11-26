@@ -6,11 +6,9 @@ import { DashboardHeader } from "@/components/header";
 import { ActivityCreateButton } from "@/components/activity-create-button";
 import { ActivityItem } from "@/components/activity-item";
 import { DashboardShell } from "@/components/shell";
-import {
-  CardWithForm,
-  DemoCreateAccount,
-} from "../../components/create-activity";
-import { toast } from "../../components/ui/use-toast";
+import { CardWithForm } from "../../../../components/create-activity";
+import { toast } from "../../../../components/ui/use-toast";
+import { ContextProps } from "../../../../types";
 
 export const metadata = {
   title: "Dashboard",
@@ -28,7 +26,11 @@ interface Member {
   name: string;
 }
 
-export default async function DashboardPage() {
+type DashboardPageProps = ContextProps;
+
+export default async function DashboardPage({
+  params: { id, integrationId },
+}: DashboardPageProps) {
   const user = await getCurrentUser();
 
   if (!user) {
@@ -55,39 +57,6 @@ export default async function DashboardPage() {
 
   const activities: Activity[] = await response.json();
 
-  // const activities: Activity[] = [
-  // {
-  //   id: "1",
-  //   title: "Activity 1",
-  //   description: "Activity 1 description",
-  //   members: [
-  //     {
-  //       id: "1",
-  //       name: "User 1",
-  //     },
-  //     {
-  //       id: "2",
-  //       name: "User 2",
-  //     },
-  //   ],
-  // },
-  // {
-  //   id: "2",
-  //   title: "Activity 2",
-  //   description: "Activity 2 description",
-  //   members: [
-  //     {
-  //       id: "1",
-  //       name: "User 1",
-  //     },
-  //     {
-  //       id: "2",
-  //       name: "User 2",
-  //     },
-  //   ],
-  // },
-  // ];
-
   return (
     <DashboardShell>
       <DashboardHeader
@@ -100,7 +69,11 @@ export default async function DashboardPage() {
         {activities?.length ? (
           <div className="divide-y divide-border rounded-md border">
             {activities.map((activity) => (
-              <ActivityItem key={activity.id} activity={activity} />
+              <ActivityItem
+                key={activity.id}
+                activity={activity}
+                integrationId={integrationId}
+              />
             ))}
           </div>
         ) : (

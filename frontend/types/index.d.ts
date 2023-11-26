@@ -28,3 +28,10 @@ export type DashboardConfig = {
   mainNav: MainNavItem[];
   sidebarNav: SidebarNavItem[];
 };
+
+export type ContextProps = {
+  params: {
+    id: string;
+    integrationId: string;
+  };
+};

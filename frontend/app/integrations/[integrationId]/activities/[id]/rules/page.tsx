@@ -1,11 +1,11 @@
-import { CreateRuleForm } from "../../../../components/create-rule";
-import { EmptyPlaceholder } from "../../../../components/empty-placeholder";
-import { DashboardHeader } from "../../../../components/header";
-import { RuleCreateButton } from "../../../../components/rule-create-button";
-import { RuleItem } from "../../../../components/rule-item";
-import { DashboardShell } from "../../../../components/shell";
-import { toast } from "../../../../components/ui/use-toast";
-import { fetchRules } from "../../../../lib/api";
+import { CreateRuleForm } from "../../../../../../components/create-rule";
+import { EmptyPlaceholder } from "../../../../../../components/empty-placeholder";
+import { DashboardHeader } from "../../../../../../components/header";
+import { RuleCreateButton } from "../../../../../../components/rule-create-button";
+import { RuleItem } from "../../../../../../components/rule-item";
+import { DashboardShell } from "../../../../../../components/shell";
+import { toast } from "../../../../../../components/ui/use-toast";
+import { fetchRules } from "../../../../../../lib/api";
 
 export interface Rule {
   id: number;

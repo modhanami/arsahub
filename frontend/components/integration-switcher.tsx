@@ -30,6 +30,7 @@ import {
 import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CheckIcon, ChevronsUpDown, PlusCircleIcon } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Integration, useIntegrations } from "../hooks/api";
@@ -43,7 +44,6 @@ import {
   FormMessage,
 } from "./ui/form";
 import { toast } from "./ui/use-toast";
-import loading from "../app/dashboard/loading";
 
 type PopoverTriggerProps = React.ComponentPropsWithoutRef<
   typeof PopoverTrigger
@@ -57,17 +57,19 @@ export default function IntegrationsSwitcher({
   className,
 }: IntegrationSwitcherProps) {
   const { data: integrations, loading, refetch } = useIntegrations(1); // TODO: for testing, replace with the userId from the session
+  const { integrationId }: { id: string; integrationId: string } = useParams();
 
   console.log(
     "🚀 ~ file: integration-switcher.tsx:68 ~ integrations:",
     integrations
   );
   const [open, setOpen] = React.useState(false);
+  const router = useRouter();
   const [showNewIntegrationDialog, setShowNewIntegrationsDialog] =
     React.useState(false);
   const [selectedIntegration, setSelectedIntegration] = React.useState<
     Integration | undefined
-  >(integrations[0]);
+  >(undefined);
 
   const form = useForm<FormData>({
     resolver: zodResolver(integrationCreateSchema),
@@ -79,9 +81,14 @@ export default function IntegrationsSwitcher({
       return;
     }
     if (!selectedIntegration) {
-      setSelectedIntegration(integrations[0]);
+      const integration = integrations?.find(
+        (integration) => integration.id === Number(integrationId)
+      );
+      if (integration) {
+        setSelectedIntegration(integration);
+      }
     }
-  }, [loading, integrations, selectedIntegration]);
+  }, [loading, integrations, selectedIntegration, integrationId]);
 
   console.log("integrations", integrations);
   console.log("selectedIntegration", selectedIntegration);
@@ -158,6 +165,7 @@ export default function IntegrationsSwitcher({
                     onSelect={() => {
                       setSelectedIntegration(integration);
                       setOpen(false);
+                      router.push(`/integrations/${integration.id}`);
                     }}
                     className="text-sm"
                   >

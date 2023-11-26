@@ -1,21 +1,19 @@
 import Link from "next/link";
-// import { Post } from "@prisma/client";
 
-import { formatDate } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Activity } from "../app/dashboard/page";
-// import { PostOperations } from "@/components/post-operations"
+import { Activity } from "../app/integrations/[integrationId]/dashboard/page";
 
 interface ActivityItemProps {
   activity: Activity;
+  integrationId: string;
 }
 
-export function ActivityItem({ activity }: ActivityItemProps) {
+export function ActivityItem({ activity, integrationId }: ActivityItemProps) {
   return (
     <div className="flex items-center justify-between p-4">
       <div className="grid gap-1">
         <Link
-          href={`/activity/${activity.id}`}
+          href={`/integrations/${integrationId}/activities/${activity.id}`}
           className="font-semibold hover:underline"
         >
           {activity.title}

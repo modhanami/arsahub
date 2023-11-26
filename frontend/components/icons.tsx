@@ -27,6 +27,7 @@ import {
   type IconNode as LucideIcon,
   ScrollText,
   ToyBrick,
+  ArrowLeft,
 } from "lucide-react";
 
 export type Icon = LucideIcon;
@@ -49,6 +50,7 @@ export const Icons = {
   warning: AlertTriangle,
   user: User,
   arrowRight: ArrowRight,
+  arrowLeft: ArrowLeft,
   help: HelpCircle,
   pizza: Pizza,
   sun: SunMedium,

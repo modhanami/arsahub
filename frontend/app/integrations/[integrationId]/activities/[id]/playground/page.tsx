@@ -1,9 +1,12 @@
-import { EmptyPlaceholder } from "../../../../components/empty-placeholder";
-import { DashboardHeader } from "../../../../components/header";
-import { PlaygroundTriggerForm } from "../../../../components/playground-trigger";
-import { DashboardShell } from "../../../../components/shell";
-import { toast } from "../../../../components/ui/use-toast";
-import { fetchMembers, fetchRules, fetchTriggers } from "../../../../lib/api";
+import { DashboardHeader } from "../../../../../../components/header";
+import { PlaygroundTriggerForm } from "../../../../../../components/playground-trigger";
+import { DashboardShell } from "../../../../../../components/shell";
+import { toast } from "../../../../../../components/ui/use-toast";
+import {
+  fetchMembers,
+  fetchTriggers,
+  fetchRules,
+} from "../../../../../../lib/api";
 
 export interface Playground {
   id: number;

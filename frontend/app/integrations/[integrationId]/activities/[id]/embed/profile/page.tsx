@@ -1,7 +1,4 @@
-import {
-  UserProfile,
-  UserProfileRealTime,
-} from "../../../../../components/ui/team-members";
+import { UserProfileRealTime } from "../../../../../../../components/ui/team-members";
 
 async function getUserProfile(userId: string) {
   const res = await fetch(

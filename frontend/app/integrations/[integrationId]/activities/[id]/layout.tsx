@@ -1,19 +1,18 @@
-"use client";
-import { useParams } from "next/navigation";
-
 import { MainNav } from "@/components/main-nav";
 import { DashboardNav } from "@/components/nav";
 import { SiteFooter } from "@/components/site-footer";
-import { activityConfig } from "../../../config/activity";
-import { SidebarNavItem } from "../../../types";
+import { activityConfig } from "../../../../../config/activity";
+import { ContextProps, SidebarNavItem } from "../../../../../types";
 
-interface ActivityLayoutProps {
+type ActivityLayoutProps = {
   children?: React.ReactNode;
-}
+} & ContextProps;
 
-export default function AcvitityLayout({ children }: ActivityLayoutProps) {
-  const { id }: { id: string } = useParams();
-  const sideNavItems = createSideNavItems(id);
+export default function AcvitityLayout({
+  children,
+  params,
+}: ActivityLayoutProps) {
+  const sideNavItems = createSideNavItems(params.integrationId, params.id);
   return (
     <div className="flex min-h-screen flex-col space-y-6">
       <header className="sticky top-0 z-40 border-b bg-background">
@@ -34,26 +33,34 @@ export default function AcvitityLayout({ children }: ActivityLayoutProps) {
   );
 }
 
-function createSideNavItems(id: string): SidebarNavItem[] {
+function createSideNavItems(
+  integrationId: string,
+  id: string
+): SidebarNavItem[] {
   return [
     {
+      title: "Back to Dashboard",
+      href: `/integrations/${integrationId}/dashboard`,
+      icon: "arrowLeft",
+    },
+    {
       title: "Activity",
-      href: `/activity/${id}`,
+      href: `/integrations/${integrationId}/activities/${id}`,
       icon: "activity",
     },
     {
       title: "Rules",
-      href: `/activity/${id}/rules`,
+      href: `/integrations/${integrationId}/activities/${id}/rules`,
       icon: "rule",
     },
     {
       title: "Playground",
-      href: `/activity/${id}/playground`,
+      href: `/integrations/${integrationId}/activities/${id}/playground`,
       icon: "playground",
     },
     {
       title: "Settings",
-      href: `/activity/${id}/settings`,
+      href: `/integrations/${integrationId}/activities/${id}/settings`,
       icon: "settings",
     },
   ];

@@ -1,24 +1,27 @@
-import { notFound } from "next/navigation";
+import { notFound, useParams } from "next/navigation";
 
-import { dashboardConfig } from "@/config/dashboard";
-import { getCurrentUser } from "@/lib/session";
 import { MainNav } from "@/components/main-nav";
 import { DashboardNav } from "@/components/nav";
 import { SiteFooter } from "@/components/site-footer";
 import { UserAccountNav } from "@/components/user-account-nav";
+import { dashboardConfig } from "@/config/dashboard";
+import { ContextProps, SidebarNavItem } from "../../../../types";
 
-interface DashboardLayoutProps {
+type DashboardLayoutProps = {
   children?: React.ReactNode;
-}
+} & ContextProps;
 
-export default async function DashboardLayout({
+export default function DashboardLayout({
   children,
+  params: { integrationId },
 }: DashboardLayoutProps) {
-  const user = await getCurrentUser();
+  const user = {};
 
   if (!user) {
     return notFound();
   }
+
+  const sideNavItems = createSideNavItems(integrationId);
 
   return (
     <div className="flex min-h-screen flex-col space-y-6">
@@ -27,16 +30,16 @@ export default async function DashboardLayout({
           <MainNav items={dashboardConfig.mainNav} />
           <UserAccountNav
             user={{
-              name: user.name,
-              image: user.image,
-              email: user.email,
+              name: "Hoo Man",
+              image: "",
+              email: "hoo@man.com",
             }}
           />
         </div>
       </header>
       <div className="container grid flex-1 gap-12 md:grid-cols-[200px_1fr]">
         <aside className="hidden w-[200px] flex-col md:flex">
-          <DashboardNav items={dashboardConfig.sidebarNav} />
+          <DashboardNav items={sideNavItems} />
         </aside>
         <main className="flex w-full flex-1 flex-col overflow-hidden">
           {children}
@@ -45,4 +48,14 @@ export default async function DashboardLayout({
       <SiteFooter className="border-t" />
     </div>
   );
+}
+
+function createSideNavItems(integrationId: string): SidebarNavItem[] {
+  return [
+    {
+      title: "Activities",
+      href: `/integrations/${integrationId}/dashboard`,
+      icon: "activity",
+    },
+  ];
 }
