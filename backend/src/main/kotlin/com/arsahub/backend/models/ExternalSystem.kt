@@ -20,7 +20,12 @@ class ExternalSystem(
     @NotNull
     @Column(name = "api_key", nullable = false)
     var apiKey: UUID? = null,
-) {
+
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "created_by", nullable = false)
+    var createdBy: User? = null,
+) : AuditedEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "external_system_id", nullable = false)

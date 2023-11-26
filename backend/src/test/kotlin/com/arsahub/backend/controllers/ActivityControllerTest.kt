@@ -50,11 +50,19 @@ class ActivityControllerTest {
     private lateinit var socketIOService: SocketIOService // no-op
 
     fun seed_activityWith1User() {
+        // create integration owner
+        val integrationOwner = userRepository.save(
+            User(
+                username = "integration_owner",
+                name = "Integration Owner",
+                externalUserId = "integration_owner",
+            )
+        )
         // integration 1
         val integration = integrationService.createIntegration(
-            IntegrationService.IntegrationCreateRequest(
-                title = "Integration 1",
-                description = "Integration 1",
+            IntegrationCreateRequest(
+                name = "Integration 1",
+                createdBy = integrationOwner.userId!!
             )
         )
         // create user
@@ -66,6 +74,7 @@ class ActivityControllerTest {
                 externalSystem = integration
             )
         )
+
         // create activity
         ACTIVITY = activityServiceImpl.createActivity(
             ActivityCreateRequest(

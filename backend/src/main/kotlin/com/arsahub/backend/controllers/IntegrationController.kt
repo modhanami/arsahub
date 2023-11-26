@@ -193,6 +193,7 @@ class IntegrationController(
             )
         ]
     )
+
     @PostMapping("/triggers")
     @ResponseStatus(HttpStatus.CREATED)
     fun createTrigger(@Valid @RequestBody request: TriggerCreateRequest): TriggerResponse {
@@ -211,6 +212,46 @@ class IntegrationController(
     @GetMapping("/triggers")
     fun getTriggers(): List<TriggerResponse> {
         return integrationService.getTriggers().map { TriggerResponse.fromEntity(it) }
+    }
+
+
+    @Operation(
+        summary = "Create an integration",
+        responses = [
+            ApiResponse(
+                responseCode = "201",
+            ),
+            ApiResponse(
+                responseCode = "400",
+                content = [Content(schema = Schema(implementation = ApiValidationError::class))]
+            )
+        ]
+    )
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    fun createIntegration(@Valid @RequestBody request: IntegrationCreateRequest): IntegrationResponse {
+        return integrationService.createIntegration(request).let { IntegrationResponse.fromEntity(it) }
+    }
+
+    @Operation(
+        summary = "List integrations",
+        responses = [
+            ApiResponse(
+                responseCode = "200",
+                content = [Content(schema = Schema(implementation = IntegrationResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "409",
+                description = "Integration with this name already exists",
+                content = [Content(schema = Schema(implementation = ApiError::class))]
+            )
+        ]
+    )
+    @GetMapping
+    fun listIntegrations(
+        @RequestParam userId: Long // TODO: for testing purposes only, should be removed and retrieved from the session token, etc.
+    ): List<IntegrationResponse> {
+        return integrationService.listIntegrations(userId).map { IntegrationResponse.fromEntity(it) }
     }
 
 }

@@ -87,6 +87,7 @@ export interface Trigger {
   description: string;
   key: string;
   id: number;
+  jsonSchema: Record<string, unknown>;
 }
 
 export function useTriggers(activityId: number) {
@@ -305,4 +306,56 @@ export function useUserProfile(activityId: number, userId: string | null) {
   }, [activityId, userId]);
 
   return profile;
+}
+
+export type Integration = {
+  id: number;
+  name: string;
+};
+
+async function fetchIntegrations(userId: number) {
+  const response = await fetch(
+    `http://localhost:8080/api/integrations?userId=${userId}`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      next: {
+        tags: [`integrations`],
+      },
+    }
+  );
+
+  if (!response?.ok) {
+    return toast({
+      title: "Something went wrong.",
+      description: "Integrations could not be fetched.",
+      variant: "destructive",
+    });
+  }
+
+  return response.json();
+}
+
+export function useIntegrations(userId: number) {
+  const [loading, setLoading] = React.useState<boolean>(true); // Always start with loading as true
+  const [integrations, setIntegrations] = React.useState<Integration[]>([]);
+
+  React.useEffect(() => {
+    fetchIntegrations(userId).then((integrations) => {
+      setIntegrations(integrations);
+      setLoading(false); // Set loading to false once data is fetched.
+    });
+  }, [userId]);
+
+  function refetch() {
+    setLoading(true);
+    fetchIntegrations(userId).then((integrations) => {
+      setIntegrations(integrations);
+      setLoading(false);
+    });
+  }
+
+  return { loading, data: integrations, refetch };
 }

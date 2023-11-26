@@ -18,7 +18,7 @@ class User(
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "external_system_id", nullable = false)
+    @JoinColumn(name = "external_system_id")
     var externalSystem: ExternalSystem? = null,
 
     @OneToMany(mappedBy = "user")
