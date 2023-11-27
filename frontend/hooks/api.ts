@@ -66,17 +66,23 @@ export function useMembers(activityId: number) {
       );
 
       if (!response?.ok) {
-        return toast({
+        toast({
           title: "Something went wrong.",
           description: "Activity members could not be fetched.",
           variant: "destructive",
         });
+        return null;
       }
 
       return response.json();
     }
 
-    fetchMembers().then((members) => setMembers(members));
+    fetchMembers().then((members) => {
+      if (!members) {
+        return;
+      }
+      setMembers(members);
+    });
   }, [activityId]);
 
   return members;
@@ -90,13 +96,13 @@ export interface Trigger {
   jsonSchema: Record<string, unknown>;
 }
 
-export function useTriggers(activityId: number) {
+export function useTriggers(integrationId: number) {
   const [triggers, setTriggers] = React.useState<Trigger[]>([]);
 
   React.useEffect(() => {
     async function fetchTriggers() {
       const response = await fetch(
-        `http://localhost:8080/api/integrations/triggers`,
+        `http://localhost:8080/api/integrations/triggers?integrationId=${integrationId}`, // TODO: Remove param
         {
           method: "GET",
           headers: {
@@ -109,18 +115,24 @@ export function useTriggers(activityId: number) {
       );
 
       if (!response?.ok) {
-        return toast({
+        toast({
           title: "Something went wrong.",
           description: "Activity triggers could not be fetched.",
           variant: "destructive",
         });
+        return null;
       }
 
       return response.json();
     }
 
-    fetchTriggers().then((triggers) => setTriggers(triggers));
-  }, [activityId]);
+    fetchTriggers().then((triggers) => {
+      if (!triggers) {
+        return;
+      }
+      setTriggers(triggers);
+    });
+  }, [integrationId]);
 
   return triggers;
 }
@@ -144,17 +156,23 @@ export function useActions() {
       );
 
       if (!response?.ok) {
-        return toast({
+        toast({
           title: "Something went wrong.",
           description: "Your activity was not created. Please try again.",
           variant: "destructive",
         });
+        return null;
       }
 
       return response.json();
     }
 
-    fetchActions().then((actions) => setActions(actions));
+    fetchActions().then((actions) => {
+      if (!actions) {
+        return;
+      }
+      setActions(actions);
+    });
   }, []);
 
   return actions;
@@ -226,17 +244,23 @@ export function useRules(activityId: number) {
       );
 
       if (!response?.ok) {
-        return toast({
+        toast({
           title: "Something went wrong.",
           description: "Activity rules could not be fetched.",
           variant: "destructive",
         });
+        return null;
       }
 
       return response.json();
     }
 
-    fetchRules().then((rules) => setRules(rules));
+    fetchRules().then((rules) => {
+      if (!rules) {
+        return;
+      }
+      setRules(rules);
+    });
   }, [activityId]);
 
   return rules;

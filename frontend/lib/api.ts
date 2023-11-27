@@ -82,16 +82,19 @@ export function fetchRules(activityId: number) {
 //   return actions;
 // }
 
-export function fetchTriggers(activityId: number) {
-  return fetch(`http://localhost:8080/api/activities/${activityId}/triggers`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    next: {
-      tags: [`triggers`],
-    },
-  });
+export function fetchTriggers(integrationId: number) {
+  return fetch(
+    `http://localhost:8080/api/integrations/triggers?integrationId={${integrationId}}`, // TODO: remove param
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      next: {
+        tags: [`triggers`],
+      },
+    }
+  );
 }
 
 // export function fetchActions()

@@ -30,7 +30,7 @@ class ActivityController(
     private val achievementRepository: AchievementRepository,
 ) {
     @Operation(
-        summary = "Create an activity",
+        summary = "Create an activity an integration",
         responses = [
             ApiResponse(
                 responseCode = "201",
@@ -75,7 +75,7 @@ class ActivityController(
     }
 
     @Operation(
-        summary = "List activities",
+        summary = "List activities for an integration",
         responses = [
             ApiResponse(
                 responseCode = "200",
@@ -83,8 +83,10 @@ class ActivityController(
         ]
     )
     @GetMapping
-    fun listActivities(): List<ActivityResponse> {
-        return activityService.listActivities()
+    fun listActivities(
+        @RequestParam integrationId: Long,
+    ): List<ActivityResponse> {
+        return activityService.listActivities(integrationId).map { ActivityResponse.fromEntity(it) }
     }
 
     data class ActivityAddMembersRequest(val externalUserIds: List<String>)

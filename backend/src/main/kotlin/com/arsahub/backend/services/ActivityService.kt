@@ -28,7 +28,7 @@ interface ActivityService {
     fun getActivity(activityId: Long): Activity?
     fun addMembers(activityId: Long, request: ActivityController.ActivityAddMembersRequest): ActivityResponse
     fun listMembers(activityId: Long): List<UserActivity>
-    fun listActivities(): List<ActivityResponse>
+    fun listActivities(integrationId: Long): List<Activity>
     fun trigger(activityId: Long, request: ActivityTriggerRequest)
     fun createRule(
         activityId: Long, request: RuleCreateRequest
@@ -51,13 +51,17 @@ class ActivityServiceImpl(
     private val ruleProgressTimeRepository: RuleProgressTimeRepository,
     private val actionRepository: ActionRepository,
     private val ruleRepository: RuleRepository,
-    private val actionHandlerRegistry: ActionHandlerRegistry
+    private val actionHandlerRegistry: ActionHandlerRegistry,
+    private val externalSystemRepository: ExternalSystemRepository
 ) : ActivityService {
 
     override fun createActivity(activityCreateRequest: ActivityCreateRequest): Activity {
+        val integration = externalSystemRepository.findById(activityCreateRequest.integrationId!!)
+            .orElseThrow { Exception("Integration not found") }
         val activityToSave = Activity(
             title = activityCreateRequest.title!!,
             description = activityCreateRequest.description,
+            externalSystem = integration
         )
         return activityRepository.save(activityToSave)
     }
@@ -108,8 +112,8 @@ class ActivityServiceImpl(
         return existingEvent.members.toList()
     }
 
-    override fun listActivities(): List<ActivityResponse> {
-        return activityRepository.findAll().map { ActivityResponse.fromEntity(it) }
+    override fun listActivities(integrationId: Long): List<Activity> {
+        return activityRepository.findAllByExternalSystemId(integrationId)
     }
 
     override fun trigger(activityId: Long, request: ActivityTriggerRequest) {

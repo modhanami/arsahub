@@ -39,7 +39,8 @@ import { DevTool } from "@hookform/devtools";
 
 type FormData = z.infer<typeof ruleCreateSchema>;
 export function CreateRuleForm() {
-  const { id }: { id: string } = useParams();
+  const { id, integrationId }: { id: string; integrationId: string } =
+    useParams();
   const router = useRouter();
   const form = useForm<FormData>({
     resolver: zodResolver(ruleCreateSchema),
@@ -50,7 +51,7 @@ export function CreateRuleForm() {
   });
   const [isCreating, setIsCreating] = React.useState(false);
   const [isOpen, setIsOpen] = React.useState(false);
-  const triggers = useTriggers(Number(id));
+  const triggers = useTriggers(Number(integrationId));
   const actions = useActions();
   const [selectedTrigger, setSelectedTrigger] = React.useState(null);
 

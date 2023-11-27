@@ -1,6 +1,7 @@
 package com.arsahub.backend.dtos
 
 import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
 
 data class ActivityCreateRequest(
@@ -9,4 +10,6 @@ data class ActivityCreateRequest(
     val title: String?,
     @field:Size(max = 500, message = "Description cannot be longer than 500 characters")
     val description: String?,
+    @field:NotNull(message = "Integration ID is required")
+    val integrationId: Long? // TODO: retrieve integration ID from JWT
 )

@@ -17,23 +17,27 @@ import java.util.*
 @Service
 class IntegrationService(
     private val triggerRepository: TriggerRepository,
-    private val externalSystemRepository: ExternalSystemRepository,
     private val userRepository: UserRepository,
-    private val integrationTemplateRepository: IntegrationTemplateRepository
-
+    private val integrationTemplateRepository: IntegrationTemplateRepository,
+    private val externalSystemRepository: ExternalSystemRepository
 ) {
+
     fun createTrigger(request: TriggerCreateRequest): TriggerResponse {
         // TODO: enforce unique key per integration
+        val integration = externalSystemRepository.findById(request.integrationId!!)
+            .orElseThrow { Exception("Integration not found") }
+
         val trigger = Trigger(
             title = request.title,
             description = request.description,
-            key = request.key
+            key = request.key,
+            integration = integration
         )
         return TriggerResponse.fromEntity(triggerRepository.save(trigger))
     }
 
-    fun getTriggers(): List<Trigger> {
-        return triggerRepository.findAll()
+    fun getTriggers(integrationId: Long): List<Trigger> {
+        return triggerRepository.findAllByIntegrationId(integrationId)
     }
 
     fun createIntegration(request: IntegrationCreateRequest): ExternalSystem {

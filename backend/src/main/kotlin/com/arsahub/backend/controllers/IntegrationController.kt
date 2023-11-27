@@ -182,7 +182,7 @@ class IntegrationController(
     }
 
     @Operation(
-        summary = "Create a trigger (globally)", // TODO: make trigger scoped to integration
+        summary = "Create a trigger for an integration",
         responses = [
             ApiResponse(
                 responseCode = "201",
@@ -210,8 +210,8 @@ class IntegrationController(
         ]
     )
     @GetMapping("/triggers")
-    fun getTriggers(): List<TriggerResponse> {
-        return integrationService.getTriggers().map { TriggerResponse.fromEntity(it) }
+    fun getTriggers(@RequestParam integrationId: Long): List<TriggerResponse> {
+        return integrationService.getTriggers(integrationId).map { TriggerResponse.fromEntity(it) }
     }
 
 

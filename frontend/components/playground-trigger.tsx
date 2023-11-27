@@ -59,8 +59,16 @@ interface Action {
   jsonSchema: Record<string, unknown>;
 }
 
+type PlaygroundTriggerFormProps = {
+  activityId: number;
+  integrationId: number;
+};
+
 type FormData = z.infer<typeof playgroundTriggerSchema>;
-export function PlaygroundTriggerForm({ activityId }: { activityId: number }) {
+export function PlaygroundTriggerForm({
+  activityId,
+  integrationId,
+}: PlaygroundTriggerFormProps) {
   console.log("activityId", activityId);
   const form = useForm<FormData>({
     resolver: zodResolver(playgroundTriggerSchema),

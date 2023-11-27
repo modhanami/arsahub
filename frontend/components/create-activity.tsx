@@ -44,11 +44,13 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { toast } from "./ui/use-toast";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { ActivityCreateButton } from "./activity-create-button";
 
 type FormData = z.infer<typeof activityCreateSchema>;
 export function CardWithForm() {
+  const { id, integrationId }: { id: string; integrationId: string } =
+    useParams();
   const router = useRouter();
   const form = useForm<FormData>({
     resolver: zodResolver(activityCreateSchema),
@@ -69,6 +71,7 @@ export function CardWithForm() {
       body: JSON.stringify({
         title: values.title,
         description: values.description,
+        integrationId: integrationId,
       }),
     });
 

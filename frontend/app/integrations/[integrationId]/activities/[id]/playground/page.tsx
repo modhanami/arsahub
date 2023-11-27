@@ -1,42 +1,15 @@
 import { DashboardHeader } from "../../../../../../components/header";
 import { PlaygroundTriggerForm } from "../../../../../../components/playground-trigger";
 import { DashboardShell } from "../../../../../../components/shell";
-import { toast } from "../../../../../../components/ui/use-toast";
-import {
-  fetchMembers,
-  fetchTriggers,
-  fetchRules,
-} from "../../../../../../lib/api";
+import { ContextProps } from "../../../../../../types";
 
-export interface Playground {
+export type Playground = {
   id: number;
   title: string;
   description: string;
-}
-export default async function PlaygroundPage({
-  params,
-}: {
-  params: { id: string };
-}) {
-  const responses = await Promise.all([
-    fetchMembers(Number(params.id)),
-    fetchTriggers(Number(params.id)),
-    fetchRules(Number(params.id)),
-  ]);
+} & ContextProps;
 
-  // if any of the responses are not ok, return toast
-  if (!responses.every((response) => response.ok)) {
-    return toast({
-      title: "Something went wrong.",
-      description: "Your rule was not created. Please try again.",
-      variant: "destructive",
-    });
-  }
-
-  const [members, triggers, rules] = await Promise.all(
-    responses.map((response) => response.json())
-  );
-
+export default async function PlaygroundPage({ params }: ContextProps) {
   return (
     <DashboardShell>
       <DashboardHeader
@@ -44,7 +17,10 @@ export default async function PlaygroundPage({
         text="Test your rules."
       ></DashboardHeader>
       <div>
-        <PlaygroundTriggerForm activityId={Number(params.id)} />
+        <PlaygroundTriggerForm
+          activityId={Number(params.id)}
+          integrationId={Number(params.integrationId)}
+        />
       </div>
     </DashboardShell>
   );

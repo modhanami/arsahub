@@ -37,15 +37,19 @@ export default async function DashboardPage({
     // redirect(authOptions?.pages?.signIn || "/login")
   }
 
-  const response = await fetch(`http://localhost:8080/api/activities`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    next: {
-      tags: ["activities"],
-    },
-  });
+  const response = await fetch(
+    `http://localhost:8080/api/activities?integrationId=${integrationId}`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      next: {
+        tags: ["activities"],
+      },
+      cache: "no-store",
+    }
+  );
 
   if (!response?.ok) {
     return toast({
