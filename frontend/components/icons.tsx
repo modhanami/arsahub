@@ -28,6 +28,8 @@ import {
   ScrollText,
   ToyBrick,
   ArrowLeft,
+  Crown,
+  Users,
 } from "lucide-react";
 
 export type Icon = LucideIcon;
@@ -77,4 +79,6 @@ export const Icons = {
   check: Check,
   rule: ScrollText,
   playground: ToyBrick,
+  leaderboard: Crown,
+  members: Users,
 };

@@ -1,29 +1,7 @@
 "use client";
 
-import { ChevronDownIcon } from "lucide-react";
-
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Card, CardContent } from "@/components/ui/card";
 import { useEffect, useState } from "react";
 
 // {
@@ -50,83 +28,58 @@ export function UserProfile({
   achievements,
 }: UserProfileProps) {
   console.log(achievements);
+  const tempAvatar = `https://avatar.vercel.sh/${username}.jpeg`;
 
   return (
-    <Card className="max-w-md">
-      <CardHeader>
-        <CardTitle>User Profile</CardTitle>
-        <CardDescription></CardDescription>
-      </CardHeader>
-      <CardContent className="grid gap-6">
+    <Card className="max-w-sm max-h-[500px] overflow-y-auto">
+      <CardContent className="grid gap-6 mt-8">
         <div className="flex items-center justify-between space-x-4">
-          <div className="flex items-center space-x-4">
-            <Avatar>
-              <AvatarImage src={avatar} alt={name} />
+          <div className="flex flex-col gap-4 w-full items-center">
+            <Avatar className="w-20 h-20">
+              <AvatarImage src={tempAvatar} alt={name} />
               <AvatarFallback>{name[0]}</AvatarFallback>
             </Avatar>
-            <div>
-              <p className="text-sm font-medium leading-none">{name}</p>
+            <div className="text-center grid gap-1">
+              <p className="font-bold text-lg leading-none">{name}</p>
               <p className="text-sm text-muted-foreground">{username}</p>
             </div>
-          </div>
-          {/* <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" className="ml-auto">
-                Owner{" "}
-                <ChevronDownIcon className="ml-2 h-4 w-4 text-muted-foreground" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="p-0" align="end">
-              <Command>
-                <CommandInput placeholder="Select new role..." />
-                <CommandList>
-                  <CommandEmpty>No roles found.</CommandEmpty>
-                  <CommandGroup>
-                    <CommandItem className="teamaspace-y-1 flex flex-col items-start px-4 py-2">
-                      <p>Viewer</p>
-                      <p className="text-sm text-muted-foreground">
-                        Can view and comment.
-                      </p>
-                    </CommandItem>
-                    <CommandItem className="teamaspace-y-1 flex flex-col items-start px-4 py-2">
-                      <p>Developer</p>
-                      <p className="text-sm text-muted-foreground">
-                        Can view, comment and edit.
-                      </p>
-                    </CommandItem>
-                    <CommandItem className="teamaspace-y-1 flex flex-col items-start px-4 py-2">
-                      <p>Billing</p>
-                      <p className="text-sm text-muted-foreground">
-                        Can view, comment and manage billing.
-                      </p>
-                    </CommandItem>
-                    <CommandItem className="teamaspace-y-1 flex flex-col items-start px-4 py-2">
-                      <p>Owner</p>
-                      <p className="text-sm text-muted-foreground">
-                        Admin-level access to all resources.
-                      </p>
-                    </CommandItem>
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover> */}
-          {/* show points */}
-          <div className="flex items-center space-x-4">
-            <p className="text-sm font-medium leading-none">{`Points: ${points}`}</p>
+
+            <div className="flex items-center space-x-4">
+              <p className=" font-medium text-xl leading-none text-amber-200">
+                {points.toLocaleString()}
+              </p>
+              <p className="text-sm font-medium leading-none">Points</p>
+            </div>
           </div>
         </div>
 
         <div>
-          <p className="font-semibold mb-2">All Achievements</p>
-          <ul className="space-y-1 list-disc list-inside text-muted-foreground">
+          <div className="font-semibold mb-2">
+            Achievements
+            <Badge className="ml-2" variant="outline">
+              {achievements?.length}
+            </Badge>
+          </div>
+          <ul className="space-y-4 my-4">
             {achievements?.length > 0
               ? achievements.map((achievement) => (
                   <li
-                    className="text-sm font-medium "
+                    className="font-medium flex gap-4"
                     key={achievement.achievementId}
                   >
-                    {achievement.title}
+                    <Image
+                      src={achievement.imageUrl || ""}
+                      width={52}
+                      height={52}
+                      alt={achievement.title}
+                      className="rounded-full"
+                    />
+                    <div>
+                      <p>{achievement.title}</p>
+                      <p className="text-muted-foreground text-sm">
+                        {achievement.description}
+                      </p>
+                    </div>
                   </li>
                 ))
               : "No achievements :("}
@@ -142,8 +95,10 @@ interface UserProfileRealTimeProps {
   userId: string;
 }
 
+import Image from "next/image";
 import { io } from "socket.io-client";
-import { AchievementResponse } from "../../hooks/api";
+import { AchievementResponse } from "../../types/generated-types";
+import { Badge } from "./badge";
 
 export function UserProfileRealTime({
   userId,

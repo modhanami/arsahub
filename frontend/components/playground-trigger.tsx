@@ -76,7 +76,7 @@ export function PlaygroundTriggerForm({
   const selectedUserId = form.watch("userId") || null;
   const [isCreating, setIsSending] = React.useState(false);
   const members = useMembers(activityId);
-  const triggers = useTriggers(activityId);
+  const triggers = useTriggers(integrationId);
   const rules = useRules(activityId);
 
   async function onSubmit(values: FormData) {
@@ -117,9 +117,6 @@ export function PlaygroundTriggerForm({
     });
   }
 
-  // when a user is selected, we need to fetch the profile with useUserProfile
-  const userProfile = useUserProfile(activityId, selectedUserId);
-
   // filter the rules based on the selected trigger
   console.log("rules", rules);
 
@@ -132,122 +129,133 @@ export function PlaygroundTriggerForm({
 
   return (
     <>
-      <Card>
-        <CardHeader>
-          <CardTitle>Send trigger</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-8">
+      <div className="flex gap-4">
+        <Card className="w-1/2 self-start">
+          <CardHeader>
+            <CardTitle>Send trigger</CardTitle>
+          </CardHeader>
+          <CardContent>
             <div>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)}>
-                  <FormField
-                    control={form.control}
-                    name="userId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>User</FormLabel>
-                        <FormControl>
-                          <Select
-                            onValueChange={field.onChange}
-                            value={field.value}
-                          >
-                            <SelectTrigger>
-                              <SelectValue
-                                className="flex items-center justify-between w-full"
-                                placeholder="Select a user"
-                              />
-                            </SelectTrigger>
-                            <SelectContent className="w-full">
-                              {members.map((member) => (
-                                <SelectItem
-                                  key={member.userId}
-                                  value={member.userId}
+              <div>
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)}>
+                    <FormField
+                      control={form.control}
+                      name="userId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>User</FormLabel>
+                          <FormControl>
+                            <Select
+                              onValueChange={field.onChange}
+                              value={field.value}
+                            >
+                              <SelectTrigger>
+                                <SelectValue
                                   className="flex items-center justify-between w-full"
-                                >
-                                  {member.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                                  placeholder="Select a user"
+                                />
+                              </SelectTrigger>
+                              <SelectContent className="w-full">
+                                {members.map((member) => (
+                                  <SelectItem
+                                    key={member.userId}
+                                    value={member.userId || ""}
+                                    className="flex items-center justify-between w-full"
+                                  >
+                                    {member.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <FormField
-                    control={form.control}
-                    name="trigger.key"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Trigger</FormLabel>
-                        <FormControl>
-                          <Select
-                            onValueChange={field.onChange}
-                            value={field.value}
-                          >
-                            <SelectTrigger>
-                              <SelectValue
-                                className="flex items-center justify-between w-full"
-                                placeholder="Select a trigger"
-                              />
-                            </SelectTrigger>
-                            <SelectContent className="w-full">
-                              {triggers.map((trigger) => (
-                                <SelectItem
-                                  key={trigger.id}
-                                  value={trigger.key}
+                    <FormField
+                      control={form.control}
+                      name="trigger.key"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Trigger</FormLabel>
+                          <FormControl>
+                            <Select
+                              onValueChange={field.onChange}
+                              value={field.value}
+                            >
+                              <SelectTrigger>
+                                <SelectValue
                                   className="flex items-center justify-between w-full"
-                                >
-                                  {trigger.title}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                                  placeholder="Select a trigger"
+                                />
+                              </SelectTrigger>
+                              <SelectContent className="w-full">
+                                {triggers.map((trigger) => (
+                                  <SelectItem
+                                    key={trigger.id}
+                                    value={trigger.key}
+                                    className="flex items-center justify-between w-full"
+                                  >
+                                    {trigger.title}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <div className="mt-4">
-                    <Button disabled={isCreating}>Send trigger</Button>
+                    <div className="mt-4">
+                      <Button disabled={isCreating}>Send trigger</Button>
+                    </div>
+                  </form>
+                </Form>
+
+                <div className="my-6  ">
+                  <div>
+                    <p className="font-semibold mb-2">
+                      Will trigger these rules
+                    </p>
+                    <ul className="space-y-1 list-disc list-inside text-muted-foreground">
+                      {filteredRules?.length > 0
+                        ? filteredRules.map((rule) => (
+                            <li className="text-sm font-medium " key={rule.id}>
+                              {rule.title}
+                            </li>
+                          ))
+                        : "No matching rules :("}
+                    </ul>
                   </div>
-                </form>
-              </Form>
-
-              <div className="my-6  ">
-                <div>
-                  <p className="font-semibold mb-2">Will trigger these rules</p>
-                  <ul className="space-y-1 list-disc list-inside text-muted-foreground">
-                    {filteredRules?.length > 0
-                      ? filteredRules.map((rule) => (
-                          <li className="text-sm font-medium " key={rule.id}>
-                            {rule.title}
-                          </li>
-                        ))
-                      : "No matching rules :("}
-                  </ul>
                 </div>
               </div>
             </div>
+          </CardContent>
+        </Card>
 
-            <div>
-              {userProfile && selectedUserId && (
-                <UserProfileRealTime
-                  userId={selectedUserId}
-                  name={userProfile.user.name || "No user selected"}
-                  username="a@b.com"
-                  avatar="X"
-                  points={userProfile.points}
-                  achievements={userProfile.achievements}
-                />
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+        <div className="w-1/2 h-[500px]">
+          {selectedUserId && (
+            // <UserProfileRealTime
+            //   userId={selectedUserId}
+            //   name={userProfile.user.name || "No user selected"}
+            //   username="a@b.com"
+            //   avatar="X"
+            //   points={userProfile.points}
+            //   achievements={userProfile.achievements}
+            // />
+            <iframe
+              src={`/embed/integrations/${integrationId}/activities/${activityId}/profile?userId=${selectedUserId}`}
+              width="100%"
+              height="100%"
+              allowFullScreen={true}
+              className="overflow-hidden border-none sticky top-0"
+            />
+          )}
+        </div>
+      </div>
     </>
   );
 }

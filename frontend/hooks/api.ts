@@ -12,6 +12,10 @@
 
 import React from "react";
 import { toast } from "../components/ui/use-toast";
+import {
+  MemberResponse,
+  UserActivityProfileResponse,
+} from "../types/generated-types";
 
 // export function fetchTriggers(activityId: number) {
 //     return fetch(`http://localhost:8080/api/activities/${activityId}/triggers`, {
@@ -40,15 +44,8 @@ import { toast } from "../components/ui/use-toast";
 //     });
 //   }
 
-interface Member {
-  memberId: number;
-  name: string;
-  points: number;
-  userId: string;
-}
-// rewrite the above to react hooks
 export function useMembers(activityId: number) {
-  const [members, setMembers] = React.useState<Member[]>([]);
+  const [members, setMembers] = React.useState<MemberResponse[]>([]);
 
   React.useEffect(() => {
     async function fetchMembers() {
@@ -274,23 +271,9 @@ export interface Action {
   jsonSchema: Record<string, unknown>;
 }
 
-export interface AchievementResponse {
-  achievementId: number;
-  title: string;
-  description: string;
-  imageUrl: string;
-}
-
-interface UserProfile {
-  user: {
-    userId: number;
-    name: string;
-  };
-  points: number;
-  achievements: AchievementResponse[];
-}
-export function useUserProfile(activityId: number, userId: string | null) {
-  const [profile, setProfile] = React.useState<UserProfile | null>(null);
+export function useUserProfile(activityId: number, userId: number) {
+  const [profile, setProfile] =
+    React.useState<UserActivityProfileResponse | null>(null);
 
   React.useEffect(() => {
     async function fetchProfile() {

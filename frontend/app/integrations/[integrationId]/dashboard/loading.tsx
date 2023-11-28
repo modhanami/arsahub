@@ -8,7 +8,7 @@ export default function DashboardLoading() {
     <DashboardShell>
       <DashboardHeader
         heading="Activities"
-        text="Create and manage acvitities."
+        text="Create and manage activities."
       >
         <ActivityCreateButton />
       </DashboardHeader>

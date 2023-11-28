@@ -1,7 +1,5 @@
-package com.arsahub.backend.controllers
+package com.arsahub.backend.dtos
 
-import com.arsahub.backend.dtos.AchievementResponse
-import com.arsahub.backend.dtos.UserResponse
 import com.arsahub.backend.models.UserActivity
 
 data class UserActivityProfileResponse(

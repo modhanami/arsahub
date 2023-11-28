@@ -5,6 +5,7 @@ data class MemberResponse(
     val name: String?,
     val points: Int?,
     val userId: String?,
+    val username: String?,
 ) {
     companion object {
         fun fromEntity(member: com.arsahub.backend.models.UserActivity): MemberResponse {
@@ -13,6 +14,7 @@ data class MemberResponse(
                 name = member.user?.name,
                 points = member.points,
                 userId = member.user?.externalUserId,
+                username = member.user?.username
             )
         }
     }

@@ -54,6 +54,16 @@ function createSideNavItems(
       icon: "rule",
     },
     {
+      title: "Leaderboard",
+      href: `/integrations/${integrationId}/activities/${id}/leaderboard`,
+      icon: "leaderboard",
+    },
+    {
+      title: "Members",
+      href: `/integrations/${integrationId}/activities/${id}/members`,
+      icon: "members",
+    },
+    {
       title: "Playground",
       href: `/integrations/${integrationId}/activities/${id}/playground`,
       icon: "playground",
