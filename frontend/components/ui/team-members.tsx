@@ -119,7 +119,7 @@ export function UserProfileRealTime({
       const { points } = data.data;
       setPoints(points);
     });
-  }, []);
+  }, [userId]);
 
   return <UserProfile {...props} points={points} />;
 }

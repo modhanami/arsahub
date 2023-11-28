@@ -92,8 +92,8 @@ export function CreateRuleForm() {
   function renderTriggerParamsFields(triggerSchema: Record<string, any>) {
     return Object.keys(triggerSchema?.properties || {}).map((paramName) => {
       const paramSchema = triggerSchema.properties[paramName];
-      const paramKey = `trigger.params.${paramName}`;
-      const paramValue = form.watch(paramKey);
+      const paramKey = `trigger.params.${paramName}` as const;
+      const paramValue = form.watch(paramKey) as number;
       const paramNameCapitalized =
         paramName.charAt(0).toUpperCase() + paramName.slice(1);
 
@@ -110,10 +110,10 @@ export function CreateRuleForm() {
                   <FormLabel>{paramNameCapitalized}</FormLabel>
                   <FormControl>
                     <Input
+                      {...field}
                       placeholder={paramNameCapitalized}
                       type="number"
                       value={paramValue}
-                      {...field}
                     />
                   </FormControl>
                   <FormMessage />
