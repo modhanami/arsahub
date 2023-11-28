@@ -1,3 +1,6 @@
+import cz.habarta.typescript.generator.JsonLibrary
+import cz.habarta.typescript.generator.TypeScriptFileType
+import cz.habarta.typescript.generator.TypeScriptOutputKind
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
@@ -10,6 +13,7 @@ plugins {
     kotlin("plugin.jpa") version "1.9.20"
     id("org.jetbrains.kotlin.plugin.allopen") version "1.9.10"
     id("com.google.cloud.tools.jib") version "3.4.0"
+    id("cz.habarta.typescript-generator") version "3.2.1263"
 //    kotlin("plugin.serialization") version "1.9.0"
 }
 
@@ -96,5 +100,25 @@ jib {
     to {
         image = "modhanami/arsahub-backend-dev"
         setCredHelper("wincred")
+    }
+}
+
+tasks {
+    generateTypeScript {
+        jsonLibrary = JsonLibrary.jackson2
+        classPatterns = listOf("com.arsahub.backend.dtos.*")
+        outputKind = TypeScriptOutputKind.module
+        outputFileType = TypeScriptFileType.implementationFile
+        outputFile = "generated-types.ts"
+    }
+}
+
+tasks.register("generateTypesForFrontend") {
+    dependsOn("generateTypeScript")
+    doLast {
+        copy {
+            from("generated-types.ts")
+            into("../frontend/types")
+        }
     }
 }
