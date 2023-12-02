@@ -15,8 +15,8 @@ class Activity(
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "external_system_id")
-    var externalSystem: ExternalSystem? = null,
+    @JoinColumn(name = "app_id")
+    var app: App? = null,
 
     @OneToMany(mappedBy = "activity")
     var rules: MutableSet<Rule> = mutableSetOf(),

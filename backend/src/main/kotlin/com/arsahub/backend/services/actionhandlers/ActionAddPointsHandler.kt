@@ -13,7 +13,7 @@ class ActionAddPointsHandler(private val userActivityRepository: UserActivityRep
         val newPoints = previousPoints + points
         member.addPoints(points)
         userActivityRepository.save(member)
-        println("User `${member.user?.userId}` (${member.user?.externalUserId}) received `$points` points for activity `${rule.activity?.title}` (${rule.activity?.activityId}) from rule `${rule.title}` (${rule.id}), previous points: $previousPoints, new points: $newPoints")
+        println("User ${member.user?.username}` (${member.user?.userId}) received `$points` points for activity `${rule.activity?.title}` (${rule.activity?.activityId}) from rule `${rule.title}` (${rule.id}), previous points: $previousPoints, new points: $newPoints")
         return ActionResult.PointsUpdate(previousPoints, newPoints, points)
     }
 }

@@ -28,7 +28,7 @@ interface ActivityService {
     fun getActivity(activityId: Long): Activity?
     fun addMembers(activityId: Long, request: ActivityController.ActivityAddMembersRequest): ActivityResponse
     fun listMembers(activityId: Long): List<UserActivity>
-    fun listActivities(integrationId: Long): List<Activity>
+    fun listActivities(appId: Long): List<Activity>
     fun trigger(activityId: Long, request: ActivityTriggerRequest)
     fun createRule(
         activityId: Long, request: RuleCreateRequest
@@ -52,16 +52,16 @@ class ActivityServiceImpl(
     private val actionRepository: ActionRepository,
     private val ruleRepository: RuleRepository,
     private val actionHandlerRegistry: ActionHandlerRegistry,
-    private val externalSystemRepository: ExternalSystemRepository
+    private val appRepository: AppRepository
 ) : ActivityService {
 
     override fun createActivity(activityCreateRequest: ActivityCreateRequest): Activity {
-        val integration = externalSystemRepository.findById(activityCreateRequest.integrationId!!)
-            .orElseThrow { Exception("Integration not found") }
+        val app = appRepository.findById(activityCreateRequest.appId!!)
+            .orElseThrow { Exception("App not found") }
         val activityToSave = Activity(
             title = activityCreateRequest.title!!,
             description = activityCreateRequest.description,
-            externalSystem = integration
+            app = app
         )
         return activityRepository.save(activityToSave)
     }
@@ -87,10 +87,10 @@ class ActivityServiceImpl(
         val existingEvent = activityRepository.findByIdOrNull(activityId)
             ?: throw EntityNotFoundException("Activity with ID $activityId not found")
 
-        val existingMemberUserIds = existingEvent.members.map { it.user?.externalUserId }.toSet()
-        val newMemberUserIds = request.externalUserIds.filter { !existingMemberUserIds.contains(it) }
-        val newMemberUsers = userRepository.findAll().filter { newMemberUserIds.contains(it.externalUserId) }
-        newMemberUsers.forEach { println(it.externalUserId) }
+        val existingMemberUserIds = existingEvent.members.map { it.user?.userId }.toSet()
+        val newMemberUserIds = request.userIds.filter { !existingMemberUserIds.contains(it) }
+        val newMemberUsers = userRepository.findAll().filter { newMemberUserIds.contains(it.userId) }
+        newMemberUsers.forEach { println(it.userId) }
         val newMembers = newMemberUsers.map { user ->
             UserActivity(
                 user = user,
@@ -112,8 +112,8 @@ class ActivityServiceImpl(
         return existingEvent.members.toList()
     }
 
-    override fun listActivities(integrationId: Long): List<Activity> {
-        return activityRepository.findAllByExternalSystemId(integrationId)
+    override fun listActivities(appId: Long): List<Activity> {
+        return activityRepository.findAllByAppId(appId)
     }
 
     override fun trigger(activityId: Long, request: ActivityTriggerRequest) {
@@ -122,7 +122,7 @@ class ActivityServiceImpl(
         val userId = request.userId
 
         val member =
-            existingActivity.members.find { it.user?.externalUserId == userId } ?: throw Exception("User not found")
+            existingActivity.members.find { it.user?.userId == userId } ?: throw Exception("User not found")
 
         val trigger = triggerRepository.findByKey(request.key) ?: throw Exception("Trigger not found")
 
@@ -153,9 +153,9 @@ class ActivityServiceImpl(
 //                    if (ruleProgress.progress == expectedCount) {
 //                        ruleProgress.completedAt = Instant.now()
 //                        isProgressCompleted = true
-//                        println("User ${existingMember.user?.userId} (${existingMember.user?.externalUserId}) has completed rule ${rule.title} (${rule.id}) with progress ${ruleProgress.progress}/${expectedCount}")
+//                        println("User ${existingMember.user?.userId} (${existingMember.user?.userId}) has completed rule ${rule.title} (${rule.id}) with progress ${ruleProgress.progress}/${expectedCount}")
 //                    } else {
-//                        println("User ${existingMember.user?.userId} (${existingMember.user?.externalUserId}) has progress ${ruleProgress.progress}/${expectedCount} for rule ${rule.title} (${rule.id})")
+//                        println("User ${existingMember.user?.userId} (${existingMember.user?.userId}) has progress ${ruleProgress.progress}/${expectedCount} for rule ${rule.title} (${rule.id})")
 //                    }
 //
 //                    ruleProgressTimeRepository.save(ruleProgress)

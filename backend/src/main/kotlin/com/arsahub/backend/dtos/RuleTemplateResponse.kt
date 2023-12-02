@@ -8,8 +8,8 @@ data class RuleTemplateResponse(
     val description: String? = null,
     val trigger: TriggerResponse? = null,
     val action: ActionResponse? = null,
-    val externalSystem: IntegrationResponse? = null,
-    val effectParams: MutableMap<String, Any>? = null,
+    val app: AppResponse? = null,
+    val actionParams: MutableMap<String, Any>? = null,
     val triggerParams: MutableMap<String, Any>? = null,
     val id: Long? = null
 ) {
@@ -20,8 +20,8 @@ data class RuleTemplateResponse(
                 description = ruleTemplate.description,
                 trigger = TriggerResponse.fromEntity(ruleTemplate.trigger!!),
                 action = ActionResponse.fromEntity(ruleTemplate.action!!),
-                externalSystem = IntegrationResponse.fromEntity(ruleTemplate.externalSystem!!),
-                effectParams = ruleTemplate.effectParams,
+                app = AppResponse.fromEntity(ruleTemplate.app!!),
+                actionParams = ruleTemplate.actionParams,
                 triggerParams = ruleTemplate.triggerParams,
                 id = ruleTemplate.id
             )

@@ -1,19 +1,19 @@
 import Link from "next/link";
 
 import { Skeleton } from "@/components/ui/skeleton";
-import { Activity } from "../app/integrations/[integrationId]/dashboard/page";
+import { Activity } from "../app/apps/[appId]/dashboard/page";
 
 interface ActivityItemProps {
   activity: Activity;
-  integrationId: string;
+  appId: string;
 }
 
-export function ActivityItem({ activity, integrationId }: ActivityItemProps) {
+export function ActivityItem({ activity, appId }: ActivityItemProps) {
   return (
     <div className="flex items-center justify-between p-4">
       <div className="grid gap-1">
         <Link
-          href={`/integrations/${integrationId}/activities/${activity.id}`}
+          href={`/apps/${appId}/activities/${activity.id}`}
           className="font-semibold hover:underline"
         >
           {activity.title}

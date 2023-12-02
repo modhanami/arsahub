@@ -35,7 +35,7 @@ class Rule(
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "effect_id", nullable = false)
+    @JoinColumn(name = "action_id", nullable = false)
     var action: Action? = null,
 
     @JdbcTypeCode(SqlTypes.JSON)
@@ -43,7 +43,7 @@ class Rule(
     var triggerTypeParams: MutableMap<String, Any>? = null,
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "effect_params")
+    @Column(name = "action_params")
     var actionParams: MutableMap<String, Any>? = null,
 
     @JdbcTypeCode(SqlTypes.JSON)

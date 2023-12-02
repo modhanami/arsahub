@@ -4,7 +4,7 @@ data class MemberResponse(
     val memberId: Long?,
     val name: String?,
     val points: Int?,
-    val userId: String?,
+    val userId: Long?,
     val username: String?,
 ) {
     companion object {
@@ -13,7 +13,7 @@ data class MemberResponse(
                 memberId = member.id,
                 name = member.user?.name,
                 points = member.points,
-                userId = member.user?.externalUserId,
+                userId = member.user?.userId,
                 username = member.user?.username
             )
         }

@@ -21,7 +21,7 @@ class ActionUnlockAchievementHandler(
         // precondition: user must not have unlocked the achievement
         if (member.userActivityAchievements.any { it.achievement?.achievementId == achievementId }) {
             val message =
-                "User `${member.user?.userId}` (${member.user?.externalUserId}) already unlocked achievement"
+                "User ${member.user?.username}` (${member.user?.userId}) already unlocked achievement"
             println(message)
             return ActionResult.Nothing(message)
         }
@@ -30,7 +30,7 @@ class ActionUnlockAchievementHandler(
         // save from the owning side
         userActivityAchievementRepository.saveAll(member.userActivityAchievements)
 
-        println("User `${member.user?.userId}` (${member.user?.externalUserId}) unlocked achievement `${achievement.title}` (${achievement.achievementId}) for activity `${rule.activity?.title}` (${rule.activity?.activityId}) from rule `${rule.title}` (${rule.id})")
+        println("User ${member.user?.username}` (${member.user?.userId}) unlocked achievement `${achievement.title}` (${achievement.achievementId}) for activity `${rule.activity?.title}` (${rule.activity?.activityId}) from rule `${rule.title}` (${rule.id})")
 
         return ActionResult.AchievementUpdate(achievement)
     }

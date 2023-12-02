@@ -31,12 +31,12 @@ class RuleTemplate(
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "external_system_id", nullable = false)
-    var externalSystem: ExternalSystem? = null,
+    @JoinColumn(name = "app_id", nullable = false)
+    var app: App? = null,
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "effect_params")
-    var effectParams: MutableMap<String, Any>? = null,
+    @Column(name = "action_params")
+    var actionParams: MutableMap<String, Any>? = null,
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "trigger_params")

@@ -1,6 +1,6 @@
 /* tslint:disable */
 /* eslint-disable */
-// Generated using typescript-generator version 3.2.1263 on 2023-11-28 21:51:28.
+// Generated using typescript-generator version 3.2.1263 on 2023-12-02 11:35:37.
 
 export interface AchievementCreateRequest {
     title: string | null;
@@ -15,7 +15,7 @@ export interface AchievementResponse {
 }
 
 export interface AchievementUnlock extends ActivityUpdate {
-    userId: string;
+    userId: number;
     achievement: AchievementResponse;
 }
 
@@ -42,7 +42,7 @@ export interface ActionResponse {
 export interface ActivityCreateRequest {
     title: string | null;
     description: string | null;
-    integrationId: number | null;
+    appId: number | null;
 }
 
 export interface ActivityResponse {
@@ -55,7 +55,7 @@ export interface ActivityResponse {
 export interface ActivityTriggerRequest {
     key: string;
     params: { [index: string]: string };
-    userId: string;
+    userId: number;
 }
 
 export interface ActivityUpdate {
@@ -75,6 +75,24 @@ export interface ApiValidationError {
     errors: { [index: string]: string };
 }
 
+export interface AppCreateRequest {
+    name: string;
+    createdBy: number;
+    templateId: number | null;
+}
+
+export interface AppResponse {
+    id: number;
+    name: string;
+}
+
+export interface AppTemplateResponse {
+    name: string | null;
+    description: string | null;
+    triggerTemplates: TriggerTemplateResponse[];
+    id: number | null;
+}
+
 export interface CustomUnitCreateRequest {
     name: string;
     key: string;
@@ -83,24 +101,6 @@ export interface CustomUnitCreateRequest {
 export interface CustomUnitResponse {
     name: string | null;
     key: string | null;
-    id: number | null;
-}
-
-export interface IntegrationCreateRequest {
-    name: string;
-    createdBy: number;
-    templateId: number | null;
-}
-
-export interface IntegrationResponse {
-    id: number;
-    name: string;
-}
-
-export interface IntegrationTemplateResponse {
-    name: string | null;
-    description: string | null;
-    triggerTemplates: TriggerTemplateResponse[];
     id: number | null;
 }
 
@@ -117,12 +117,12 @@ export interface MemberResponse {
     memberId: number | null;
     name: string | null;
     points: number | null;
-    userId: string | null;
+    userId: number | null;
     username: string | null;
 }
 
 export interface PointsUpdate extends ActivityUpdate {
-    userId: string;
+    userId: number;
     points: number;
 }
 
@@ -156,8 +156,8 @@ export interface RuleTemplateResponse {
     description: string | null;
     trigger: TriggerResponse | null;
     action: ActionResponse | null;
-    externalSystem: IntegrationResponse | null;
-    effectParams: { [index: string]: any } | null;
+    app: AppResponse | null;
+    actionParams: { [index: string]: any } | null;
     triggerParams: { [index: string]: any } | null;
     id: number | null;
 }
@@ -166,7 +166,7 @@ export interface TriggerCreateRequest {
     title: string | null;
     description: string | null;
     key: string | null;
-    integrationId: number | null;
+    appId: number | null;
 }
 
 export interface TriggerDefinition {

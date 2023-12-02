@@ -1,5 +1,5 @@
 // export function fetchRules(activityId: number) {
-//     return fetch(`http://localhost:8080/api/activities/${activityId}/rules`, {
+//     return fetch(`${API_URL}/activities/${activityId}/rules`, {
 //       method: "GET",
 //       headers: {
 //         "Content-Type": "application/json",
@@ -18,7 +18,7 @@ import {
 } from "../types/generated-types";
 
 // export function fetchTriggers(activityId: number) {
-//     return fetch(`http://localhost:8080/api/activities/${activityId}/triggers`, {
+//     return fetch(`${API_URL}/activities/${activityId}/triggers`, {
 //       method: "GET",
 //       headers: {
 //         "Content-Type": "application/json",
@@ -33,7 +33,7 @@ import {
 
 //   // fetch members
 //   export function fetchMembers(activityId: number) {
-//     return fetch(`http://localhost:8080/api/activities/${activityId}/members`, {
+//     return fetch(`${API_URL}/activities/${activityId}/members`, {
 //       method: "GET",
 //       headers: {
 //         "Content-Type": "application/json",
@@ -50,7 +50,7 @@ export function useMembers(activityId: number) {
   React.useEffect(() => {
     async function fetchMembers() {
       const response = await fetch(
-        `http://localhost:8080/api/activities/${activityId}/members`,
+        `${API_URL}/activities/${activityId}/members`,
         {
           method: "GET",
           headers: {
@@ -93,13 +93,13 @@ export interface Trigger {
   jsonSchema: Record<string, unknown>;
 }
 
-export function useTriggers(integrationId: number) {
+export function useTriggers(appId: number) {
   const [triggers, setTriggers] = React.useState<Trigger[]>([]);
 
   React.useEffect(() => {
     async function fetchTriggers() {
       const response = await fetch(
-        `http://localhost:8080/api/integrations/triggers?integrationId=${integrationId}`, // TODO: Remove param
+        `${API_URL}/apps/triggers?appId=${appId}`, // TODO: Remove param
         {
           method: "GET",
           headers: {
@@ -129,7 +129,7 @@ export function useTriggers(integrationId: number) {
       }
       setTriggers(triggers);
     });
-  }, [integrationId]);
+  }, [appId]);
 
   return triggers;
 }
@@ -139,18 +139,15 @@ export function useActions() {
 
   React.useEffect(() => {
     async function fetchActions() {
-      const response = await fetch(
-        `http://localhost:8080/api/activities/actions`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          next: {
-            tags: ["actions"],
-          },
-        }
-      );
+      const response = await fetch(`${API_URL}/activities/actions`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        next: {
+          tags: ["actions"],
+        },
+      });
 
       if (!response?.ok) {
         toast({
@@ -228,7 +225,7 @@ export function useRules(activityId: number) {
   React.useEffect(() => {
     async function fetchRules() {
       const response = await fetch(
-        `http://localhost:8080/api/activities/${activityId}/rules`,
+        `${API_URL}/activities/${activityId}/rules`,
         {
           method: "GET",
           headers: {
@@ -281,7 +278,7 @@ export function useUserProfile(activityId: number, userId: number) {
         return null;
       }
       const response = await fetch(
-        `http://localhost:8080/api/activities/${activityId}/profile?userId=${userId}`,
+        `${API_URL}/activities/${activityId}/profile?userId=${userId}`,
         {
           method: "GET",
           headers: {
@@ -315,29 +312,26 @@ export function useUserProfile(activityId: number, userId: number) {
   return profile;
 }
 
-export type Integration = {
+export type App = {
   id: number;
   name: string;
 };
 
-async function fetchIntegrations(userId: number) {
-  const response = await fetch(
-    `http://localhost:8080/api/integrations?userId=${userId}`,
-    {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      next: {
-        tags: [`integrations`],
-      },
-    }
-  );
+async function fetchApps(userId: number) {
+  const response = await fetch(`${API_URL}/apps?userId=${userId}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    next: {
+      tags: [`apps`],
+    },
+  });
 
   if (!response?.ok) {
     toast({
       title: "Something went wrong.",
-      description: "Integrations could not be fetched.",
+      description: "Apps could not be fetched.",
       variant: "destructive",
     });
     return null;
@@ -346,65 +340,62 @@ async function fetchIntegrations(userId: number) {
   return response.json();
 }
 
-export function useIntegrations(userId: number) {
+export function useApps(userId: number) {
   const [loading, setLoading] = React.useState<boolean>(true); // Always start with loading as true
-  const [integrations, setIntegrations] = React.useState<Integration[]>([]);
+  const [apps, setApps] = React.useState<App[]>([]);
 
   React.useEffect(() => {
-    fetchIntegrations(userId).then((integrations) => {
-      if (!integrations) {
+    fetchApps(userId).then((apps) => {
+      if (!apps) {
         return;
       }
-      setIntegrations(integrations);
+      setApps(apps);
       setLoading(false); // Set loading to false once data is fetched.
     });
   }, [userId]);
 
   function refetch() {
     setLoading(true);
-    fetchIntegrations(userId).then((integrations) => {
-      if (!integrations) {
+    fetchApps(userId).then((apps) => {
+      if (!apps) {
         return;
       }
-      setIntegrations(integrations);
+      setApps(apps);
       setLoading(false);
     });
   }
 
-  return { loading, data: integrations, refetch };
+  return { loading, data: apps, refetch };
 }
 
 type TriggerTemplate = Trigger;
 
-export interface IntegrationTemplate {
+export interface AppTemplate {
   id: number;
   name: string;
   description: string;
   triggerTemplates: TriggerTemplate[];
 }
 
-export function useIntegrationTemplates() {
-  const [templates, setTemplates] = React.useState<IntegrationTemplate[]>([]);
+export function useAppTemplates() {
+  const [templates, setTemplates] = React.useState<AppTemplate[]>([]);
 
   React.useEffect(() => {
     async function fetchTemplates() {
-      const response = await fetch(
-        `http://localhost:8080/api/integrations/templates`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          next: {
-            tags: [`templates`],
-          },
-        }
-      );
+      const response = await fetch(`${API_URL}/apps/templates`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        next: {
+          tags: [`templates`],
+        },
+      });
 
       if (!response?.ok) {
         toast({
           title: "Something went wrong.",
-          description: "Integration templates could not be fetched.",
+          description: "App templates could not be fetched.",
           variant: "destructive",
         });
         return null;
@@ -423,3 +414,5 @@ export function useIntegrationTemplates() {
 
   return templates;
 }
+
+export const API_URL = process.env.NEXT_PUBLIC_API_URL;

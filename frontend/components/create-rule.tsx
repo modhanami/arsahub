@@ -31,7 +31,7 @@ import * as z from "zod";
 import { ruleCreateSchema } from "../lib/validations/rule";
 
 import { useParams } from "next/navigation";
-import { useActions, useTriggers } from "../hooks/api";
+import { API_URL, useActions, useTriggers } from "../hooks/api";
 import { RuleCreateButton } from "./rule-create-button";
 import { DialogHeader } from "./ui/dialog";
 import { toast } from "./ui/use-toast";
@@ -39,8 +39,7 @@ import { DevTool } from "@hookform/devtools";
 
 type FormData = z.infer<typeof ruleCreateSchema>;
 export function CreateRuleForm() {
-  const { id, integrationId }: { id: string; integrationId: string } =
-    useParams();
+  const { id, appId }: { id: string; appId: string } = useParams();
   const router = useRouter();
   const form = useForm<FormData>({
     resolver: zodResolver(ruleCreateSchema),
@@ -51,7 +50,7 @@ export function CreateRuleForm() {
   });
   const [isCreating, setIsCreating] = React.useState(false);
   const [isOpen, setIsOpen] = React.useState(false);
-  const triggers = useTriggers(Number(integrationId));
+  const triggers = useTriggers(Number(appId));
   const actions = useActions();
   const [selectedTrigger, setSelectedTrigger] = React.useState(null);
 
@@ -59,16 +58,13 @@ export function CreateRuleForm() {
     console.log("submit", values);
     setIsCreating(true);
 
-    const response = await fetch(
-      `http://localhost:8080/api/activities/${id}/rules`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(values),
-      }
-    );
+    const response = await fetch(`${API_URL}/activities/${id}/rules`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(values),
+    });
 
     setIsCreating(false);
     setIsOpen(false);

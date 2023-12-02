@@ -32,9 +32,14 @@ class SocketIOService(val server: SocketIOServer) {
         defaultNamespace.addEventListener(
             "subscribe-user",
             String::class.java
-        ) { client: SocketIOClient, data: String, ackSender: AckRequest ->
-            println("subscribe-user: $data")
-            client.joinRoom(getUserRoomName(data))
+        ) { client: SocketIOClient, rawUserId: String, ackSender: AckRequest ->
+            println("subscribe-user: $rawUserId")
+            val userId = rawUserId.toLongOrNull()
+            if (userId == null) {
+                ackSender.sendAckData("Invalid user ID")
+                return@addEventListener
+            }
+            client.joinRoom(getUserRoomName(userId))
             ackSender.sendAckData("OK")
         }
     }
@@ -57,7 +62,7 @@ class SocketIOService(val server: SocketIOServer) {
         println("broadcastToActivityRoom: $activityId, $data")
     }
 
-    fun broadcastToUserRoom(userId: String, data: ActivityUpdate) {
+    fun broadcastToUserRoom(userId: Long, data: ActivityUpdate) {
         val userRoom = defaultNamespace.getRoomOperations(getUserRoomName(userId))
         val type = when (data) {
             is PointsUpdate -> "points-update"
@@ -79,7 +84,7 @@ class SocketIOService(val server: SocketIOServer) {
         return "/activities/$activityId"
     }
 
-    fun getUserRoomName(userId: String): String {
+    fun getUserRoomName(userId: Long): String {
         return "/users/$userId"
     }
 

@@ -1,5 +1,7 @@
+import { API_URL } from "../hooks/api";
+
 export function fetchRules(activityId: number) {
-  return fetch(`http://localhost:8080/api/activities/${activityId}/rules`, {
+  return fetch(`${API_URL}/activities/${activityId}/rules`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
@@ -16,7 +18,7 @@ export function fetchRules(activityId: number) {
 //   React.useEffect(() => {
 //     async function fetchTriggers() {
 //       const response = await fetch(
-//         `http://localhost:8080/api/activities/${id}/triggers`,
+//         `${API_URL}/activities/${id}/triggers`,
 //         {
 //           method: "GET",
 //           headers: {
@@ -52,7 +54,7 @@ export function fetchRules(activityId: number) {
 //   React.useEffect(() => {
 //     async function fetchActions() {
 //       const response = await fetch(
-//         `http://localhost:8080/api/activities/actions`,
+//         `${API_URL}/activities/actions`,
 //         {
 //           method: "GET",
 //           headers: {
@@ -82,9 +84,9 @@ export function fetchRules(activityId: number) {
 //   return actions;
 // }
 
-export function fetchTriggers(integrationId: number) {
+export function fetchTriggers(appId: number) {
   return fetch(
-    `http://localhost:8080/api/integrations/triggers?integrationId={${integrationId}}`, // TODO: remove param
+    `${API_URL}/apps/triggers?appId={${appId}}`, // TODO: remove param
     {
       method: "GET",
       headers: {
@@ -101,7 +103,7 @@ export function fetchTriggers(integrationId: number) {
 
 // fetch members
 export function fetchMembers(activityId: number) {
-  return fetch(`http://localhost:8080/api/activities/${activityId}/members`, {
+  return fetch(`${API_URL}/activities/${activityId}/members`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",

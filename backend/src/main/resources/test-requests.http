@@ -9,7 +9,7 @@ POST {{host}}/api/activities/{{activityId}}/members
 Content-Type: application/json
 
 {
-  "externalUserIds": [
+  "userIds": [
     "user1",
     "user2"
   ]
@@ -131,7 +131,7 @@ Content-Type: application/json
 }
 
 ### Create trigger for activity (without custom fields)
-POST {{host}}/api/integrations/triggers
+POST {{host}}/api/apps/triggers
 Content-Type: application/json
 
 {
@@ -167,7 +167,7 @@ Content-Type: application/json
 GET {{host}}/api/activities/{{activityId}}/rules
 
 ### Increment unit
-POST http://localhost:8080/api/integrations/{{activityId}}/increment-unit
+POST http://localhost:8080/api/apps/{{activityId}}/increment-unit
 Content-Type: application/json
 
 {
@@ -177,7 +177,7 @@ Content-Type: application/json
 }
 
 ### Create custom unit
-POST http://localhost:8080/api/integrations/custom-units
+POST http://localhost:8080/api/apps/custom-units
 Content-Type: application/json
 
 {

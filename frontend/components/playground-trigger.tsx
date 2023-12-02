@@ -37,6 +37,7 @@ import { playgroundTriggerSchema } from "../lib/validations/playground";
 import { fetchMembers, fetchRules, fetchTriggers } from "../lib/api";
 import { id } from "date-fns/locale";
 import {
+  API_URL,
   useMembers,
   useRules,
   useTriggers,
@@ -61,13 +62,13 @@ interface Action {
 
 type PlaygroundTriggerFormProps = {
   activityId: number;
-  integrationId: number;
+  appId: number;
 };
 
 type FormData = z.infer<typeof playgroundTriggerSchema>;
 export function PlaygroundTriggerForm({
   activityId,
-  integrationId,
+  appId,
 }: PlaygroundTriggerFormProps) {
   console.log("activityId", activityId);
   const form = useForm<FormData>({
@@ -76,7 +77,7 @@ export function PlaygroundTriggerForm({
   const selectedUserId = form.watch("userId") || null;
   const [isCreating, setIsSending] = React.useState(false);
   const members = useMembers(activityId);
-  const triggers = useTriggers(integrationId);
+  const triggers = useTriggers(appId);
   const rules = useRules(activityId);
 
   async function onSubmit(values: FormData) {
@@ -90,7 +91,7 @@ export function PlaygroundTriggerForm({
     };
 
     const response = await fetch(
-      `http://localhost:8080/api/activities/${activityId}/trigger`,
+      `${API_URL}/activities/${activityId}/trigger`,
       {
         method: "POST",
         headers: {
@@ -247,7 +248,7 @@ export function PlaygroundTriggerForm({
             //   achievements={userProfile.achievements}
             // />
             <iframe
-              src={`/embed/integrations/${integrationId}/activities/${activityId}/profile?userId=${selectedUserId}`}
+              src={`/embed/apps/${appId}/activities/${activityId}/profile?userId=${selectedUserId}`}
               width="100%"
               height="100%"
               allowFullScreen={true}

@@ -46,11 +46,11 @@ import {
 import { toast } from "./ui/use-toast";
 import { useParams, useRouter } from "next/navigation";
 import { ActivityCreateButton } from "./activity-create-button";
+import { API_URL } from "../hooks/api";
 
 type FormData = z.infer<typeof activityCreateSchema>;
 export function CardWithForm() {
-  const { id, integrationId }: { id: string; integrationId: string } =
-    useParams();
+  const { id, appId }: { id: string; appId: string } = useParams();
   const router = useRouter();
   const form = useForm<FormData>({
     resolver: zodResolver(activityCreateSchema),
@@ -63,7 +63,7 @@ export function CardWithForm() {
 
     setIsCreating(true);
 
-    const response = await fetch(`http://localhost:8080/api/activities`, {
+    const response = await fetch(`${API_URL}/activities`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -71,7 +71,7 @@ export function CardWithForm() {
       body: JSON.stringify({
         title: values.title,
         description: values.description,
-        integrationId: integrationId,
+        appId: appId,
       }),
     });
 

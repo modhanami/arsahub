@@ -31,8 +31,6 @@ class Action(
 ) : AuditedEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "effect_id", nullable = false)
+    @Column(name = "action_id", nullable = false)
     var id: Long? = null
-
-
 }

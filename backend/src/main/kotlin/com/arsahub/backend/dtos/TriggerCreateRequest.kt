@@ -12,6 +12,6 @@ data class TriggerCreateRequest(
     val description: String?,
     @field:NotBlank(message = "Key is required")
     val key: String?,
-    @field:NotNull(message = "Integration ID is required")
-    val integrationId: Long? // TODO: retrieve integration ID from JWT
+    @field:NotNull(message = "App ID is required")
+    val appId: Long? // TODO: retrieve app ID from JWT
 )

@@ -26,8 +26,8 @@ class TriggerTemplate(
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "integration_template_id", nullable = false)
-    var integrationTemplate: IntegrationTemplate? = null,
+    @JoinColumn(name = "app_template_id", nullable = false)
+    var appTemplate: AppTemplate? = null,
 
     ) {
     @Id

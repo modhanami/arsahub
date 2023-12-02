@@ -30,7 +30,7 @@ class ActivityController(
     private val achievementRepository: AchievementRepository,
 ) {
     @Operation(
-        summary = "Create an activity an integration",
+        summary = "Create an activity an app",
         responses = [
             ApiResponse(
                 responseCode = "201",
@@ -75,7 +75,7 @@ class ActivityController(
     }
 
     @Operation(
-        summary = "List activities for an integration",
+        summary = "List activities for an app",
         responses = [
             ApiResponse(
                 responseCode = "200",
@@ -84,12 +84,12 @@ class ActivityController(
     )
     @GetMapping
     fun listActivities(
-        @RequestParam integrationId: Long,
+        @RequestParam appId: Long,
     ): List<ActivityResponse> {
-        return activityService.listActivities(integrationId).map { ActivityResponse.fromEntity(it) }
+        return activityService.listActivities(appId).map { ActivityResponse.fromEntity(it) }
     }
 
-    data class ActivityAddMembersRequest(val externalUserIds: List<String>)
+    data class ActivityAddMembersRequest(val userIds: List<Long>)
 
     @Operation(
         summary = "Add new members to an activity",
@@ -289,11 +289,11 @@ class ActivityController(
     @GetMapping("/{activityId}/profile")
     fun getUserActivityProfile(
         @PathVariable activityId: Long,
-        @RequestParam userId: String
+        @RequestParam userId: Long
     ): UserActivityProfileResponse {
         val existingActivity = activityRepository.findByIdOrNull(activityId)
             ?: throw EntityNotFoundException("Activity with ID $activityId not found")
-        val existingMember = existingActivity.members.find { it.user?.externalUserId == userId }
+        val existingMember = existingActivity.members.find { it.user?.userId == userId }
             ?: throw EntityNotFoundException("User with ID $userId not found")
 
         return UserActivityProfileResponse.fromEntity(existingMember)

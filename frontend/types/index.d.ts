@@ -32,6 +32,6 @@ export type DashboardConfig = {
 export type ContextProps = {
   params: {
     id: string;
-    integrationId: string;
+    appId: string;
   };
 };

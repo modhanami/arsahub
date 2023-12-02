@@ -32,9 +32,9 @@ class Trigger(
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "integration_id", nullable = false)
-    var integration: ExternalSystem? = null
-    
+    @JoinColumn(name = "app_id", nullable = false)
+    var app: App? = null
+
 ) : AuditedEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

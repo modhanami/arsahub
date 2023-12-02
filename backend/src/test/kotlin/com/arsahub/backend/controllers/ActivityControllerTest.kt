@@ -7,7 +7,7 @@ import com.arsahub.backend.models.Activity
 import com.arsahub.backend.models.User
 import com.arsahub.backend.repositories.UserRepository
 import com.arsahub.backend.services.ActivityServiceImpl
-import com.arsahub.backend.services.IntegrationService
+import com.arsahub.backend.services.AppService
 import com.corundumstudio.socketio.SocketIOServer
 import jakarta.transaction.Transactional
 import org.assertj.core.api.Assertions.assertThat
@@ -40,6 +40,7 @@ import org.testcontainers.junit.jupiter.Testcontainers
 class ActivityControllerTest {
     lateinit var ACTIVITY: Activity
     lateinit var ACHIEVEMENT: Achievement
+    lateinit var USER: User
 
     @MockBean
     @Suppress("unused")
@@ -50,28 +51,25 @@ class ActivityControllerTest {
     private lateinit var socketIOService: SocketIOService // no-op
 
     fun seed_activityWith1User() {
-        // create integration owner
-        val integrationOwner = userRepository.save(
+        // create app owner
+        val appOwner = userRepository.save(
             User(
-                username = "integration_owner",
-                name = "Integration Owner",
-                externalUserId = "integration_owner",
+                username = "app_owner",
+                name = "App Owner",
             )
         )
-        // integration 1
-        val integration = integrationService.createIntegration(
-            IntegrationCreateRequest(
-                name = "Integration 1",
-                createdBy = integrationOwner.userId!!
+        // app 1
+        val app = appService.createApp(
+            AppCreateRequest(
+                name = "App 1",
+                createdBy = appOwner.userId!!
             )
         )
         // create user
-        userRepository.save(
+        USER = userRepository.save(
             User(
                 username = "user1",
-                name = "User 1",
-                externalUserId = "user1",
-                externalSystem = integration
+                name = "User 1"
             )
         )
 
@@ -80,19 +78,21 @@ class ActivityControllerTest {
             ActivityCreateRequest(
                 title = "Activity 1",
                 description = "Activity 1",
+                appId = app.id!!
             )
         )
         // add user to activity
         activityServiceImpl.addMembers(
             ACTIVITY.activityId!!,
-            ActivityController.ActivityAddMembersRequest(externalUserIds = listOf("user1"))
+            ActivityController.ActivityAddMembersRequest(userIds = listOf(USER.userId!!))
         )
-        // create trigger for integration
-        integrationService.createTrigger(
+        // create trigger for app
+        appService.createTrigger(
             TriggerCreateRequest(
                 title = "Share activity",
                 description = "Triggered when activity is shared",
-                key = "activity_shared"
+                key = "activity_shared",
+                appId = app.id!!
             )
         )
         // achievement
@@ -106,22 +106,22 @@ class ActivityControllerTest {
         // default action from us
         jdbcClient.sql(
             """
-            INSERT INTO action (effect_id, title, description, json_schema, created_at, updated_at, key) VALUES (1, 'Add points', null, '{"type": "object", "${'$'}schema": "http://json-schema.org/draft-04/schema#", "required": ["value"], "properties": {"value": {"type": "number"}}}', '2023-10-31 13:54:49.958514 +00:00', '2023-10-31 13:54:49.958514 +00:00', 'add_points');
-            INSERT INTO action (effect_id, title, description, json_schema, created_at, updated_at, key) VALUES (2, 'Unlock achievement', null, '{"type": "object", "${'$'}schema": "http://json-schema.org/draft-04/schema#", "required": ["achievementId"], "properties": {"achievementId": {"type": "number"}}}', '2023-10-31 14:08:24.064419 +00:00', '2023-10-31 14:08:24.064419 +00:00', 'unlock_achievement');
+            INSERT INTO action (action_id, title, description, json_schema, created_at, updated_at, key) VALUES (1, 'Add points', null, '{"type": "object", "${'$'}schema": "http://json-schema.org/draft-04/schema#", "required": ["value"], "properties": {"value": {"type": "number"}}}', '2023-10-31 13:54:49.958514 +00:00', '2023-10-31 13:54:49.958514 +00:00', 'add_points');
+            INSERT INTO action (action_id, title, description, json_schema, created_at, updated_at, key) VALUES (2, 'Unlock achievement', null, '{"type": "object", "${'$'}schema": "http://json-schema.org/draft-04/schema#", "required": ["achievementId"], "properties": {"achievementId": {"type": "number"}}}', '2023-10-31 14:08:24.064419 +00:00', '2023-10-31 14:08:24.064419 +00:00', 'unlock_achievement');
         """
         ).update()
 
         // default triggers from us
         jdbcClient.sql(
             """
-            INSERT INTO trigger (title, description, created_at, updated_at, key, json_schema) VALUES ('Points reached', 'Points reached', '2023-11-25 09:15:26.439378 +00:00', '2023-11-25 09:15:26.439378 +00:00', 'points_reached', '{"type": "object", "${'$'}schema": "http://json-schema.org/draft-04/schema#", "required": ["value"], "properties": {"value": {"type": "number"}}}');
+            INSERT INTO trigger (title, description, created_at, updated_at, key, json_schema, app_id) VALUES ('Points reached', 'Points reached', '2023-11-25 09:15:26.439378 +00:00', '2023-11-25 09:15:26.439378 +00:00', 'points_reached', '{"type": "object", "${'$'}schema": "http://json-schema.org/draft-04/schema#", "required": ["value"], "properties": {"value": {"type": "number"}}}', ${app.id});
             """
         ).update()
 
     }
 
     @Autowired
-    private lateinit var integrationService: IntegrationService
+    private lateinit var appService: AppService
 
     @Autowired
     private lateinit var jdbcClient: JdbcClient
@@ -140,7 +140,8 @@ class ActivityControllerTest {
         @get:RestartScope
         @ServiceConnection
         @Suppress("unused")
-        val postgres = PostgreSQLContainer<Nothing>("postgres:16-alpine")
+        val postgres: PostgreSQLContainer<Nothing> =
+            PostgreSQLContainer<Nothing>("postgres:16-alpine").withInitScript("schema.sql")
     }
 
     @Test
@@ -222,7 +223,7 @@ class ActivityControllerTest {
                 .content(
                     """
                     {
-                        "userId": "user1",
+                        "userId": ${USER.userId!!},
                         "key": "activity_shared",
                         "params": {}
                     }
@@ -233,7 +234,7 @@ class ActivityControllerTest {
 
         // check that user has 15 points (10 + 5)
         val user = activityServiceImpl.listMembers(ACTIVITY.activityId!!)
-            .find { it.user?.externalUserId == "user1" }
+            .find { it.user?.userId == USER.userId!! }
 
         assertThat(user?.points).isEqualTo(15)
     }
@@ -282,7 +283,7 @@ class ActivityControllerTest {
                     .content(
                         """
                         {
-                            "userId": "user1",
+                            "userId": ${USER.userId!!},
                             "key": "activity_shared",
                             "params": {}
                         }
@@ -294,7 +295,7 @@ class ActivityControllerTest {
 
         // check that user has 25 points (10 + 10 + 5)
         val user = activityServiceImpl.listMembers(ACTIVITY.activityId!!)
-            .find { it.user?.externalUserId == "user1" }
+            .find { it.user?.userId == USER.userId!! }
 
         assertThat(user?.points).isEqualTo(25)
     }
@@ -325,7 +326,7 @@ class ActivityControllerTest {
                 .content(
                     """
                     {
-                        "userId": "user1",
+                        "userId": ${USER.userId!!},
                         "key": "activity_shared",
                         "params": {}
                     }
@@ -336,7 +337,7 @@ class ActivityControllerTest {
 
         // check that user has 1 achievement
         val user = activityServiceImpl.listMembers(ACTIVITY.activityId!!)
-            .find { it.user?.externalUserId == "user1" }
+            .find { it.user?.userId == USER.userId!! }
 
         assertThat(user?.userActivityAchievements?.size).isEqualTo(1)
 
@@ -347,7 +348,7 @@ class ActivityControllerTest {
                 .content(
                     """
                     {
-                        "userId": "user1",
+                        "userId": ${USER.userId!!},
                         "key": "activity_shared",
                         "params": {}
                     }
@@ -358,7 +359,7 @@ class ActivityControllerTest {
 
         // check that user still has 1 achievement
         val user2 = activityServiceImpl.listMembers(ACTIVITY.activityId!!)
-            .find { it.user?.externalUserId == "user1" }
+            .find { it.user?.userId == USER.userId!! }
 
         assertThat(user2?.userActivityAchievements?.size).isEqualTo(1)
     }
