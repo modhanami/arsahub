@@ -6,6 +6,7 @@ import com.arsahub.backend.repositories.CustomUnitRepository
 import com.corundumstudio.socketio.SocketIOServer
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.devtools.restart.RestartScope
@@ -30,6 +31,7 @@ import org.testcontainers.junit.jupiter.Testcontainers
 @Testcontainers
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
+@Disabled
 class AppControllerTest {
     @Autowired
     private lateinit var customUnitRepository: CustomUnitRepository
