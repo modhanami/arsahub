@@ -2,11 +2,9 @@ package com.arsahub.backend.controllers
 
 import com.arsahub.backend.dtos.*
 import com.arsahub.backend.exceptions.ConflictException
-import com.arsahub.backend.models.CustomUnit
-import com.arsahub.backend.models.RuleProgressTime
-import com.arsahub.backend.models.Trigger
-import com.arsahub.backend.models.UserActivityProgress
+import com.arsahub.backend.models.*
 import com.arsahub.backend.repositories.*
+import com.arsahub.backend.security.auth.CurrentApp
 import com.arsahub.backend.services.ActivityService
 import com.arsahub.backend.services.AppService
 import com.arsahub.backend.utils.JsonSchemaValidator
@@ -229,8 +227,29 @@ class AppController(
     )
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    fun createApp(@Valid @RequestBody request: AppCreateRequest): AppResponse {
-        return appService.createApp(request).let { AppResponse.fromEntity(it) }
+    fun createApp(@Valid @RequestBody request: AppCreateRequest): AppCreateResponse {
+        return appService.createApp(request).let { AppCreateResponse.fromEntity(it.app, it.apiKey) }
+    }
+
+    @Operation(
+        summary = "Validate key",
+        responses = [
+            ApiResponse(
+                responseCode = "200",
+            ),
+            ApiResponse(
+                responseCode = "400",
+                content = [Content(schema = Schema(implementation = ApiValidationError::class))]
+            )
+        ]
+    )
+    @PostMapping("{appId}/validate-key")
+    @ResponseStatus(HttpStatus.CREATED)
+    fun validateToken(
+        @PathVariable appId: Long,
+        @CurrentApp app: App
+    ): Boolean {
+        return true
     }
 
     @Operation(

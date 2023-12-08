@@ -3,7 +3,6 @@ package com.arsahub.backend.models
 import jakarta.persistence.*
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
-import java.util.*
 
 @Entity
 @Table(name = "app")
@@ -19,7 +18,7 @@ class App(
 
     @NotNull
     @Column(name = "api_key", nullable = false)
-    var apiKey: UUID? = null,
+    var apiKey: String? = null,
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

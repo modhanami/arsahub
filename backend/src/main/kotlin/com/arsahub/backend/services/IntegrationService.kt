@@ -1,6 +1,7 @@
 package com.arsahub.backend.services
 
 import com.arsahub.backend.dtos.AppCreateRequest
+import com.arsahub.backend.dtos.AppWithAPIToken
 import com.arsahub.backend.dtos.TriggerCreateRequest
 import com.arsahub.backend.dtos.TriggerResponse
 import com.arsahub.backend.exceptions.ConflictException
@@ -12,14 +13,14 @@ import com.arsahub.backend.repositories.AppTemplateRepository
 import com.arsahub.backend.repositories.TriggerRepository
 import com.arsahub.backend.repositories.UserRepository
 import org.springframework.stereotype.Service
-import java.util.*
 
 @Service
 class AppService(
     private val triggerRepository: TriggerRepository,
     private val userRepository: UserRepository,
     private val appTemplateRepository: AppTemplateRepository,
-    private val appRepository: AppRepository
+    private val appRepository: AppRepository,
+    private val apiKeyService: APIKeyService
 ) {
 
     fun createTrigger(request: TriggerCreateRequest): TriggerResponse {
@@ -40,7 +41,7 @@ class AppService(
         return triggerRepository.findAllByAppId(appId)
     }
 
-    fun createApp(request: AppCreateRequest): App {
+    fun createApp(request: AppCreateRequest): AppWithAPIToken {
         val user = userRepository.findById(request.createdBy).orElseThrow { Exception("User not found") }
 
         // name should be unique for each user
@@ -48,15 +49,16 @@ class AppService(
             throw ConflictException("App with this name already exists for this user")
         }
 
+        val generatedAPIKey = apiKeyService.generateKey()
         val app = App(
             title = request.name,
             createdBy = user,
-            apiKey = UUID.randomUUID()
+            apiKey = generatedAPIKey.hashedAPIKey
         )
         val savedApp = appRepository.save(app)
 
         if (request.templateId == null) {
-            return savedApp
+            return AppWithAPIToken(savedApp, generatedAPIKey.apiKey)
         }
 
         println("Populating for template ${request.templateId}")
@@ -73,7 +75,7 @@ class AppService(
             println("Created trigger ${it.title} for app ${savedApp.title} (${savedApp.id})")
         }
 
-        return savedApp
+        return AppWithAPIToken(savedApp, generatedAPIKey.apiKey)
     }
 
     fun listApps(userId: Long): List<App> {
