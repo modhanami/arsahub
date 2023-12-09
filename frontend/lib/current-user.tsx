@@ -49,14 +49,17 @@ export async function setCurrentUserWithUUID(uuid: string) {
   localStorage.setItem("user-uuid", uuid);
   loading = true;
 
-  return fetchUserByUUID(uuid).then((user) => {
-    currentUser = {
-      ...user,
-      uuid,
-    };
-    userChangeListeners.forEach((listener) => listener({ ...user, uuid }));
-    loading = false;
-  });
+  return fetchUserByUUID(uuid)
+    .then((user) => {
+      currentUser = {
+        ...user,
+        uuid,
+      };
+      userChangeListeners.forEach((listener) => listener({ ...user, uuid }));
+    })
+    .finally(() => {
+      loading = false;
+    });
 }
 
 export function logoutCurrentUser() {

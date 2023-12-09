@@ -48,10 +48,10 @@ import { getCurrentApp } from "../lib/current-app";
 //     });
 //   }
 
-export function makeAuthorizationHeader() {
+export function makeAuthorizationHeader(): Record<string, string> {
   const currentApp = getCurrentApp();
   if (currentApp === null) {
-    throw new Error("No current app");
+    return {};
   }
 
   return {
@@ -109,24 +109,21 @@ export interface Trigger {
   jsonSchema: Record<string, unknown>;
 }
 
-export function useTriggers(appId: number) {
+export function useTriggers() {
   const [triggers, setTriggers] = React.useState<Trigger[]>([]);
 
   React.useEffect(() => {
     async function fetchTriggers() {
-      const response = await fetch(
-        `${API_URL}/apps/triggers?appId=${appId}`, // TODO: Remove param
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            ...makeAuthorizationHeader(),
-          },
-          next: {
-            tags: [`triggers`],
-          },
-        }
-      );
+      const response = await fetch(`${API_URL}/apps/triggers`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          ...makeAuthorizationHeader(),
+        },
+        next: {
+          tags: [`triggers`],
+        },
+      });
 
       if (!response?.ok) {
         toast({
@@ -146,7 +143,7 @@ export function useTriggers(appId: number) {
       }
       setTriggers(triggers);
     });
-  }, [appId]);
+  }, []);
 
   return triggers;
 }

@@ -50,7 +50,6 @@ import { API_URL } from "../hooks/api";
 
 type FormData = z.infer<typeof activityCreateSchema>;
 export function CardWithForm() {
-  const { id, appId }: { id: string; appId: string } = useParams();
   const router = useRouter();
   const form = useForm<FormData>({
     resolver: zodResolver(activityCreateSchema),
@@ -71,7 +70,6 @@ export function CardWithForm() {
       body: JSON.stringify({
         title: values.title,
         description: values.description,
-        appId: appId,
       }),
     });
 

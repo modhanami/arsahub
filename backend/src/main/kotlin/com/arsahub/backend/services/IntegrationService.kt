@@ -85,7 +85,7 @@ class AppService(
     }
 
     fun getAppByUserUUID(uuid: UUID): App {
-        return appRepository.findByCreatedByUuid(uuid).find { it.title == "app1" } ?: throw Exception("App not found")
+        return appRepository.findByCreatedByUuid(uuid).first() ?: throw Exception("App not found")
     }
 
     fun getUserByUUID(userUUID: UUID): User {

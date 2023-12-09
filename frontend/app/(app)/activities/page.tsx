@@ -6,15 +6,14 @@ import { ActivityItem } from "@/components/activity-item";
 import { EmptyPlaceholder } from "@/components/empty-placeholder";
 import { DashboardHeader } from "@/components/header";
 import { DashboardShell } from "@/components/shell";
-import { CardWithForm } from "../../../../../components/create-activity";
-import { useActivities } from "../../../../../hooks/api";
-import { ContextProps } from "../../../../../types";
+import { useActivities } from "../../../hooks/api";
+import { ContextProps } from "../../../types";
 
 type DashboardPageProps = ContextProps;
 
-export default function DashboardPage({
-  params: { id, appId },
-}: DashboardPageProps) {
+export default function Page({ params: { id } }: DashboardPageProps) {
+  console.log("Rendered Activities Page");
+
   const activities = useActivities();
 
   return (
@@ -23,17 +22,13 @@ export default function DashboardPage({
         heading="Activities"
         text="Create and manage activities."
       >
-        <CardWithForm />
+        {/* <CardWithForm /> */}
       </DashboardHeader>
       <div>
         {activities?.length ? (
           <div className="divide-y divide-border rounded-md border">
             {activities.map((activity) => (
-              <ActivityItem
-                key={activity.id}
-                activity={activity}
-                appId={appId}
-              />
+              <ActivityItem key={activity.id} activity={activity} />
             ))}
           </div>
         ) : (

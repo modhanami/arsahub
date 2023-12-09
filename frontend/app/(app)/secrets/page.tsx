@@ -1,11 +1,11 @@
 "use client";
 import { useState } from "react";
-import { useApp, useApps } from "../../../../../hooks/api";
-import { Input } from "../../../../../components/ui/input";
-import { Button } from "../../../../../components/ui/button";
-import { DashboardHeader } from "../../../../../components/header";
-import { DashboardShell } from "../../../../../components/shell";
-import { toast } from "../../../../../components/ui/use-toast";
+import { useApp, useApps } from "../../../hooks/api";
+import { Input } from "../../../components/ui/input";
+import { Button } from "../../../components/ui/button";
+import { DashboardHeader } from "../../../components/header";
+import { DashboardShell } from "../../../components/shell";
+import { toast } from "../../../components/ui/use-toast";
 export default function Page() {
   const { data, loading } = useApp("4c1250f9-e442-45d6-ae67-2b41b0e3d4b9");
   const [showSecret, setShowSecret] = useState(false);

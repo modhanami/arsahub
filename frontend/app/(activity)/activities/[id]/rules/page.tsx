@@ -1,11 +1,11 @@
 "use client";
-import { CreateRuleForm } from "../../../../../../../components/create-rule";
-import { EmptyPlaceholder } from "../../../../../../../components/empty-placeholder";
-import { DashboardHeader } from "../../../../../../../components/header";
-import { RuleCreateButton } from "../../../../../../../components/rule-create-button";
-import { RuleItem } from "../../../../../../../components/rule-item";
-import { DashboardShell } from "../../../../../../../components/shell";
-import { useRules } from "../../../../../../../hooks/api";
+import { CreateRuleForm } from "../../../../../components/create-rule";
+import { EmptyPlaceholder } from "../../../../../components/empty-placeholder";
+import { DashboardHeader } from "../../../../../components/header";
+import { RuleCreateButton } from "../../../../../components/rule-create-button";
+import { RuleItem } from "../../../../../components/rule-item";
+import { DashboardShell } from "../../../../../components/shell";
+import { useRules } from "../../../../../hooks/api";
 
 export interface Rule {
   id: number;

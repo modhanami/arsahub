@@ -5,15 +5,14 @@ import { ActivityResponse } from "../types/generated-types";
 
 interface ActivityItemProps {
   activity: ActivityResponse;
-  appId: string;
 }
 
-export function ActivityItem({ activity, appId }: ActivityItemProps) {
+export function ActivityItem({ activity }: ActivityItemProps) {
   return (
     <div className="flex items-center justify-between p-4">
       <div className="grid gap-1">
         <Link
-          href={`/apps/${appId}/activities/${activity.id}`}
+          href={`/activities/${activity.id}`}
           className="font-semibold hover:underline"
         >
           {activity.title}

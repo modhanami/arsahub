@@ -1,6 +1,6 @@
-import { API_URL } from "../../../../../../../hooks/api";
-import { ContextProps } from "../../../../../../../types";
-import { LeaderboardResponse } from "../../../../../../../types/generated-types";
+import { API_URL } from "../../../../../hooks/api";
+import { ContextProps } from "../../../../../types";
+import { LeaderboardResponse } from "../../../../../types/generated-types";
 
 type Props = ContextProps;
 

@@ -1,7 +1,7 @@
-import { DashboardHeader } from "../../../../../../../components/header";
-import { PlaygroundTriggerForm } from "../../../../../../../components/playground-trigger";
-import { DashboardShell } from "../../../../../../../components/shell";
-import { ContextProps } from "../../../../../../../types";
+import { DashboardHeader } from "../../../../../components/header";
+import { PlaygroundTriggerForm } from "../../../../../components/playground-trigger";
+import { DashboardShell } from "../../../../../components/shell";
+import { ContextProps } from "../../../../../types";
 
 export type Playground = {
   id: number;

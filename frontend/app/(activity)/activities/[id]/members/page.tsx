@@ -1,11 +1,11 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { DashboardHeader } from "../../../../../../../components/header";
-import { DashboardShell } from "../../../../../../../components/shell";
-import { toast } from "../../../../../../../components/ui/use-toast";
-import { useMembers } from "../../../../../../../hooks/api";
-import { ContextProps } from "../../../../../../../types";
-import { MemberResponse } from "../../../../../../../types/generated-types";
+import { DashboardHeader } from "../../../../../components/header";
+import { DashboardShell } from "../../../../../components/shell";
+import { toast } from "../../../../../components/ui/use-toast";
+import { useMembers } from "../../../../../hooks/api";
+import { ContextProps } from "../../../../../types";
+import { MemberResponse } from "../../../../../types/generated-types";
 
 export type Props = {
   searchParams: {
@@ -33,9 +33,7 @@ export default function Page({ params, searchParams }: Props) {
   function handleClick(member: MemberResponse) {
     console.log(member);
 
-    router.push(
-      `/apps/${params.appId}/activities/${params.id}/members?userId=${member.userId}`
-    );
+    router.push(`/activities/${params.id}/members?userId=${member.userId}`);
 
     toast({
       title: `User ${member.username} selected.`,
@@ -61,7 +59,7 @@ export default function Page({ params, searchParams }: Props) {
         <div className="w-1/2">
           {searchParams.userId && (
             <iframe
-              src={`/embed/apps/${params.appId}/activities/${params.id}/profile?userId=${searchParams.userId}`}
+              src={`/embed/activities/${params.id}/profile?userId=${searchParams.userId}`}
               width="100%"
               height="100%"
               allowFullScreen={true}

@@ -248,7 +248,7 @@ class AppController(
             )
         ]
     )
-    @PostMapping("{appId}/validate-key")
+    @PostMapping("/validate-key")
     @ResponseStatus(HttpStatus.CREATED)
     fun validateToken(
         @PathVariable appId: Long,

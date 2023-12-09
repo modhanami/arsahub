@@ -34,7 +34,6 @@ import { RuleCreateButton } from "./rule-create-button";
 import { DialogHeader } from "./ui/dialog";
 import { toast } from "./ui/use-toast";
 import { playgroundTriggerSchema } from "../lib/validations/playground";
-import { fetchMembers, fetchRules, fetchTriggers } from "../lib/api";
 import { id } from "date-fns/locale";
 import {
   API_URL,
@@ -63,13 +62,11 @@ interface Action {
 
 type PlaygroundTriggerFormProps = {
   activityId: number;
-  appId: number;
 };
 
 type FormData = z.infer<typeof playgroundTriggerSchema>;
 export function PlaygroundTriggerForm({
   activityId,
-  appId,
 }: PlaygroundTriggerFormProps) {
   console.log("activityId", activityId);
   const form = useForm<FormData>({
@@ -78,7 +75,7 @@ export function PlaygroundTriggerForm({
   const selectedUserId = form.watch("userId") || null;
   const [isCreating, setIsSending] = React.useState(false);
   const members = useMembers(activityId);
-  const triggers = useTriggers(appId);
+  const triggers = useTriggers();
   const rules = useRules(activityId);
 
   async function onSubmit(values: FormData) {
@@ -250,7 +247,7 @@ export function PlaygroundTriggerForm({
             //   achievements={userProfile.achievements}
             // />
             <iframe
-              src={`/embed/apps/${appId}/activities/${activityId}/profile?userId=${selectedUserId}`}
+              src={`/embed/activities/${activityId}/profile?userId=${selectedUserId}`}
               width="100%"
               height="100%"
               allowFullScreen={true}

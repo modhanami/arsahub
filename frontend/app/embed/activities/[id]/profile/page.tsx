@@ -1,7 +1,7 @@
-import { UserProfileRealTime } from "../../../../../../../components/ui/team-members";
-import { API_URL } from "../../../../../../../hooks/api";
-import { ContextProps } from "../../../../../../../types";
-import { UserActivityProfileResponse } from "../../../../../../../types/generated-types";
+import { UserProfileRealTime } from "../../../../../components/ui/team-members";
+import { API_URL } from "../../../../../hooks/api";
+import { ContextProps } from "../../../../../types";
+import { UserActivityProfileResponse } from "../../../../../types/generated-types";
 
 async function getUserProfile(
   activityId: string,

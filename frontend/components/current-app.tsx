@@ -8,7 +8,7 @@ import { Button } from "./ui/button";
 export function CurrentAppForm() {
   const { currentApp, setCurrentAppWithApiKey } = useCurrentApp();
 
-  const [key, setToken] = useState(getCurrentApp().apiKey || "");
+  const [key, setToken] = useState(getCurrentApp()?.apiKey || "");
   const [previousKey, setPreviousKey] = useState(key);
   const [isEditing, setIsEditing] = useState(false);
 
