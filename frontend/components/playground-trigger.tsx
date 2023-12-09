@@ -38,6 +38,7 @@ import { fetchMembers, fetchRules, fetchTriggers } from "../lib/api";
 import { id } from "date-fns/locale";
 import {
   API_URL,
+  makeAuthorizationHeader,
   useMembers,
   useRules,
   useTriggers,
@@ -96,6 +97,7 @@ export function PlaygroundTriggerForm({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...makeAuthorizationHeader(),
         },
         body: JSON.stringify(body),
       }

@@ -4,6 +4,8 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ModeToggle } from "../components/mode-toggle";
 import { Toaster } from "../components/ui/toaster";
+import { CurrentAppProvider } from "../lib/current-app";
+import { CurrentUserProvider } from "../lib/current-user";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -26,9 +28,13 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {/* <ModeToggle /> */}
-          {children}
-          <Toaster />
+          <CurrentUserProvider>
+            <CurrentAppProvider>
+              {/* <ModeToggle /> */}
+              {children}
+              <Toaster />
+            </CurrentAppProvider>
+          </CurrentUserProvider>
         </ThemeProvider>
       </body>
     </html>

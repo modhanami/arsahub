@@ -2,9 +2,11 @@ package com.arsahub.backend.controllers
 
 import com.arsahub.backend.dtos.*
 import com.arsahub.backend.dtos.ApiValidationError
+import com.arsahub.backend.models.App
 import com.arsahub.backend.repositories.AchievementRepository
 import com.arsahub.backend.repositories.ActionRepository
 import com.arsahub.backend.repositories.ActivityRepository
+import com.arsahub.backend.security.auth.CurrentApp
 import com.arsahub.backend.services.ActivityService
 import com.arsahub.backend.services.LeaderboardService
 import io.swagger.v3.oas.annotations.Operation
@@ -16,6 +18,7 @@ import jakarta.persistence.EntityNotFoundException
 import jakarta.validation.Valid
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.http.HttpStatus
+import org.springframework.security.access.AccessDeniedException
 import org.springframework.web.bind.annotation.*
 
 
@@ -44,9 +47,10 @@ class ActivityController(
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     fun createActivity(
-        @Valid @RequestBody activityCreateRequest: ActivityCreateRequest
+        @Valid @RequestBody activityCreateRequest: ActivityCreateRequest,
+        @CurrentApp app: App
     ): ActivityResponse {
-        return activityService.createActivity(activityCreateRequest).let { ActivityResponse.fromEntity(it) }
+        return activityService.createActivity(app, activityCreateRequest).let { ActivityResponse.fromEntity(it) }
     }
 
     @Operation(
@@ -69,9 +73,22 @@ class ActivityController(
     @PutMapping("/{activityId}")
     fun updateActivity(
         @PathVariable activityId: Long,
-        @Valid @RequestBody activityUpdateRequest: ActivityUpdateRequest
+        @Valid @RequestBody activityUpdateRequest: ActivityUpdateRequest,
+        @CurrentApp app: App
     ): ActivityResponse {
+        if (!canPerformAction(activityId, app)) {
+            throw AccessDeniedException("You do not have access to this activity")
+        }
         return activityService.updateActivity(activityId, activityUpdateRequest)
+    }
+
+    fun canPerformAction(
+        targetActivityId: Long,
+        @CurrentApp app: App
+    ): Boolean {
+        val activity = activityRepository.findByIdOrNull(targetActivityId)
+            ?: throw EntityNotFoundException("Activity with ID $targetActivityId not found")
+        return activity.app?.id == app.id
     }
 
     @Operation(
@@ -84,9 +101,9 @@ class ActivityController(
     )
     @GetMapping
     fun listActivities(
-        @RequestParam appId: Long,
+        @CurrentApp app: App
     ): List<ActivityResponse> {
-        return activityService.listActivities(appId).map { ActivityResponse.fromEntity(it) }
+        return app.id?.let { activityService.listActivities(it).map { ActivityResponse.fromEntity(it) } } ?: emptyList()
     }
 
     data class ActivityAddMembersRequest(val userIds: List<Long>)
@@ -109,7 +126,13 @@ class ActivityController(
     )
     @PostMapping("/{activityId}/members")
     @ResponseStatus(HttpStatus.CREATED)
-    fun addMembers(@PathVariable activityId: Long, @RequestBody request: ActivityAddMembersRequest): ActivityResponse {
+    fun addMembers(
+        @PathVariable activityId: Long, @RequestBody request: ActivityAddMembersRequest,
+        @CurrentApp app: App
+    ): ActivityResponse {
+        if (!canPerformAction(activityId, app)) {
+            throw AccessDeniedException("You do not have access to this activity")
+        }
         return activityService.addMembers(activityId, request)
     }
 
@@ -126,7 +149,13 @@ class ActivityController(
         ]
     )
     @GetMapping("/{activityId}/members")
-    fun listMembers(@PathVariable activityId: Long): List<MemberResponse> {
+    fun listMembers(
+        @PathVariable activityId: Long,
+        @CurrentApp app: App
+    ): List<MemberResponse> {
+        if (!canPerformAction(activityId, app)) {
+            throw AccessDeniedException("You do not have access to this activity")
+        }
         return activityService.listMembers(activityId).map { MemberResponse.fromEntity(it) }
     }
 
@@ -147,7 +176,13 @@ class ActivityController(
         ]
     )
     @PostMapping("/{activityId}/trigger")
-    fun trigger(@RequestBody request: ActivityTriggerRequest, @PathVariable activityId: Long) {
+    fun trigger(
+        @RequestBody request: ActivityTriggerRequest, @PathVariable activityId: Long,
+        @CurrentApp app: App
+    ) {
+        if (!canPerformAction(activityId, app)) {
+            throw AccessDeniedException("You do not have access to this activity")
+        }
         return activityService.trigger(activityId, request)
     }
 
@@ -189,8 +224,12 @@ class ActivityController(
     )
     @PostMapping("/{activityId}/rules")
     fun createRule(
-        @PathVariable activityId: Long, @Valid @RequestBody request: RuleCreateRequest
+        @PathVariable activityId: Long, @Valid @RequestBody request: RuleCreateRequest,
+        @CurrentApp app: App
     ): RuleResponse {
+        if (!canPerformAction(activityId, app)) {
+            throw AccessDeniedException("You do not have access to this activity")
+        }
         return activityService.createRule(activityId, request).let { RuleResponse.fromEntity(it) }
     }
 
@@ -207,7 +246,14 @@ class ActivityController(
         ]
     )
     @GetMapping("/{activityId}/rules")
-    fun getRules(@PathVariable activityId: Long): List<RuleResponse> {
+    fun getRules(
+        @PathVariable activityId: Long,
+        @CurrentApp app: App
+    ): List<RuleResponse> {
+        if (!canPerformAction(activityId, app)) {
+            throw AccessDeniedException("You do not have access to this activity")
+        }
+
         val activity = activityRepository.findByIdOrNull(activityId)
             ?: throw EntityNotFoundException("Activity with ID $activityId not found")
 
@@ -234,8 +280,13 @@ class ActivityController(
     @ResponseStatus(HttpStatus.CREATED)
     fun createAchievement(
         @PathVariable activityId: Long,
-        @Valid @RequestBody request: AchievementCreateRequest
+        @Valid @RequestBody request: AchievementCreateRequest,
+        @CurrentApp app: App
     ): AchievementResponse {
+        if (!canPerformAction(activityId, app)) {
+            throw AccessDeniedException("You do not have access to this activity")
+        }
+
         return activityService.createAchievement(activityId, request).let { AchievementResponse.fromEntity(it) }
     }
 
@@ -259,8 +310,13 @@ class ActivityController(
     fun updateAchievement(
         @PathVariable activityId: Long,
         @PathVariable achievementId: Long,
-        @Valid @RequestBody request: AchievementUpdateRequest
+        @Valid @RequestBody request: AchievementUpdateRequest,
+        @CurrentApp app: App
     ): AchievementResponse {
+        if (!canPerformAction(activityId, app)) {
+            throw AccessDeniedException("You do not have access to this activity")
+        }
+
         val activity = activityService.getActivity(activityId) ?: throw Exception("Activity not found")
         val achievement =
             achievementRepository.findById(achievementId).orElseThrow { Exception("Achievement not found") }

@@ -1,10 +1,14 @@
-import { notFound, useParams } from "next/navigation";
+"use client";
+
+import { notFound } from "next/navigation";
 
 import { MainNav } from "@/components/main-nav";
 import { DashboardNav } from "@/components/nav";
 import { SiteFooter } from "@/components/site-footer";
 import { UserAccountNav } from "@/components/user-account-nav";
 import { dashboardConfig } from "@/config/dashboard";
+import { CurrentAppForm } from "../../../../components/current-app";
+import { useCurrentUser } from "../../../../lib/current-user";
 import { ContextProps, SidebarNavItem } from "../../../../types";
 
 type DashboardLayoutProps = {
@@ -15,11 +19,7 @@ export default function DashboardLayout({
   children,
   params: { appId },
 }: DashboardLayoutProps) {
-  const user = {};
-
-  if (!user) {
-    return notFound();
-  }
+  const { currentUser } = useCurrentUser();
 
   const sideNavItems = createSideNavItems(appId);
 
@@ -28,13 +28,8 @@ export default function DashboardLayout({
       <header className="sticky top-0 z-40 border-b bg-background">
         <div className="container flex h-16 items-center justify-between py-4">
           <MainNav items={dashboardConfig.mainNav} />
-          <UserAccountNav
-            user={{
-              name: "Hoo Man",
-              image: "",
-              email: "hoo@man.com",
-            }}
-          />
+          <CurrentAppForm />
+          <UserAccountNav />
         </div>
       </header>
       <div className="container grid flex-1 gap-12 md:grid-cols-[200px_1fr]">
@@ -53,9 +48,29 @@ export default function DashboardLayout({
 function createSideNavItems(appId: string): SidebarNavItem[] {
   return [
     {
+      title: "General",
+      href: `/apps/${appId}`,
+      icon: "general",
+    },
+    {
+      title: "Secrets",
+      href: `/apps/${appId}/secrets`,
+      icon: "lock",
+    },
+    {
+      title: "Triggers",
+      href: `/apps/${appId}/triggers`,
+      icon: "trigger",
+    },
+    {
       title: "Activities",
-      href: `/apps/${appId}/dashboard`,
+      href: `/apps/${appId}/activities`,
       icon: "activity",
+    },
+    {
+      title: "Users",
+      href: `/apps/${appId}/users`,
+      icon: "users",
     },
   ];
 }

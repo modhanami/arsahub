@@ -30,6 +30,9 @@ import {
   ArrowLeft,
   Crown,
   Users,
+  Lock,
+  Info,
+  Zap,
 } from "lucide-react";
 
 export type Icon = LucideIcon;
@@ -81,4 +84,8 @@ export const Icons = {
   playground: ToyBrick,
   leaderboard: Crown,
   members: Users,
+  users: Users,
+  lock: Lock,
+  trigger: Zap,
+  general: Info,
 };

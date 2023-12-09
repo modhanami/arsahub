@@ -20,6 +20,7 @@ import org.springframework.data.repository.findByIdOrNull
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
 import java.time.Instant
+import java.util.*
 
 @RestController
 @RequestMapping("/api/apps")
@@ -191,12 +192,15 @@ class AppController(
             )
         ]
     )
-
     @PostMapping("/triggers")
     @ResponseStatus(HttpStatus.CREATED)
-    fun createTrigger(@Valid @RequestBody request: TriggerCreateRequest): TriggerResponse {
-        return appService.createTrigger(request)
+    fun createTrigger(
+        @Valid @RequestBody request: TriggerCreateRequest,
+        @CurrentApp app: App
+    ): TriggerResponse {
+        return appService.createTrigger(app, request)
     }
+
 
     @Operation(
         summary = "Get all triggers",
@@ -208,28 +212,29 @@ class AppController(
         ]
     )
     @GetMapping("/triggers")
-    fun getTriggers(@RequestParam appId: Long): List<TriggerResponse> {
-        return appService.getTriggers(appId).map { TriggerResponse.fromEntity(it) }
+    fun getTriggers(
+        @CurrentApp app: App
+    ): List<TriggerResponse> {
+        return app.id?.let { appService.getTriggers(it).map { TriggerResponse.fromEntity(it) } } ?: emptyList()
     }
 
-
-    @Operation(
-        summary = "Create an app",
-        responses = [
-            ApiResponse(
-                responseCode = "201",
-            ),
-            ApiResponse(
-                responseCode = "400",
-                content = [Content(schema = Schema(implementation = ApiValidationError::class))]
-            )
-        ]
-    )
-    @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    fun createApp(@Valid @RequestBody request: AppCreateRequest): AppCreateResponse {
-        return appService.createApp(request).let { AppCreateResponse.fromEntity(it.app, it.apiKey) }
-    }
+//    @Operation(
+//        summary = "Create an app",
+//        responses = [
+//            ApiResponse(
+//                responseCode = "201",
+//            ),
+//            ApiResponse(
+//                responseCode = "400",
+//                content = [Content(schema = Schema(implementation = ApiValidationError::class))]
+//            )
+//        ]
+//    )
+//    @PostMapping
+//    @ResponseStatus(HttpStatus.CREATED)
+//    fun createApp(@Valid @RequestBody request: AppCreateRequest): AppCreateResponse {
+//        return appService.createApp(request).let { AppCreateResponse.fromEntity(it.app, it.apiKey) }
+//    }
 
     @Operation(
         summary = "Validate key",
@@ -253,24 +258,36 @@ class AppController(
     }
 
     @Operation(
-        summary = "List apps",
+        summary = "Get a specific app by UUID",
         responses = [
             ApiResponse(
                 responseCode = "200",
                 content = [Content(schema = Schema(implementation = AppResponse::class))]
-            ),
-            ApiResponse(
-                responseCode = "409",
-                description = "App with this name already exists",
-                content = [Content(schema = Schema(implementation = ApiError::class))]
             )
         ]
     )
     @GetMapping
-    fun listApps(
-        @RequestParam userId: Long // TODO: for testing purposes only, should be removed and retrieved from the session token, etc.
-    ): List<AppResponse> {
-        return appService.listApps(userId).map { AppResponse.fromEntity(it) }
+    fun getAppByUserUUID(
+        @RequestParam(required = false) userUUID: UUID
+    ): AppResponse {
+        return appService.getAppByUserUUID(userUUID).let { AppResponse.fromEntity(it) }
+    }
+
+    //    get current authenticated app
+    @Operation(
+        summary = "Get current authenticated app",
+        responses = [
+            ApiResponse(
+                responseCode = "200",
+                content = [Content(schema = Schema(implementation = AppResponse::class))]
+            )
+        ]
+    )
+    @GetMapping("/current")
+    fun getCurrentApp(
+        @CurrentApp app: App
+    ): AppResponse {
+        return AppResponse.fromEntity(app)
     }
 
 //    data class RuleTemplateCreateRequest(
@@ -326,5 +343,22 @@ class AppController(
     fun listAppTemplates(
     ): List<AppTemplateResponse> {
         return appService.listAppTemplates().map { AppTemplateResponse.fromEntity(it) }
+    }
+
+    @Operation(
+        summary = "Get a specific user by UUID", // TODO: remove this after the user auth is implemented
+        responses = [
+            ApiResponse(
+                responseCode = "200",
+                content = [Content(schema = Schema(implementation = UserResponse::class))]
+            )
+        ]
+    )
+    @GetMapping("/users/current")
+    fun getUserByUUID(
+        @RequestHeader("Authorization") authHeader: String
+    ): UserResponse {
+        val userUUID = UUID.fromString(authHeader.split(" ")[1])
+        return appService.getUserByUUID(userUUID).let { UserResponse.fromEntity(it) }
     }
 }

@@ -1,8 +1,8 @@
 import { MainNav } from "@/components/main-nav";
 import { DashboardNav } from "@/components/nav";
 import { SiteFooter } from "@/components/site-footer";
-import { activityConfig } from "../../../../../config/activity";
-import { ContextProps, SidebarNavItem } from "../../../../../types";
+import { activityConfig } from "../../../../../../config/activity";
+import { ContextProps, SidebarNavItem } from "../../../../../../types";
 
 type ActivityLayoutProps = {
   children?: React.ReactNode;

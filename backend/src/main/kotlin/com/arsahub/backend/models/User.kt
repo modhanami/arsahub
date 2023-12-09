@@ -1,6 +1,8 @@
 package com.arsahub.backend.models
 
 import jakarta.persistence.*
+import jakarta.validation.constraints.NotNull
+import java.util.*
 
 @Entity
 @Table(name = "user")
@@ -14,6 +16,10 @@ class User(
 
     @OneToMany(mappedBy = "user")
     var userActivities: MutableSet<UserActivity> = mutableSetOf(),
+
+    @NotNull
+    @Column(name = "uuid", nullable = false)
+    var uuid: UUID? = null
 ) : AuditedEntity() {
 
     @Id

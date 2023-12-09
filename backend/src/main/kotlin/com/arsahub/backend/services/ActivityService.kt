@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import java.time.Instant
 
 interface ActivityService {
-    fun createActivity(activityCreateRequest: ActivityCreateRequest): Activity
+    fun createActivity(app: App, activityCreateRequest: ActivityCreateRequest): Activity
     fun updateActivity(
         activityId: Long,
         activityUpdateRequest: ActivityUpdateRequest
@@ -55,13 +55,13 @@ class ActivityServiceImpl(
     private val appRepository: AppRepository
 ) : ActivityService {
 
-    override fun createActivity(activityCreateRequest: ActivityCreateRequest): Activity {
-        val app = appRepository.findById(activityCreateRequest.appId!!)
+    override fun createActivity(app: App, activityCreateRequest: ActivityCreateRequest): Activity {
+        val existingApp = appRepository.findById(app.id!!)
             .orElseThrow { Exception("App not found") }
         val activityToSave = Activity(
             title = activityCreateRequest.title!!,
             description = activityCreateRequest.description,
-            app = app
+            app = existingApp
         )
         return activityRepository.save(activityToSave)
     }

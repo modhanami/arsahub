@@ -1,14 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    async redirects() {
-        return [
-            {
-                source: '/apps/:id',
-                destination: '/apps/:id/dashboard', // Redirect to /dashboard
-                permanent: true, // if you want it to be a 301 redirect
-            },
-        ]
-    },
     images: {
         remotePatterns: [
             {

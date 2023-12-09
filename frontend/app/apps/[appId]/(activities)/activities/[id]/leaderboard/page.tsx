@@ -1,5 +1,5 @@
 "use client";
-import { ContextProps } from "../../../../../../types";
+import { ContextProps } from "../../../../../../../types";
 
 type Props = ContextProps;
 

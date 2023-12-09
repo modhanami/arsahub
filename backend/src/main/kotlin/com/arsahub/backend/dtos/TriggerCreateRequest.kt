@@ -1,7 +1,6 @@
 package com.arsahub.backend.dtos
 
 import jakarta.validation.constraints.NotBlank
-import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
 
 data class TriggerCreateRequest(
@@ -12,6 +11,5 @@ data class TriggerCreateRequest(
     val description: String?,
     @field:NotBlank(message = "Key is required")
     val key: String?,
-    @field:NotNull(message = "App ID is required")
-    val appId: Long? // TODO: retrieve app ID from JWT
-)
+
+    )

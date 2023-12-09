@@ -8,11 +8,13 @@ import com.arsahub.backend.exceptions.ConflictException
 import com.arsahub.backend.models.App
 import com.arsahub.backend.models.AppTemplate
 import com.arsahub.backend.models.Trigger
+import com.arsahub.backend.models.User
 import com.arsahub.backend.repositories.AppRepository
 import com.arsahub.backend.repositories.AppTemplateRepository
 import com.arsahub.backend.repositories.TriggerRepository
 import com.arsahub.backend.repositories.UserRepository
 import org.springframework.stereotype.Service
+import java.util.*
 
 @Service
 class AppService(
@@ -23,17 +25,17 @@ class AppService(
     private val apiKeyService: APIKeyService
 ) {
 
-    fun createTrigger(request: TriggerCreateRequest): TriggerResponse {
-        // TODO: enforce unique key per app
-        val app = appRepository.findById(request.appId!!)
-            .orElseThrow { Exception("App not found") }
+    fun createTrigger(app: App, request: TriggerCreateRequest): TriggerResponse {
+        val existingApp = app.id?.let { appRepository.findById(it).orElseThrow { Exception("App not found") } }
+            ?: throw Exception("App not found")
 
         val trigger = Trigger(
             title = request.title,
             description = request.description,
             key = request.key,
-            app = app
+            app = existingApp
         )
+
         return TriggerResponse.fromEntity(triggerRepository.save(trigger))
     }
 
@@ -78,13 +80,16 @@ class AppService(
         return AppWithAPIToken(savedApp, generatedAPIKey.apiKey)
     }
 
-    fun listApps(userId: Long): List<App> {
-        val user = userRepository.findById(userId).orElseThrow { Exception("User not found") }
-        return appRepository.findAllByCreatedBy(user)
-    }
-
     fun listAppTemplates(): List<AppTemplate> {
         return appTemplateRepository.findAll()
+    }
+
+    fun getAppByUserUUID(uuid: UUID): App {
+        return appRepository.findByCreatedByUuid(uuid).find { it.title == "app1" } ?: throw Exception("App not found")
+    }
+
+    fun getUserByUUID(userUUID: UUID): User {
+        return userRepository.findByUuid(userUUID) ?: throw Exception("User not found")
     }
 }
 

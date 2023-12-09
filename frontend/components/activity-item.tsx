@@ -1,10 +1,10 @@
 import Link from "next/link";
 
 import { Skeleton } from "@/components/ui/skeleton";
-import { Activity } from "../app/apps/[appId]/dashboard/page";
+import { ActivityResponse } from "../types/generated-types";
 
 interface ActivityItemProps {
-  activity: Activity;
+  activity: ActivityResponse;
   appId: string;
 }
 

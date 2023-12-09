@@ -1,36 +1,15 @@
 "use client";
 import * as React from "react";
 
-import { Button } from "@/components/ui/button";
-import { CardTitle } from "@/components/ui/card";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
-import { appCreateSchema } from "../lib/validations/app";
-import { ActivityCreateButton } from "./activity-create-button";
-import { toast } from "./ui/use-toast";
 import { API_URL } from "../hooks/api";
+import { appCreateSchema } from "../lib/validations/app";
+import { AppCreateResponse } from "../types/generated-types";
+import { toast } from "./ui/use-toast";
 
 type FormData = z.infer<typeof appCreateSchema>;
 export function CreateAppForm() {

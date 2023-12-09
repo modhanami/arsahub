@@ -1,63 +1,21 @@
 // import { authOptions } from "@/lib/auth"
 // import { db } from "@/lib/db"
-import { getCurrentUser } from "@/lib/session";
-import { EmptyPlaceholder } from "@/components/empty-placeholder";
-import { DashboardHeader } from "@/components/header";
+"use client";
 import { ActivityCreateButton } from "@/components/activity-create-button";
 import { ActivityItem } from "@/components/activity-item";
+import { EmptyPlaceholder } from "@/components/empty-placeholder";
+import { DashboardHeader } from "@/components/header";
 import { DashboardShell } from "@/components/shell";
-import { CardWithForm } from "../../../../components/create-activity";
-import { toast } from "../../../../components/ui/use-toast";
-import { ContextProps } from "../../../../types";
-import { API_URL } from "../../../../hooks/api";
-
-export const metadata = {
-  title: "Dashboard",
-};
-
-export interface Activity {
-  id: string;
-  title: string;
-  description: string;
-  members: Member[];
-}
-
-interface Member {
-  id: string;
-  name: string;
-}
+import { CardWithForm } from "../../../../../components/create-activity";
+import { useActivities } from "../../../../../hooks/api";
+import { ContextProps } from "../../../../../types";
 
 type DashboardPageProps = ContextProps;
 
-export default async function DashboardPage({
+export default function DashboardPage({
   params: { id, appId },
 }: DashboardPageProps) {
-  const user = await getCurrentUser();
-
-  if (!user) {
-    // redirect(authOptions?.pages?.signIn || "/login")
-  }
-
-  const response = await fetch(`${API_URL}/activities?appId=${appId}`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    next: {
-      tags: ["activities"],
-    },
-    cache: "no-store",
-  });
-
-  if (!response?.ok) {
-    return toast({
-      title: "Something went wrong.",
-      description: "Your activity was not created. Please try again.",
-      variant: "destructive",
-    });
-  }
-
-  const activities: Activity[] = await response.json();
+  const activities = useActivities();
 
   return (
     <DashboardShell>

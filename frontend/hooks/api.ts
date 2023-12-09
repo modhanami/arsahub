@@ -13,9 +13,13 @@
 import React from "react";
 import { toast } from "../components/ui/use-toast";
 import {
+  ActivityResponse,
+  AppResponse,
   MemberResponse,
+  RuleResponse,
   UserActivityProfileResponse,
 } from "../types/generated-types";
+import { getCurrentApp } from "../lib/current-app";
 
 // export function fetchTriggers(activityId: number) {
 //     return fetch(`${API_URL}/activities/${activityId}/triggers`, {
@@ -44,6 +48,17 @@ import {
 //     });
 //   }
 
+export function makeAuthorizationHeader() {
+  const currentApp = getCurrentApp();
+  if (currentApp === null) {
+    throw new Error("No current app");
+  }
+
+  return {
+    Authorization: `Bearer ${currentApp.apiKey}`,
+  };
+}
+
 export function useMembers(activityId: number) {
   const [members, setMembers] = React.useState<MemberResponse[]>([]);
 
@@ -55,6 +70,7 @@ export function useMembers(activityId: number) {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
+            ...makeAuthorizationHeader(),
           },
           next: {
             tags: [`members`],
@@ -104,6 +120,7 @@ export function useTriggers(appId: number) {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
+            ...makeAuthorizationHeader(),
           },
           next: {
             tags: [`triggers`],
@@ -143,6 +160,7 @@ export function useActions() {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
+          ...makeAuthorizationHeader(),
         },
         next: {
           tags: ["actions"],
@@ -220,7 +238,7 @@ export interface Rule {
 }
 
 export function useRules(activityId: number) {
-  const [rules, setRules] = React.useState<Rule[]>([]);
+  const [rules, setRules] = React.useState<RuleResponse[]>([]);
 
   React.useEffect(() => {
     async function fetchRules() {
@@ -230,6 +248,7 @@ export function useRules(activityId: number) {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
+            ...makeAuthorizationHeader(),
           },
           next: {
             tags: [`rules`],
@@ -316,12 +335,14 @@ export type App = {
   id: number;
   name: string;
 };
+export type UserUUID = string;
 
 async function fetchApps(userId: number) {
   const response = await fetch(`${API_URL}/apps?userId=${userId}`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
+      ...makeAuthorizationHeader(),
     },
     next: {
       tags: [`apps`],
@@ -338,6 +359,58 @@ async function fetchApps(userId: number) {
   }
 
   return response.json();
+}
+
+async function fetchApp(userUUID: UserUUID) {
+  const response = await fetch(`${API_URL}/apps?userUUID=${userUUID}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      ...makeAuthorizationHeader(),
+    },
+    next: {
+      tags: [`apps`],
+    },
+  });
+
+  if (!response?.ok) {
+    toast({
+      title: "Something went wrong.",
+      description: "App could not be fetched.",
+      variant: "destructive",
+    });
+    return null;
+  }
+
+  return response.json();
+}
+
+export function useApp(userUUID: UserUUID) {
+  const [loading, setLoading] = React.useState<boolean>(true); // Always start with loading as true
+  const [app, setApp] = React.useState<AppResponse | null>(null);
+
+  React.useEffect(() => {
+    fetchApp(userUUID).then((app) => {
+      if (!app) {
+        return;
+      }
+      setApp(app);
+      setLoading(false); // Set loading to false once data is fetched.
+    });
+  }, [userUUID]);
+
+  function refetch() {
+    setLoading(true);
+    fetchApp(userUUID).then((app) => {
+      if (!app) {
+        return;
+      }
+      setApp(app);
+      setLoading(false);
+    });
+  }
+
+  return { loading, data: app, refetch };
 }
 
 export function useApps(userId: number) {
@@ -386,6 +459,7 @@ export function useAppTemplates() {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
+          ...makeAuthorizationHeader(),
         },
         next: {
           tags: [`templates`],
@@ -413,6 +487,45 @@ export function useAppTemplates() {
   }, []);
 
   return templates;
+}
+
+export function useActivities() {
+  const [activities, setActivities] = React.useState<ActivityResponse[]>([]);
+
+  React.useEffect(() => {
+    async function fetchActivities() {
+      const response = await fetch(`${API_URL}/activities`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          ...makeAuthorizationHeader(),
+        },
+        next: {
+          tags: ["activities"],
+        },
+        cache: "no-store",
+      });
+
+      if (!response?.ok) {
+        return toast({
+          title: "Something went wrong.",
+          description: "Your activity was not created. Please try again.",
+          variant: "destructive",
+        });
+      }
+
+      return response.json();
+    }
+
+    fetchActivities().then((activities) => {
+      if (!activities) {
+        return;
+      }
+      setActivities(activities);
+    });
+  }, []);
+
+  return activities;
 }
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL;
