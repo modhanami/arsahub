@@ -19,7 +19,7 @@ import {
   RuleResponse,
   UserActivityProfileResponse,
 } from "../types/generated-types";
-import { getCurrentApp } from "../lib/current-app";
+import { useCurrentApp } from "../lib/current-app";
 
 // export function fetchTriggers(activityId: number) {
 //     return fetch(`${API_URL}/activities/${activityId}/triggers`, {
@@ -48,20 +48,21 @@ import { getCurrentApp } from "../lib/current-app";
 //     });
 //   }
 
-export function makeAuthorizationHeader(): Record<string, string> {
-  const currentApp = getCurrentApp();
-  if (currentApp === null) {
+export function makeAppAuthHeader(
+  app: AppResponse | undefined
+): Record<string, string> {
+  if (!app) {
     return {};
   }
 
   return {
-    Authorization: `Bearer ${currentApp.apiKey}`,
+    Authorization: `Bearer ${app.apiKey}`,
   };
 }
 
 export function useMembers(activityId: number) {
   const [members, setMembers] = React.useState<MemberResponse[]>([]);
-
+  const { currentApp } = useCurrentApp();
   React.useEffect(() => {
     async function fetchMembers() {
       const response = await fetch(
@@ -70,7 +71,7 @@ export function useMembers(activityId: number) {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
-            ...makeAuthorizationHeader(),
+            ...makeAppAuthHeader(currentApp),
           },
           next: {
             tags: [`members`],
@@ -96,7 +97,7 @@ export function useMembers(activityId: number) {
       }
       setMembers(members);
     });
-  }, [activityId]);
+  }, [activityId, currentApp]);
 
   return members;
 }
@@ -111,14 +112,14 @@ export interface Trigger {
 
 export function useTriggers() {
   const [triggers, setTriggers] = React.useState<Trigger[]>([]);
-
+  const { currentApp } = useCurrentApp();
   React.useEffect(() => {
     async function fetchTriggers() {
       const response = await fetch(`${API_URL}/apps/triggers`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          ...makeAuthorizationHeader(),
+          ...makeAppAuthHeader(currentApp),
         },
         next: {
           tags: [`triggers`],
@@ -143,21 +144,21 @@ export function useTriggers() {
       }
       setTriggers(triggers);
     });
-  }, []);
+  }, [currentApp]);
 
   return triggers;
 }
 
 export function useActions() {
   const [actions, setActions] = React.useState<Action[]>([]);
-
+  const { currentApp } = useCurrentApp();
   React.useEffect(() => {
     async function fetchActions() {
       const response = await fetch(`${API_URL}/activities/actions`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          ...makeAuthorizationHeader(),
+          ...makeAppAuthHeader(currentApp),
         },
         next: {
           tags: ["actions"],
@@ -182,7 +183,7 @@ export function useActions() {
       }
       setActions(actions);
     });
-  }, []);
+  }, [currentApp]);
 
   return actions;
 }
@@ -236,7 +237,7 @@ export interface Rule {
 
 export function useRules(activityId: number) {
   const [rules, setRules] = React.useState<RuleResponse[]>([]);
-
+  const { currentApp } = useCurrentApp();
   React.useEffect(() => {
     async function fetchRules() {
       const response = await fetch(
@@ -245,7 +246,7 @@ export function useRules(activityId: number) {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
-            ...makeAuthorizationHeader(),
+            ...makeAppAuthHeader(currentApp),
           },
           next: {
             tags: [`rules`],
@@ -271,7 +272,7 @@ export function useRules(activityId: number) {
       }
       setRules(rules);
     });
-  }, [activityId]);
+  }, [activityId, currentApp]);
 
   return rules;
 }
@@ -287,7 +288,7 @@ export interface Action {
 export function useUserProfile(activityId: number, userId: number) {
   const [profile, setProfile] =
     React.useState<UserActivityProfileResponse | null>(null);
-
+  const { currentApp } = useCurrentApp();
   React.useEffect(() => {
     async function fetchProfile() {
       if (!userId) {
@@ -334,12 +335,12 @@ export type App = {
 };
 export type UserUUID = string;
 
-async function fetchApps(userId: number) {
+async function fetchApps(userId: number, currentApp: AppResponse | undefined) {
   const response = await fetch(`${API_URL}/apps?userId=${userId}`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
-      ...makeAuthorizationHeader(),
+      ...makeAppAuthHeader(currentApp),
     },
     next: {
       tags: [`apps`],
@@ -358,12 +359,15 @@ async function fetchApps(userId: number) {
   return response.json();
 }
 
-async function fetchApp(userUUID: UserUUID) {
+async function fetchApp(
+  userUUID: UserUUID,
+  currentApp: AppResponse | undefined
+) {
   const response = await fetch(`${API_URL}/apps?userUUID=${userUUID}`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
-      ...makeAuthorizationHeader(),
+      ...makeAppAuthHeader(currentApp),
     },
     next: {
       tags: [`apps`],
@@ -385,20 +389,20 @@ async function fetchApp(userUUID: UserUUID) {
 export function useApp(userUUID: UserUUID) {
   const [loading, setLoading] = React.useState<boolean>(true); // Always start with loading as true
   const [app, setApp] = React.useState<AppResponse | null>(null);
-
+  const { currentApp } = useCurrentApp();
   React.useEffect(() => {
-    fetchApp(userUUID).then((app) => {
+    fetchApp(userUUID, currentApp).then((app) => {
       if (!app) {
         return;
       }
       setApp(app);
       setLoading(false); // Set loading to false once data is fetched.
     });
-  }, [userUUID]);
+  }, [userUUID, currentApp]);
 
   function refetch() {
     setLoading(true);
-    fetchApp(userUUID).then((app) => {
+    fetchApp(userUUID, currentApp).then((app) => {
       if (!app) {
         return;
       }
@@ -413,20 +417,20 @@ export function useApp(userUUID: UserUUID) {
 export function useApps(userId: number) {
   const [loading, setLoading] = React.useState<boolean>(true); // Always start with loading as true
   const [apps, setApps] = React.useState<App[]>([]);
-
+  const { currentApp } = useCurrentApp();
   React.useEffect(() => {
-    fetchApps(userId).then((apps) => {
+    fetchApps(userId, currentApp).then((apps) => {
       if (!apps) {
         return;
       }
       setApps(apps);
       setLoading(false); // Set loading to false once data is fetched.
     });
-  }, [userId]);
+  }, [currentApp, userId]);
 
   function refetch() {
     setLoading(true);
-    fetchApps(userId).then((apps) => {
+    fetchApps(userId, currentApp).then((apps) => {
       if (!apps) {
         return;
       }
@@ -449,14 +453,14 @@ export interface AppTemplate {
 
 export function useAppTemplates() {
   const [templates, setTemplates] = React.useState<AppTemplate[]>([]);
-
+  const { currentApp } = useCurrentApp();
   React.useEffect(() => {
     async function fetchTemplates() {
       const response = await fetch(`${API_URL}/apps/templates`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          ...makeAuthorizationHeader(),
+          ...makeAppAuthHeader(currentApp),
         },
         next: {
           tags: [`templates`],
@@ -481,21 +485,26 @@ export function useAppTemplates() {
       }
       setTemplates(templates);
     });
-  }, []);
+  }, [currentApp]);
 
   return templates;
 }
 
 export function useActivities() {
   const [activities, setActivities] = React.useState<ActivityResponse[]>([]);
+  const { currentApp, isLoading } = useCurrentApp();
 
   React.useEffect(() => {
+    if (isLoading) {
+      return;
+    }
+
     async function fetchActivities() {
       const response = await fetch(`${API_URL}/activities`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          ...makeAuthorizationHeader(),
+          ...makeAppAuthHeader(currentApp),
         },
         next: {
           tags: ["activities"],
@@ -520,7 +529,7 @@ export function useActivities() {
       }
       setActivities(activities);
     });
-  }, []);
+  }, [currentApp, isLoading]);
 
   return activities;
 }

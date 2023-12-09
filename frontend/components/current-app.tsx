@@ -2,13 +2,13 @@
 import React, { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
 import { Input } from "../components/ui/input";
-import { getCurrentApp, useCurrentApp } from "../lib/current-app";
 import { Button } from "./ui/button";
+import { useCurrentApp } from "../lib/current-app";
 
 export function CurrentAppForm() {
   const { currentApp, setCurrentAppWithApiKey } = useCurrentApp();
 
-  const [key, setToken] = useState(getCurrentApp()?.apiKey || "");
+  const [key, setToken] = useState(currentApp?.apiKey || "");
   const [previousKey, setPreviousKey] = useState(key);
   const [isEditing, setIsEditing] = useState(false);
 

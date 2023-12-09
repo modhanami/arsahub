@@ -1,5 +1,3 @@
-// import { authOptions } from "@/lib/auth"
-// import { db } from "@/lib/db"
 "use client";
 import { ActivityCreateButton } from "@/components/activity-create-button";
 import { ActivityItem } from "@/components/activity-item";
@@ -12,8 +10,6 @@ import { ContextProps } from "../../../types";
 type DashboardPageProps = ContextProps;
 
 export default function Page({ params: { id } }: DashboardPageProps) {
-  console.log("Rendered Activities Page");
-
   const activities = useActivities();
 
   return (

@@ -37,13 +37,14 @@ import { playgroundTriggerSchema } from "../lib/validations/playground";
 import { id } from "date-fns/locale";
 import {
   API_URL,
-  makeAuthorizationHeader,
+  makeAppAuthHeader,
   useMembers,
   useRules,
   useTriggers,
   useUserProfile,
 } from "../hooks/api";
 import { UserProfileRealTime } from "./ui/team-members";
+import { useCurrentApp } from "../lib/current-app";
 
 interface Trigger {
   title: string;
@@ -77,6 +78,7 @@ export function PlaygroundTriggerForm({
   const members = useMembers(activityId);
   const triggers = useTriggers();
   const rules = useRules(activityId);
+  const { currentApp } = useCurrentApp();
 
   async function onSubmit(values: FormData) {
     console.log("submit", values);
@@ -94,7 +96,7 @@ export function PlaygroundTriggerForm({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...makeAuthorizationHeader(),
+          ...makeAppAuthHeader(currentApp),
         },
         body: JSON.stringify(body),
       }
@@ -122,7 +124,7 @@ export function PlaygroundTriggerForm({
 
   const filteredRules = rules.filter((rule) => {
     const triggerKey = form.watch("trigger.key");
-    return rule.trigger.key === triggerKey;
+    return rule.trigger?.key === triggerKey;
   });
 
   console.log("filteredRules", filteredRules);
@@ -160,7 +162,7 @@ export function PlaygroundTriggerForm({
                                 {members.map((member) => (
                                   <SelectItem
                                     key={member.userId}
-                                    value={member.userId || ""}
+                                    value={String(member.userId) || ""}
                                     className="flex items-center justify-between w-full"
                                   >
                                     {member.name}

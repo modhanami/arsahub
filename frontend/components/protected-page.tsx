@@ -24,17 +24,17 @@ export function UserProtectedPage({ children }: { children: React.ReactNode }) {
 }
 
 export function AppProtectedPage({ children }: { children: React.ReactNode }) {
-  const { currentApp, loading } = useCurrentApp();
+  const { currentApp, isLoading } = useCurrentApp();
 
-  if (!loading && !currentApp) {
-    toast({
-      title: "App API key is required",
-      description: "You need to provide an API key to access this page.",
-      variant: "destructive",
-    });
+  if (isLoading) {
+    return null;
   }
 
-  if (loading) {
+  if (!currentApp) {
+    toast({
+      title: "No app selected",
+      description: "Please select an app to continue.",
+    });
     return null;
   }
 

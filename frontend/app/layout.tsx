@@ -1,11 +1,10 @@
+import { ThemeProvider } from "@/components/theme-provider";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import "./globals.css";
-import { ThemeProvider } from "@/components/theme-provider";
-import { ModeToggle } from "../components/mode-toggle";
+import { WrappedQueryClientProvider } from "../components/query-client-provider";
 import { Toaster } from "../components/ui/toaster";
-import { CurrentAppProvider } from "../lib/current-app";
 import { CurrentUserProvider } from "../lib/current-user";
+import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -29,11 +28,11 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <CurrentUserProvider>
-            <CurrentAppProvider>
+            <WrappedQueryClientProvider>
               {/* <ModeToggle /> */}
               {children}
               <Toaster />
-            </CurrentAppProvider>
+            </WrappedQueryClientProvider>
           </CurrentUserProvider>
         </ThemeProvider>
       </body>
