@@ -1,44 +1,25 @@
 "use client";
-import { Button } from "@/components/ui/button";
-import { CardTitle } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "next/navigation";
+import {Button} from "@/components/ui/button";
+import {CardTitle} from "@/components/ui/card";
+import {Dialog, DialogClose, DialogContent, DialogTrigger,} from "@/components/ui/dialog";
+import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage,} from "@/components/ui/form";
+import {Input} from "@/components/ui/input";
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue,} from "@/components/ui/select";
+import {zodResolver} from "@hookform/resolvers/zod";
+import {useRouter} from "next/navigation";
 import * as React from "react";
-import { useForm } from "react-hook-form";
+import {useForm} from "react-hook-form";
 import * as z from "zod";
-import { ruleCreateSchema } from "../lib/validations/rule";
-
-import { useParams } from "next/navigation";
-import { API_URL, useActions, useTriggers } from "../hooks/api";
-import { RuleCreateButton } from "./rule-create-button";
-import { DialogHeader } from "./ui/dialog";
-import { toast } from "./ui/use-toast";
-import { DevTool } from "@hookform/devtools";
+import {ruleCreateSchema} from "../lib/validations/rule";
+import {API_URL, makeAppAuthHeader, useActions, useTriggers} from "../hooks/api";
+import {RuleCreateButton} from "./rule-create-button";
+import {DialogHeader} from "./ui/dialog";
+import {toast} from "./ui/use-toast";
+import {useCurrentApp} from "@/lib/current-app";
 
 type FormData = z.infer<typeof ruleCreateSchema>;
-export function CreateRuleForm() {
+
+export function CreateRuleForm({activityId}: { activityId: number }) {
   const router = useRouter();
   const form = useForm<FormData>({
     resolver: zodResolver(ruleCreateSchema),
@@ -52,15 +33,17 @@ export function CreateRuleForm() {
   const triggers = useTriggers();
   const actions = useActions();
   const [selectedTrigger, setSelectedTrigger] = React.useState(null);
+  const {currentApp} = useCurrentApp()
 
   async function onSubmit(values: FormData) {
     console.log("submit", values);
     setIsCreating(true);
 
-    const response = await fetch(`${API_URL}/activities/${id}/rules`, {
+    const response = await fetch(`${API_URL}/activities/${activityId}/rules`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...makeAppAuthHeader(currentApp),
       },
       body: JSON.stringify(values),
     });
@@ -100,7 +83,7 @@ export function CreateRuleForm() {
               control={form.control}
               name={paramKey}
               key={paramName}
-              render={({ field }) => (
+              render={({field}) => (
                 <FormItem>
                   <FormLabel>{paramNameCapitalized}</FormLabel>
                   <FormControl>
@@ -111,7 +94,7 @@ export function CreateRuleForm() {
                       value={paramValue}
                     />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage/>
                 </FormItem>
               )}
             />
@@ -132,7 +115,7 @@ export function CreateRuleForm() {
     <>
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogTrigger asChild>
-          <RuleCreateButton />
+          <RuleCreateButton/>
         </DialogTrigger>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -143,20 +126,20 @@ export function CreateRuleForm() {
               <FormField
                 control={form.control}
                 name="name"
-                render={({ field }) => (
+                render={({field}) => (
                   <FormItem>
                     <FormLabel>Name</FormLabel>
                     <FormControl>
                       <Input placeholder="Name of your rule" {...field} />
                     </FormControl>{" "}
-                    <FormMessage />
+                    <FormMessage/>
                   </FormItem>
                 )}
               />
               <FormField
                 control={form.control}
                 name="description"
-                render={({ field }) => (
+                render={({field}) => (
                   <FormItem>
                     <FormLabel>Description</FormLabel>
                     <FormControl>
@@ -165,7 +148,7 @@ export function CreateRuleForm() {
                         {...field}
                       />
                     </FormControl>{" "}
-                    <FormMessage />
+                    <FormMessage/>
                   </FormItem>
                 )}
               />
@@ -173,7 +156,7 @@ export function CreateRuleForm() {
               <FormField
                 control={form.control}
                 name="trigger.key"
-                render={({ field }) => (
+                render={({field}) => (
                   <FormItem className="mt-4">
                     <FormLabel>Trigger</FormLabel>
                     <FormControl>
@@ -191,7 +174,7 @@ export function CreateRuleForm() {
                           {triggers.map((trigger) => (
                             <SelectItem
                               key={trigger.id}
-                              value={trigger.key}
+                              value={trigger.key!!}
                               className="flex items-center justify-between w-full"
                             >
                               {trigger.title}
@@ -200,7 +183,7 @@ export function CreateRuleForm() {
                         </SelectContent>
                       </Select>
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage/>
                   </FormItem>
                 )}
               />
@@ -212,7 +195,7 @@ export function CreateRuleForm() {
               <FormField
                 control={form.control}
                 name="action.key"
-                render={({ field }) => (
+                render={({field}) => (
                   <FormItem className="mt-4">
                     <FormLabel>Action</FormLabel>
                     <FormControl>
@@ -239,7 +222,7 @@ export function CreateRuleForm() {
                         </SelectContent>
                       </Select>
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage/>
                   </FormItem>
                 )}
               />
@@ -248,13 +231,13 @@ export function CreateRuleForm() {
                 <FormField
                   control={form.control}
                   name="action.params.value"
-                  render={({ field }) => (
+                  render={({field}) => (
                     <FormItem>
                       <FormLabel>Value</FormLabel>
                       <FormControl>
                         <Input placeholder="Value" type="number" {...field} />
                       </FormControl>
-                      <FormMessage />
+                      <FormMessage/>
                     </FormItem>
                   )}
                 />
@@ -264,7 +247,7 @@ export function CreateRuleForm() {
                 <FormField
                   control={form.control}
                   name="action.params.achievementId"
-                  render={({ field }) => (
+                  render={({field}) => (
                     <FormItem>
                       <FormLabel>Achievement</FormLabel>
                       <FormControl>
@@ -274,7 +257,7 @@ export function CreateRuleForm() {
                           {...field}
                         />
                       </FormControl>
-                      <FormMessage />
+                      <FormMessage/>
                     </FormItem>
                   )}
                 />

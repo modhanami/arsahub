@@ -17,6 +17,7 @@ import {
   AppResponse,
   MemberResponse,
   RuleResponse,
+  TriggerResponse,
   UserActivityProfileResponse,
 } from "../types/generated-types";
 import {useCurrentApp} from "../lib/current-app";
@@ -111,9 +112,14 @@ export interface Trigger {
 }
 
 export function useTriggers() {
-  const [triggers, setTriggers] = React.useState<Trigger[]>([]);
-  const {currentApp} = useCurrentApp();
+  const [triggers, setTriggers] = React.useState<TriggerResponse[]>([]);
+  const {currentApp, isLoading} = useCurrentApp();
+
   React.useEffect(() => {
+    if (isLoading) {
+      return;
+    }
+
     async function fetchTriggers() {
       const response = await fetch(`${API_URL}/apps/triggers`, {
         method: "GET",
@@ -144,7 +150,7 @@ export function useTriggers() {
       }
       setTriggers(triggers);
     });
-  }, [currentApp]);
+  }, [currentApp, isLoading]);
 
   return triggers;
 }
