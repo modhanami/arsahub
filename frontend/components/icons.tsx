@@ -11,6 +11,7 @@ import {
   Cuboid,
   File,
   FileText,
+  FlaskConical,
   HelpCircle,
   type IconNode as LucideIcon,
   Image,
@@ -62,7 +63,7 @@ export const Icons = {
   sun: SunMedium,
   moon: Moon,
   laptop: Laptop,
-  gitHub: ({...props}: LucideProps) => (
+  gitHub: ({ ...props }: LucideProps) => (
     <svg
       aria-hidden="true"
       focusable="false"
@@ -90,4 +91,5 @@ export const Icons = {
   trigger: Zap,
   general: Info,
   achievement: Medal,
+  experiment: FlaskConical,
 };

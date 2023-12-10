@@ -1,4 +1,4 @@
-import {Icons} from "../components/icons";
+import { Icons } from "../components/icons";
 
 export type NavItem = {
   title: string;
@@ -8,21 +8,32 @@ export type NavItem = {
 
 export type MainNavItem = NavItem;
 
-export type SidebarNavItem = {
-  title: string;
-  disabled?: boolean;
-  external?: boolean;
-  icon?: keyof typeof Icons;
-} & (
+export type SidebarNavItem =
+  | ({
+      title: string;
+      disabled?: boolean;
+      external?: boolean;
+      icon?: keyof typeof Icons;
+      appProtected?: boolean;
+      type: "item";
+      hoverHighlight?: boolean;
+    } & (
+      | {
+          href: string;
+          items?: never;
+        }
+      | {
+          href?: string;
+          items: NavLink[];
+        }
+    ))
   | {
-  href: string;
-  items?: never;
-}
+      type: "divider";
+    }
   | {
-  href?: string;
-  items: NavLink[];
-}
-  );
+      type: "title";
+      title: string;
+    };
 
 export type DashboardConfig = {
   mainNav: MainNavItem[];
@@ -38,12 +49,12 @@ export type ContextProps = {
 export type ApiError = { message: string };
 
 export type SiteConfig = {
-  name: string
-  description: string
-  url: string
-  ogImage: string
+  name: string;
+  description: string;
+  url: string;
+  ogImage: string;
   links: {
-    twitter: string
-    github: string
-  }
-}
+    twitter: string;
+    github: string;
+  };
+};

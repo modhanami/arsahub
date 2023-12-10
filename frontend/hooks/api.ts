@@ -174,7 +174,7 @@ export function useActions() {
       if (!response?.ok) {
         toast({
           title: "Something went wrong.",
-          description: "Your activity was not created. Please try again.",
+          description: "Activity actions could not be fetched.",
           variant: "destructive",
         });
         return null;
@@ -521,7 +521,7 @@ export function useActivities() {
       if (!response?.ok) {
         return toast({
           title: "Something went wrong.",
-          description: "Your activity was not created. Please try again.",
+          description: "Activities could not be fetched.",
           variant: "destructive",
         });
       }

@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
 import { Input } from "../components/ui/input";
 import { Button } from "./ui/button";
 import { useCurrentApp } from "../lib/current-app";
+import Link from "next/link";
 
 export function CurrentAppForm() {
   const { currentApp, setCurrentAppWithApiKey } = useCurrentApp();
@@ -28,17 +29,27 @@ export function CurrentAppForm() {
   };
 
   return (
-    <div className="gap-4 flex items-center">
+    <div className="gap-4 grid">
       {isEditing ? (
         <>
-          <Input
-            value={key}
-            onChange={handleTokenChange}
-            className="max-w-sm"
-            placeholder="Enter your app's API key"
-            type="password"
-          />
-          <div className="flex gap-2">
+          <div>
+            <Input
+              value={key}
+              onChange={handleTokenChange}
+              className="max-w-sm"
+              placeholder="Enter your app's API key"
+              type="password"
+            />
+            <Link
+              href={{
+                pathname: "/secrets",
+              }}
+              className="text-xs text-blue-500 hover:underline"
+            >
+              Get your API key
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
             <Button onClick={handleSaveToken}>Save</Button>
             <Button onClick={handleCancelEdit} variant="outline">
               Cancel
@@ -57,9 +68,11 @@ export function CurrentAppForm() {
                 <AvatarFallback>AS</AvatarFallback>
               </Avatar>
             )}
-            {currentApp?.name || "No app selected"}
+            {currentApp?.name || null}
           </div>
-          <Button onClick={() => setIsEditing(true)}>Edit</Button>
+          <Button onClick={() => setIsEditing(true)} variant="outline">
+            Set App API Key
+          </Button>
         </>
       )}
     </div>

@@ -4,8 +4,8 @@ import { ActivityItem } from "@/components/activity-item";
 import { EmptyPlaceholder } from "@/components/empty-placeholder";
 import { DashboardHeader } from "@/components/header";
 import { DashboardShell } from "@/components/shell";
-import { useActivities } from "../../../hooks/api";
-import { ContextProps } from "../../../types";
+import { useActivities } from "../../../../hooks/api";
+import { ContextProps } from "../../../../types";
 
 type DashboardPageProps = ContextProps;
 

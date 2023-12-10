@@ -1,11 +1,11 @@
 "use client";
-import {useRouter} from "next/navigation";
-import {DashboardHeader} from "../../../../../components/header";
-import {DashboardShell} from "../../../../../components/shell";
-import {toast} from "../../../../../components/ui/use-toast";
-import {useMembers} from "../../../../../hooks/api";
-import {ContextProps} from "../../../../../types";
-import {MemberResponse} from "../../../../../types/generated-types";
+import { useRouter } from "next/navigation";
+import { DashboardHeader } from "../../../../../components/header";
+import { DashboardShell } from "../../../../../components/shell";
+import { toast } from "../../../../../components/ui/use-toast";
+import { useMembers } from "../../../../../hooks/api";
+import { ContextProps } from "../../../../../types";
+import { MemberResponse } from "../../../../../types/generated-types";
 import MemberAddForm from "@/components/add-member-form";
 
 export type Props = {
@@ -14,10 +14,10 @@ export type Props = {
   };
 } & ContextProps;
 
-export default function Page({params, searchParams}: Props) {
+export default function Page({ params, searchParams }: Props) {
   const members = [
     ...useMembers(Number(params.id)),
-    ...Array.from({length: 20}).map<MemberResponse>((_, i) => {
+    ...Array.from({ length: 20 }).map<MemberResponse>((_, i) => {
       const id = 1_000_000 + i;
       return {
         userId: String(id),
@@ -42,10 +42,11 @@ export default function Page({params, searchParams}: Props) {
 
   return (
     <DashboardShell>
-      <DashboardHeader heading="Members">
-        {/* show form for adding new members, based on the users in this app */}
-
-        <MemberAddForm activityId={Number(params.id)}/>
+      <DashboardHeader
+        heading="Members"
+        text="Select a member to view their profile."
+      >
+        <MemberAddForm activityId={Number(params.id)} />
       </DashboardHeader>
       <div className="flex gap-4">
         <div className="divide-y divide-border rounded-md border w-1/2 p-4 overflow-y-auto">

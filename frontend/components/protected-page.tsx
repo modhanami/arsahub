@@ -21,6 +21,7 @@ export function UserProtectedPage({ children }: { children: React.ReactNode }) {
 }
 
 export function AppProtectedPage({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
   const { currentApp, isLoading } = useCurrentApp();
 
   if (isLoading) {
@@ -29,9 +30,10 @@ export function AppProtectedPage({ children }: { children: React.ReactNode }) {
 
   if (!currentApp) {
     toast({
-      title: "No app selected",
-      description: "Please select an app to continue.",
+      title: "No App Specified",
+      description: "You must specify an app API key to access this page.",
     });
+    router.push("/");
     return null;
   }
 
