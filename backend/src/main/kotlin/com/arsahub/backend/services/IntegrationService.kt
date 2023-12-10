@@ -98,5 +98,9 @@ class AppService(
         appUserRepository.save(newAppUser)
         return newAppUser
     }
+
+    fun listUsers(app: App): List<AppUser> {
+        return appUserRepository.findAllByApp(app)
+    }
 }
 

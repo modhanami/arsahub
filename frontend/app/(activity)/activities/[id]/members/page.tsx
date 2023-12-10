@@ -6,6 +6,7 @@ import {toast} from "../../../../../components/ui/use-toast";
 import {useMembers} from "../../../../../hooks/api";
 import {ContextProps} from "../../../../../types";
 import {MemberResponse} from "../../../../../types/generated-types";
+import MemberAddForm from "@/components/add-member-form";
 
 export type Props = {
   searchParams: {
@@ -41,7 +42,11 @@ export default function Page({params, searchParams}: Props) {
 
   return (
     <DashboardShell>
-      <DashboardHeader heading="Members"></DashboardHeader>
+      <DashboardHeader heading="Members">
+        {/* show form for adding new members, based on the users in this app */}
+
+        <MemberAddForm activityId={Number(params.id)}/>
+      </DashboardHeader>
       <div className="flex gap-4">
         <div className="divide-y divide-border rounded-md border w-1/2 p-4 overflow-y-auto">
           {members.map((member) => (

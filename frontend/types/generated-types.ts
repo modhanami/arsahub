@@ -1,6 +1,6 @@
 /* tslint:disable */
 /* eslint-disable */
-// Generated using typescript-generator version 3.2.1263 on 2023-12-10 14:10:08.
+// Generated using typescript-generator version 3.2.1263 on 2023-12-10 17:24:21.
 
 export interface AchievementCreateRequest {
     title: string | null;
@@ -37,6 +37,10 @@ export interface ActionResponse {
     jsonSchema: { [index: string]: any } | null;
     key: string | null;
     id: number | null;
+}
+
+export interface ActivityAddMembersRequest {
+    userIds: string[];
 }
 
 export interface ActivityCreateRequest {
@@ -105,7 +109,7 @@ export interface AppUserCreateRequest {
 }
 
 export interface AppUserResponse {
-    uniqueId: string;
+    userId: string;
     displayName: string;
 }
 

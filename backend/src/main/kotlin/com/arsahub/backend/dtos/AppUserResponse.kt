@@ -3,13 +3,13 @@ package com.arsahub.backend.dtos
 import com.arsahub.backend.models.AppUser
 
 data class AppUserResponse(
-    val uniqueId: String,
+    val userId: String,
     val displayName: String
 ) {
     companion object {
         fun fromEntity(entity: AppUser): AppUserResponse {
             return AppUserResponse(
-                uniqueId = entity.userId ?: "",
+                userId = entity.userId ?: "",
                 displayName = entity.displayName ?: ""
             )
         }

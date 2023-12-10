@@ -20,6 +20,7 @@ import org.springframework.data.repository.findByIdOrNull
 import org.springframework.http.HttpStatus
 import org.springframework.security.access.AccessDeniedException
 import org.springframework.web.bind.annotation.*
+import org.springframework.web.server.ResponseStatusException
 
 
 @RestController
@@ -106,8 +107,6 @@ class ActivityController(
         return app.id?.let { activityService.listActivities(it).map { ActivityResponse.fromEntity(it) } } ?: emptyList()
     }
 
-    data class ActivityAddMembersRequest(val userIds: List<String>)
-
     @Operation(
         summary = "Add new members to an activity",
         responses = [
@@ -121,6 +120,10 @@ class ActivityController(
             ApiResponse(
                 responseCode = "404",
                 description = "Activity not found", content = [Content()]
+            ),
+            ApiResponse(
+                responseCode = "304",
+                description = "No new members added, all members already exist", content = [Content()]
             )
         ]
     )
@@ -133,7 +136,12 @@ class ActivityController(
         if (!canPerformAction(activityId, app)) {
             throw AccessDeniedException("You do not have access to this activity")
         }
-        return activityService.addMembers(activityId, request)
+        val result = activityService.addMembers(activityId, request)
+        if (!result.hasNewMembers) {
+            throw ResponseStatusException(HttpStatus.NOT_MODIFIED, "No new members added, all members already exist")
+        }
+
+        return ActivityResponse.fromEntity(result.activity)
     }
 
     @Operation(

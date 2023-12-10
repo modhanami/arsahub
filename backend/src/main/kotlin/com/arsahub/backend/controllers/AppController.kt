@@ -383,4 +383,19 @@ class AppController(
         return appService.addUser(app, request).let { AppUserResponse.fromEntity(it) }
     }
 
+    @Operation(
+        summary = "List users",
+        responses = [
+            ApiResponse(
+                responseCode = "200",
+                content = [Content(schema = Schema(implementation = AppUserResponse::class))]
+            )
+        ]
+    )
+    @GetMapping("/users")
+    fun listUsers(
+        @CurrentApp app: App
+    ): List<AppUserResponse> {
+        return appService.listUsers(app).map { AppUserResponse.fromEntity(it) }
+    }
 }

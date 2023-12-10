@@ -1,7 +1,6 @@
 package com.arsahub.backend.services
 
 import com.arsahub.backend.SocketIOService
-import com.arsahub.backend.controllers.ActivityController
 import com.arsahub.backend.dtos.*
 import com.arsahub.backend.models.*
 import com.arsahub.backend.repositories.*
@@ -26,7 +25,7 @@ interface ActivityService {
     ): ActivityResponse
 
     fun getActivity(activityId: Long): Activity?
-    fun addMembers(activityId: Long, request: ActivityController.ActivityAddMembersRequest): ActivityResponse
+    fun addMembers(activityId: Long, request: ActivityAddMembersRequest): ActivityAddMembersResult
     fun listMembers(activityId: Long): List<AppUserActivity>
     fun listActivities(appId: Long): List<Activity>
     fun trigger(activityId: Long, request: ActivityTriggerRequest)
@@ -85,25 +84,25 @@ class ActivityServiceImpl(
     }
 
     override fun addMembers(
-        activityId: Long, request: ActivityController.ActivityAddMembersRequest
-    ): ActivityResponse {
-        val existingEvent = activityRepository.findByIdOrNull(activityId)
+        activityId: Long, request: ActivityAddMembersRequest
+    ): ActivityAddMembersResult {
+        val existingActivity = activityRepository.findByIdOrNull(activityId)
             ?: throw EntityNotFoundException("Activity with ID $activityId not found")
 
-        val existingMemberUserIds = existingEvent.members.map { it.appUser?.userId }.toSet()
+        val existingMemberUserIds = existingActivity.members.map { it.appUser?.userId }.toSet()
         val newMemberUserIds = request.userIds.filter { !existingMemberUserIds.contains(it) }
-        val newMemberAppUsers = appUserRepository.findAllByAppAndUserIdIn(existingEvent.app!!, newMemberUserIds)
+        val newMemberAppUsers = appUserRepository.findAllByAppAndUserIdIn(existingActivity.app!!, newMemberUserIds)
         val newMembers = newMemberAppUsers.map { appUser ->
             AppUserActivity(
                 appUser = appUser,
-                activity = existingEvent,
+                activity = existingActivity,
             )
         }
         userActivityRepository.saveAllAndFlush(newMembers)
 
-        return ActivityResponse.fromEntity(
-            activityRepository.findByIdOrNull(activityId)
-                ?: throw EntityNotFoundException("Activity with ID $activityId not found")
+        return ActivityAddMembersResult(
+            activity = existingActivity,
+            hasNewMembers = newMembers.isNotEmpty()
         )
     }
 

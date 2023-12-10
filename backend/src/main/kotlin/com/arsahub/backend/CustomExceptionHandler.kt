@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ControllerAdvice
 import org.springframework.web.bind.annotation.ExceptionHandler
+import org.springframework.web.server.ResponseStatusException
 
 @ControllerAdvice
 class CustomExceptionHandler {
@@ -24,4 +25,9 @@ class CustomExceptionHandler {
         return ResponseEntity(response, HttpStatus.CONFLICT)
     }
 
+    @ExceptionHandler(ResponseStatusException::class)
+    fun handleResponseStatusExceptions(ex: ResponseStatusException): ResponseEntity<ApiError> {
+        val response = ApiError(ex.reason ?: "Unknown error")
+        return ResponseEntity.status(ex.statusCode).body(response)
+    }
 }
