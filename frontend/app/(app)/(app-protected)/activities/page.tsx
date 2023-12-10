@@ -6,6 +6,7 @@ import { DashboardHeader } from "@/components/header";
 import { DashboardShell } from "@/components/shell";
 import { useActivities } from "../../../../hooks/api";
 import { ContextProps } from "../../../../types";
+import { ActivityCreateForm } from "@/components/create-activity";
 
 type DashboardPageProps = ContextProps;
 
@@ -18,7 +19,7 @@ export default function Page({ params: { id } }: DashboardPageProps) {
         heading="Activities"
         text="Create and manage activities."
       >
-        {/* <CardWithForm /> */}
+        <ActivityCreateForm />
       </DashboardHeader>
       <div>
         {activities?.length ? (

@@ -2,23 +2,8 @@
 import * as React from "react";
 
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useForm } from "react-hook-form";
 import { activityCreateSchema } from "../lib/validations/activity";
 import * as z from "zod";
@@ -32,30 +17,30 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { type } from "os";
 
 import {
   Dialog,
   DialogClose,
   DialogContent,
-  DialogDescription,
   DialogHeader,
-  DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { toast } from "./ui/use-toast";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { ActivityCreateButton } from "./activity-create-button";
-import { API_URL } from "../hooks/api";
+import { API_URL, makeAppAuthHeader } from "../hooks/api";
+import { useCurrentApp } from "@/lib/current-app";
 
 type FormData = z.infer<typeof activityCreateSchema>;
-export function CardWithForm() {
+
+export function ActivityCreateForm() {
   const router = useRouter();
   const form = useForm<FormData>({
     resolver: zodResolver(activityCreateSchema),
   });
   const [isCreating, setIsCreating] = React.useState(false);
   const [isOpen, setIsOpen] = React.useState(false);
+  const { currentApp } = useCurrentApp();
 
   async function onSubmit(values: FormData) {
     console.log(values);
@@ -66,6 +51,7 @@ export function CardWithForm() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...makeAppAuthHeader(currentApp),
       },
       body: JSON.stringify({
         title: values.title,
