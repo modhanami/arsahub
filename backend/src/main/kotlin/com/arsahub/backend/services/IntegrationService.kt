@@ -1,18 +1,9 @@
 package com.arsahub.backend.services
 
-import com.arsahub.backend.dtos.AppCreateRequest
-import com.arsahub.backend.dtos.AppWithAPIToken
-import com.arsahub.backend.dtos.TriggerCreateRequest
-import com.arsahub.backend.dtos.TriggerResponse
+import com.arsahub.backend.dtos.*
 import com.arsahub.backend.exceptions.ConflictException
-import com.arsahub.backend.models.App
-import com.arsahub.backend.models.AppTemplate
-import com.arsahub.backend.models.Trigger
-import com.arsahub.backend.models.User
-import com.arsahub.backend.repositories.AppRepository
-import com.arsahub.backend.repositories.AppTemplateRepository
-import com.arsahub.backend.repositories.TriggerRepository
-import com.arsahub.backend.repositories.UserRepository
+import com.arsahub.backend.models.*
+import com.arsahub.backend.repositories.*
 import org.springframework.stereotype.Service
 import java.util.*
 
@@ -22,7 +13,9 @@ class AppService(
     private val userRepository: UserRepository,
     private val appTemplateRepository: AppTemplateRepository,
     private val appRepository: AppRepository,
-    private val apiKeyService: APIKeyService
+    private val apiKeyService: APIKeyService,
+    private val appUserRepository: AppUserRepository
+
 ) {
 
     fun createTrigger(app: App, request: TriggerCreateRequest): TriggerResponse {
@@ -90,6 +83,20 @@ class AppService(
 
     fun getUserByUUID(userUUID: UUID): User {
         return userRepository.findByUuid(userUUID) ?: throw Exception("User not found")
+    }
+
+    fun addUser(app: App, request: AppUserCreateRequest): AppUser {
+        val appUser = appUserRepository.findByAppAndUserId(app, request.uniqueId)
+        if (appUser != null) {
+            throw ConflictException("App user already exists")
+        }
+        val newAppUser = AppUser(
+            userId = request.uniqueId,
+            displayName = request.displayName,
+            app = app
+        )
+        appUserRepository.save(newAppUser)
+        return newAppUser
     }
 }
 

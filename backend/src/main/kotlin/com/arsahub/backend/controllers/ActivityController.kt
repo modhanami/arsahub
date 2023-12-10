@@ -106,7 +106,7 @@ class ActivityController(
         return app.id?.let { activityService.listActivities(it).map { ActivityResponse.fromEntity(it) } } ?: emptyList()
     }
 
-    data class ActivityAddMembersRequest(val userIds: List<Long>)
+    data class ActivityAddMembersRequest(val userIds: List<String>)
 
     @Operation(
         summary = "Add new members to an activity",
@@ -345,11 +345,11 @@ class ActivityController(
     @GetMapping("/{activityId}/profile")
     fun getUserActivityProfile(
         @PathVariable activityId: Long,
-        @RequestParam userId: Long
+        @RequestParam userId: String
     ): UserActivityProfileResponse {
         val existingActivity = activityRepository.findByIdOrNull(activityId)
             ?: throw EntityNotFoundException("Activity with ID $activityId not found")
-        val existingMember = existingActivity.members.find { it.user?.userId == userId }
+        val existingMember = existingActivity.members.find { it.appUser?.userId == userId }
             ?: throw EntityNotFoundException("User with ID $userId not found")
 
         return UserActivityProfileResponse.fromEntity(existingMember)

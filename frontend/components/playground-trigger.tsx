@@ -1,50 +1,16 @@
 "use client";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "next/navigation";
+import {Button} from "@/components/ui/button";
+import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
+import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage,} from "@/components/ui/form";
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue,} from "@/components/ui/select";
+import {zodResolver} from "@hookform/resolvers/zod";
 import * as React from "react";
-import { useForm } from "react-hook-form";
+import {useForm} from "react-hook-form";
 import * as z from "zod";
-
-import { useParams } from "next/navigation";
-import { RuleCreateButton } from "./rule-create-button";
-import { DialogHeader } from "./ui/dialog";
-import { toast } from "./ui/use-toast";
-import { playgroundTriggerSchema } from "../lib/validations/playground";
-import { id } from "date-fns/locale";
-import {
-  API_URL,
-  makeAppAuthHeader,
-  useMembers,
-  useRules,
-  useTriggers,
-  useUserProfile,
-} from "../hooks/api";
-import { UserProfileRealTime } from "./ui/team-members";
-import { useCurrentApp } from "../lib/current-app";
+import {toast} from "./ui/use-toast";
+import {playgroundTriggerSchema} from "../lib/validations/playground";
+import {API_URL, makeAppAuthHeader, useMembers, useRules, useTriggers,} from "../hooks/api";
+import {useCurrentApp} from "../lib/current-app";
 
 interface Trigger {
   title: string;
@@ -66,9 +32,10 @@ type PlaygroundTriggerFormProps = {
 };
 
 type FormData = z.infer<typeof playgroundTriggerSchema>;
+
 export function PlaygroundTriggerForm({
-  activityId,
-}: PlaygroundTriggerFormProps) {
+                                        activityId,
+                                      }: PlaygroundTriggerFormProps) {
   console.log("activityId", activityId);
   const form = useForm<FormData>({
     resolver: zodResolver(playgroundTriggerSchema),
@@ -78,7 +45,7 @@ export function PlaygroundTriggerForm({
   const members = useMembers(activityId);
   const triggers = useTriggers();
   const rules = useRules(activityId);
-  const { currentApp } = useCurrentApp();
+  const {currentApp} = useCurrentApp();
 
   async function onSubmit(values: FormData) {
     console.log("submit", values);
@@ -144,7 +111,7 @@ export function PlaygroundTriggerForm({
                     <FormField
                       control={form.control}
                       name="userId"
-                      render={({ field }) => (
+                      render={({field}) => (
                         <FormItem>
                           <FormLabel>User</FormLabel>
                           <FormControl>
@@ -165,13 +132,13 @@ export function PlaygroundTriggerForm({
                                     value={String(member.userId) || ""}
                                     className="flex items-center justify-between w-full"
                                   >
-                                    {member.name}
+                                    {member.displayName}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>
                           </FormControl>
-                          <FormMessage />
+                          <FormMessage/>
                         </FormItem>
                       )}
                     />
@@ -179,7 +146,7 @@ export function PlaygroundTriggerForm({
                     <FormField
                       control={form.control}
                       name="trigger.key"
-                      render={({ field }) => (
+                      render={({field}) => (
                         <FormItem>
                           <FormLabel>Trigger</FormLabel>
                           <FormControl>
@@ -206,7 +173,7 @@ export function PlaygroundTriggerForm({
                               </SelectContent>
                             </Select>
                           </FormControl>
-                          <FormMessage />
+                          <FormMessage/>
                         </FormItem>
                       )}
                     />
@@ -225,10 +192,10 @@ export function PlaygroundTriggerForm({
                     <ul className="space-y-1 list-disc list-inside text-muted-foreground">
                       {filteredRules?.length > 0
                         ? filteredRules.map((rule) => (
-                            <li className="text-sm font-medium " key={rule.id}>
-                              {rule.title}
-                            </li>
-                          ))
+                          <li className="text-sm font-medium " key={rule.id}>
+                            {rule.title}
+                          </li>
+                        ))
                         : "No matching rules :("}
                     </ul>
                   </div>

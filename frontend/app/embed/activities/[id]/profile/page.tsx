@@ -1,7 +1,7 @@
-import { UserProfileRealTime } from "../../../../../components/ui/team-members";
-import { API_URL } from "../../../../../hooks/api";
-import { ContextProps } from "../../../../../types";
-import { UserActivityProfileResponse } from "../../../../../types/generated-types";
+import {UserProfileRealTime} from "../../../../../components/ui/team-members";
+import {API_URL} from "../../../../../hooks/api";
+import {ContextProps} from "../../../../../types";
+import {UserActivityProfileResponse} from "../../../../../types/generated-types";
 
 async function getUserProfile(
   activityId: string,
@@ -23,9 +23,9 @@ type Props = ContextProps & {
 };
 
 export default async function Page({
-  params,
-  searchParams: { userId },
-}: Props) {
+                                     params,
+                                     searchParams: {userId},
+                                   }: Props) {
   const data = await getUserProfile(params.id, userId);
   console.log(data);
 
@@ -37,8 +37,7 @@ export default async function Page({
     <main>
       <UserProfileRealTime
         userId={userId}
-        name={data.user.name}
-        username={data.user.username || ""}
+        name={data.user.displayName || ""}
         avatar="X"
         points={data.points}
         achievements={data.achievements || []}

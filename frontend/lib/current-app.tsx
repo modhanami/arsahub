@@ -20,6 +20,7 @@ export function useCurrentApp(): {
   currentApp: AppResponse | undefined;
   setCurrentAppWithApiKey: (apiKey: string) => void;
   isLoading: boolean;
+  clearCurrentApp: () => void;
 } {
   const apiKey = localStorage.getItem("app-api-key");
   const queryClient = useQueryClient();
@@ -53,5 +54,10 @@ export function useCurrentApp(): {
     }
   );
 
-  return { currentApp, setCurrentAppWithApiKey, isLoading };
+  const clearCurrentApp = () => {
+    queryClient.removeQueries("currentApp");
+    localStorage.removeItem("app-api-key");
+  };
+
+  return { currentApp, setCurrentAppWithApiKey, isLoading, clearCurrentApp };
 }

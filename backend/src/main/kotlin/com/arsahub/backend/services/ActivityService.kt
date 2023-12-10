@@ -27,7 +27,7 @@ interface ActivityService {
 
     fun getActivity(activityId: Long): Activity?
     fun addMembers(activityId: Long, request: ActivityController.ActivityAddMembersRequest): ActivityResponse
-    fun listMembers(activityId: Long): List<UserActivity>
+    fun listMembers(activityId: Long): List<AppUserActivity>
     fun listActivities(appId: Long): List<Activity>
     fun trigger(activityId: Long, request: ActivityTriggerRequest)
     fun createRule(
@@ -52,7 +52,8 @@ class ActivityServiceImpl(
     private val actionRepository: ActionRepository,
     private val ruleRepository: RuleRepository,
     private val actionHandlerRegistry: ActionHandlerRegistry,
-    private val appRepository: AppRepository
+    private val appRepository: AppRepository,
+    private val appUserRepository: AppUserRepository
 ) : ActivityService {
 
     override fun createActivity(app: App, activityCreateRequest: ActivityCreateRequest): Activity {
@@ -87,13 +88,12 @@ class ActivityServiceImpl(
         val existingEvent = activityRepository.findByIdOrNull(activityId)
             ?: throw EntityNotFoundException("Activity with ID $activityId not found")
 
-        val existingMemberUserIds = existingEvent.members.map { it.user?.userId }.toSet()
+        val existingMemberUserIds = existingEvent.members.map { it.appUser?.userId }.toSet()
         val newMemberUserIds = request.userIds.filter { !existingMemberUserIds.contains(it) }
-        val newMemberUsers = userRepository.findAll().filter { newMemberUserIds.contains(it.userId) }
-        newMemberUsers.forEach { println(it.userId) }
-        val newMembers = newMemberUsers.map { user ->
-            UserActivity(
-                user = user,
+        val newMemberAppUsers = appUserRepository.findAllByAppAndUserIdIn(existingEvent.app!!, newMemberUserIds)
+        val newMembers = newMemberAppUsers.map { appUser ->
+            AppUserActivity(
+                appUser = appUser,
                 activity = existingEvent,
             )
         }
@@ -105,7 +105,7 @@ class ActivityServiceImpl(
         )
     }
 
-    override fun listMembers(activityId: Long): List<UserActivity> {
+    override fun listMembers(activityId: Long): List<AppUserActivity> {
         val existingEvent = activityRepository.findByIdOrNull(activityId)
             ?: throw EntityNotFoundException("Activity with ID $activityId not found")
 
@@ -122,7 +122,7 @@ class ActivityServiceImpl(
         val userId = request.userId
 
         val member =
-            existingActivity.members.find { it.user?.userId == userId } ?: throw Exception("User not found")
+            existingActivity.members.find { it.appUser?.userId == userId } ?: throw Exception("User not found")
 
         val trigger = triggerRepository.findByKey(request.key) ?: throw Exception("Trigger not found")
 
@@ -141,7 +141,7 @@ class ActivityServiceImpl(
 //                    var ruleProgress = ruleProgressTimeRepository.findByRuleAndUserActivity(rule, existingMember)
 //                    if (ruleProgress == null) {
 //                        ruleProgress = RuleProgressTime(
-//                            rule = rule, userActivity = existingMember, progress = 0
+//                            rule = rule, appUserActivity = existingMember, progress = 0
 //                        )
 //                    } else {
 //                        if (ruleProgress.completedAt != null) {
@@ -223,7 +223,7 @@ class ActivityServiceImpl(
                 }
 
                 // check if the rule has already been activated from rule_progress_time
-                if (ruleProgressTimeRepository.findByRuleAndUserActivity(rule, member) != null) {
+                if (ruleProgressTimeRepository.findByRuleAndAppUserActivity(rule, member) != null) {
                     return@forEach
                 }
 
@@ -240,7 +240,7 @@ class ActivityServiceImpl(
 
                 // mark the rule as activated for the user
                 val ruleProgress = RuleProgressTime(
-                    rule = rule, userActivity = member, progress = 1, completedAt = Instant.now()
+                    rule = rule, appUserActivity = member, progress = 1, completedAt = Instant.now()
                 )
                 ruleProgressTimeRepository.save(ruleProgress)
             }

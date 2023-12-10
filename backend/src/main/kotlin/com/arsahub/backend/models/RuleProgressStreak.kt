@@ -22,13 +22,12 @@ class RuleProgressStreak(
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_activity_id", nullable = false)
-    var userActivity: UserActivity? = null
+    @JoinColumn(name = "app_user_activity_id", nullable = false)
+    var appUserActivity: AppUserActivity? = null
 ) : AuditedEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "rule_progress_streak_id", nullable = false)
     var id: Long? = null
-
 
 }

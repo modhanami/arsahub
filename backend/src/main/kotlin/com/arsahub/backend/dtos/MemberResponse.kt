@@ -1,20 +1,20 @@
 package com.arsahub.backend.dtos
 
+import com.arsahub.backend.models.AppUserActivity
+
 data class MemberResponse(
-    val memberId: Long?,
-    val name: String?,
+//    val memberId: Long?,
+    val userId: String?,
+    val displayName: String?,
     val points: Int?,
-    val userId: Long?,
-    val username: String?,
 ) {
     companion object {
-        fun fromEntity(member: com.arsahub.backend.models.UserActivity): MemberResponse {
+        fun fromEntity(member: AppUserActivity): MemberResponse {
             return MemberResponse(
-                memberId = member.id,
-                name = member.user?.name,
+//                memberId = member.id,
+                userId = member.appUser?.userId,
+                displayName = member.appUser?.displayName,
                 points = member.points,
-                userId = member.user?.userId,
-                username = member.user?.username
             )
         }
     }

@@ -6,16 +6,16 @@ import jakarta.validation.constraints.Size
 
 @Entity
 @Table(
-    name = "user_activity_point_history", indexes = [
-        Index(name = "idx_16432_user_activity_id", columnList = "user_activity_id"),
+    name = "app_user_activity_point_history", indexes = [
+        Index(name = "idx_16432_user_activity_id", columnList = "app_user_activity_id"),
         Index(name = "idx_16432_activity_id", columnList = "activity_id")
     ]
 )
 class UserActivityPointHistory(
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_activity_id", nullable = false)
-    var userActivity: UserActivity? = null,
+    @JoinColumn(name = "app_user_activity_id", nullable = false)
+    var appUserActivity: AppUserActivity? = null,
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -32,6 +32,6 @@ class UserActivityPointHistory(
 ) {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "user_activity_point_history_id", nullable = false)
+    @Column(name = "app_user_activity_point_history_id", nullable = false)
     var id: Long? = null
 }

@@ -14,9 +14,6 @@ class User(
     @Column(name = "name", nullable = false)
     val name: String,
 
-    @OneToMany(mappedBy = "user")
-    var userActivities: MutableSet<UserActivity> = mutableSetOf(),
-
     @NotNull
     @Column(name = "uuid", nullable = false)
     var uuid: UUID? = null

@@ -1,7 +1,7 @@
 package com.arsahub.backend.services.actionhandlers
 
+import com.arsahub.backend.models.AppUserActivity
 import com.arsahub.backend.models.Rule
-import com.arsahub.backend.models.UserActivity
 import org.springframework.stereotype.Component
 
 @Component
@@ -14,7 +14,7 @@ class ActionHandlerRegistry(
         "unlock_achievement" to actionUnlockAchievementHandler
     )
 
-    override fun handleAction(rule: Rule, member: UserActivity): ActionResult {
+    override fun handleAction(rule: Rule, member: AppUserActivity): ActionResult {
         val handler = handlers[rule.action?.key] ?: throw Exception("Action handler not found")
         return handler.handleAction(rule, member)
     }

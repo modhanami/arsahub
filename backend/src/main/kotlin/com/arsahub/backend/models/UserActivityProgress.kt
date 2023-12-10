@@ -4,7 +4,7 @@ import jakarta.persistence.*
 import jakarta.validation.constraints.NotNull
 
 @Entity
-@Table(name = "user_activity_progress")
+@Table(name = "app_user_activity_progress")
 class UserActivityProgress(
 
     @NotNull
@@ -14,8 +14,8 @@ class UserActivityProgress(
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_activity_id", nullable = false)
-    var userActivity: UserActivity? = null,
+    @JoinColumn(name = "app_user_activity_id", nullable = false)
+    var appUserActivity: AppUserActivity? = null,
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -28,6 +28,6 @@ class UserActivityProgress(
 ) : AuditedEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "user_activity_progress_id", nullable = false)
+    @Column(name = "app_user_activity_progress_id", nullable = false)
     var id: Long? = null
 }

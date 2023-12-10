@@ -1,5 +1,6 @@
 "use client";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "../../components/ui/button";
@@ -12,9 +13,9 @@ import {
 } from "../../components/ui/form";
 import { Input } from "../../components/ui/input";
 import { useCurrentUser } from "../../lib/current-user";
-import { useRouter, useSearchParams } from "next/navigation";
 
 export default function Page() {
+  const defaultRedirect = "/activities";
   const router = useRouter();
   const loginSchema = z.object({
     uuid: z
@@ -26,9 +27,9 @@ export default function Page() {
   type FormData = z.infer<typeof loginSchema>;
 
   const { currentUser, setCurrentUserWithUUID } = useCurrentUser();
-  //   if (currentUser) {
-  //     router.push("/");
-  //   }
+  if (currentUser) {
+    router.push(defaultRedirect);
+  }
 
   const form = useForm<FormData>({
     resolver: zodResolver(loginSchema),
@@ -41,7 +42,7 @@ export default function Page() {
   async function handleLogin(data: { uuid: string }) {
     try {
       await setCurrentUserWithUUID(data.uuid);
-      router.push(searchParams.get("redirect") || "/");
+      router.push(searchParams.get("redirect") || defaultRedirect);
     } catch (error: any) {
       console.log("Error", error);
 

@@ -1,23 +1,20 @@
 "use client";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { useCurrentUser } from "../lib/current-user";
 import { useCurrentApp } from "../lib/current-app";
+import { useCurrentUser } from "../lib/current-user";
 import { toast } from "./ui/use-toast";
 
 export function UserProtectedPage({ children }: { children: React.ReactNode }) {
-  const { currentUser, loading } = useCurrentUser();
+  const { currentUser, isLoading } = useCurrentUser();
   const router = useRouter();
   const pathname = usePathname();
 
-  useEffect(() => {
-    if (!loading && !currentUser) {
-      router.push(`/login?redirect=${pathname}`);
-    }
-  }, [currentUser, loading, pathname, router]);
-
-  if (loading) {
+  if (isLoading) {
     return null;
+  }
+
+  if (!currentUser) {
+    router.push(`/login?redirect=${pathname}`);
   }
 
   return children;

@@ -1,18 +1,18 @@
 package com.arsahub.backend.dtos
 
-import com.arsahub.backend.models.UserActivity
+import com.arsahub.backend.models.AppUserActivity
 
 data class UserActivityProfileResponse(
-    val user: UserResponse?,
+    val user: AppUserResponse?,
     val points: Int,
     val achievements: List<AchievementResponse>
 ) {
     companion object {
-        fun fromEntity(userActivity: UserActivity): UserActivityProfileResponse {
+        fun fromEntity(appUserActivity: AppUserActivity): UserActivityProfileResponse {
             return UserActivityProfileResponse(
-                user = userActivity.user?.let { UserResponse.fromEntity(it) },
-                points = userActivity.points ?: 0,
-                achievements = userActivity.userActivityAchievements.mapNotNull {
+                user = appUserActivity.appUser?.let { AppUserResponse.fromEntity(it) },
+                points = appUserActivity.points ?: 0,
+                achievements = appUserActivity.userActivityAchievements.mapNotNull {
                     it.achievement?.let { achievement ->
                         AchievementResponse.fromEntity(achievement)
                     }

@@ -11,7 +11,7 @@
 //   }
 
 import React from "react";
-import { toast } from "../components/ui/use-toast";
+import {toast} from "../components/ui/use-toast";
 import {
   ActivityResponse,
   AppResponse,
@@ -19,7 +19,7 @@ import {
   RuleResponse,
   UserActivityProfileResponse,
 } from "../types/generated-types";
-import { useCurrentApp } from "../lib/current-app";
+import {useCurrentApp} from "../lib/current-app";
 
 // export function fetchTriggers(activityId: number) {
 //     return fetch(`${API_URL}/activities/${activityId}/triggers`, {
@@ -62,7 +62,7 @@ export function makeAppAuthHeader(
 
 export function useMembers(activityId: number) {
   const [members, setMembers] = React.useState<MemberResponse[]>([]);
-  const { currentApp } = useCurrentApp();
+  const {currentApp} = useCurrentApp();
   React.useEffect(() => {
     async function fetchMembers() {
       const response = await fetch(
@@ -112,7 +112,7 @@ export interface Trigger {
 
 export function useTriggers() {
   const [triggers, setTriggers] = React.useState<Trigger[]>([]);
-  const { currentApp } = useCurrentApp();
+  const {currentApp} = useCurrentApp();
   React.useEffect(() => {
     async function fetchTriggers() {
       const response = await fetch(`${API_URL}/apps/triggers`, {
@@ -151,7 +151,7 @@ export function useTriggers() {
 
 export function useActions() {
   const [actions, setActions] = React.useState<Action[]>([]);
-  const { currentApp } = useCurrentApp();
+  const {currentApp} = useCurrentApp();
   React.useEffect(() => {
     async function fetchActions() {
       const response = await fetch(`${API_URL}/activities/actions`, {
@@ -237,7 +237,7 @@ export interface Rule {
 
 export function useRules(activityId: number) {
   const [rules, setRules] = React.useState<RuleResponse[]>([]);
-  const { currentApp } = useCurrentApp();
+  const {currentApp} = useCurrentApp();
   React.useEffect(() => {
     async function fetchRules() {
       const response = await fetch(
@@ -285,10 +285,10 @@ export interface Action {
   jsonSchema: Record<string, unknown>;
 }
 
-export function useUserProfile(activityId: number, userId: number) {
+export function useUserProfile(activityId: number, userId: string) {
   const [profile, setProfile] =
     React.useState<UserActivityProfileResponse | null>(null);
-  const { currentApp } = useCurrentApp();
+  const {currentApp} = useCurrentApp();
   React.useEffect(() => {
     async function fetchProfile() {
       if (!userId) {
@@ -389,7 +389,7 @@ async function fetchApp(
 export function useApp(userUUID: UserUUID) {
   const [loading, setLoading] = React.useState<boolean>(true); // Always start with loading as true
   const [app, setApp] = React.useState<AppResponse | null>(null);
-  const { currentApp } = useCurrentApp();
+  const {currentApp} = useCurrentApp();
   React.useEffect(() => {
     fetchApp(userUUID, currentApp).then((app) => {
       if (!app) {
@@ -411,13 +411,13 @@ export function useApp(userUUID: UserUUID) {
     });
   }
 
-  return { loading, data: app, refetch };
+  return {loading, data: app, refetch};
 }
 
 export function useApps(userId: number) {
   const [loading, setLoading] = React.useState<boolean>(true); // Always start with loading as true
   const [apps, setApps] = React.useState<App[]>([]);
-  const { currentApp } = useCurrentApp();
+  const {currentApp} = useCurrentApp();
   React.useEffect(() => {
     fetchApps(userId, currentApp).then((apps) => {
       if (!apps) {
@@ -439,7 +439,7 @@ export function useApps(userId: number) {
     });
   }
 
-  return { loading, data: apps, refetch };
+  return {loading, data: apps, refetch};
 }
 
 type TriggerTemplate = Trigger;
@@ -453,7 +453,7 @@ export interface AppTemplate {
 
 export function useAppTemplates() {
   const [templates, setTemplates] = React.useState<AppTemplate[]>([]);
-  const { currentApp } = useCurrentApp();
+  const {currentApp} = useCurrentApp();
   React.useEffect(() => {
     async function fetchTemplates() {
       const response = await fetch(`${API_URL}/apps/templates`, {
@@ -492,7 +492,7 @@ export function useAppTemplates() {
 
 export function useActivities() {
   const [activities, setActivities] = React.useState<ActivityResponse[]>([]);
-  const { currentApp, isLoading } = useCurrentApp();
+  const {currentApp, isLoading} = useCurrentApp();
 
   React.useEffect(() => {
     if (isLoading) {

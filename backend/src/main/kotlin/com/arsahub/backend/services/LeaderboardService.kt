@@ -16,10 +16,10 @@ class LeaderboardServiceImpl(
         val entries = userActivityRepository.findAllByActivity_ActivityId(activityId)
             .sortedByDescending { it.points }
             .mapIndexed { index, member ->
-                if (member.id != null && member.user != null && member.points != null) {
+                if (member.id != null && member.appUser != null && member.points != null) {
                     LeaderboardResponse.Entry(
-                        memberId = member.id!!,
-                        memberName = member.user!!.name,
+                        userId = member.appUser!!.userId!!,
+                        memberName = member.appUser!!.displayName!!,
                         score = member.points!!,
                         rank = index + 1
                     )

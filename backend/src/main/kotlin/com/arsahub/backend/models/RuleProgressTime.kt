@@ -23,9 +23,9 @@ class RuleProgressTime(
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_activity_id", nullable = false)
-    var userActivity: UserActivity? = null,
-    
+    @JoinColumn(name = "app_user_activity_id", nullable = false)
+    var appUserActivity: AppUserActivity? = null,
+
     @Column(name = "completed_at")
     var completedAt: Instant? = null
 ) : AuditedEntity()

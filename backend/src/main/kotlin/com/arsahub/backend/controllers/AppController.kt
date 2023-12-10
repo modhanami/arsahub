@@ -98,7 +98,7 @@ class AppController(
     data class IncrementUnitRequest(
         val unitKey: String,
         val amount: Int,
-        val userId: Long,
+        val userId: String,
     )
 
     @Operation(
@@ -126,24 +126,24 @@ class AppController(
             ?: throw EntityNotFoundException("Custom unit with key ${request.unitKey} not found")
         val activity = activityRepository.findByIdOrNull(activityId)
             ?: throw EntityNotFoundException("Activity with ID $activityId not found")
-        val userActivity = activity.members.find { it.user?.userId == request.userId }
+        val appUserActivity = activity.members.find { it.appUser?.userId == request.userId }
             ?: throw EntityNotFoundException("User with ID ${request.userId} not found")
-        var currentProgress = userActivity.userActivityProgresses.find { it.customUnit?.key == request.unitKey }
+        var currentProgress = appUserActivity.userActivityProgresses.find { it.customUnit?.key == request.unitKey }
         if (currentProgress != null) {
             currentProgress.progressValue = currentProgress.progressValue?.plus(request.amount)
             userActivityProgressRepository.save(currentProgress)
 
-            println("Incremented progress ${customUnit.name} for user ${userActivity.user?.userId} in activity ${activity.title} by ${request.amount} to ${currentProgress.progressValue}")
+            println("Incremented progress ${customUnit.name} for user ${appUserActivity.appUser?.userId} in activity ${activity.title} by ${request.amount} to ${currentProgress.progressValue}")
         } else {
             currentProgress = UserActivityProgress(
                 activity = activity,
-                userActivity = userActivity,
+                appUserActivity = appUserActivity,
                 customUnit = customUnit,
                 progressValue = request.amount
             )
             userActivityProgressRepository.save(currentProgress)
 
-            println("Created progress ${customUnit.name} for user ${userActivity.user?.userId} in activity ${activity.title} with value ${request.amount}")
+            println("Created progress ${customUnit.name} for user ${appUserActivity.appUser?.userId} in activity ${activity.title} with value ${request.amount}")
         }
         val matchingRules = activity.rules.filter { it.trigger?.key == "${customUnit.key}_reached" }
         println("Found ${matchingRules.size} rules for ${customUnit.name} reached")
@@ -152,12 +152,12 @@ class AppController(
                 ?: throw Exception("Value not found for rule ${rule.title} (${rule.id})")
 
             if ((currentProgress.progressValue ?: 0) < value) {
-                println("Skipping rule ${rule.title} (${rule.id}) for user ${userActivity.user?.userId} in activity ${activity.title} because progress is ${currentProgress.progressValue} and value is $value")
+                println("Skipping rule ${rule.title} (${rule.id}) for user ${appUserActivity.appUser?.userId} in activity ${activity.title} because progress is ${currentProgress.progressValue} and value is $value")
                 return@forEach
             }
             // check if the rule has already been activated from rule_progress_time
-            if (ruleProgressTimeRepository.findByRuleAndUserActivity(rule, userActivity) != null) {
-                println("Skipping rule ${rule.title} (${rule.id}) for user ${userActivity.user?.userId} in activity ${activity.title} because it has already been activated")
+            if (ruleProgressTimeRepository.findByRuleAndAppUserActivity(rule, appUserActivity) != null) {
+                println("Skipping rule ${rule.title} (${rule.id}) for user ${appUserActivity.appUser?.userId} in activity ${activity.title} because it has already been activated")
                 return@forEach
             }
 
@@ -173,7 +173,7 @@ class AppController(
             )
             // mark the rule as activated for the user
             val ruleProgress = RuleProgressTime(
-                rule = rule, userActivity = userActivity, progress = 1, completedAt = Instant.now()
+                rule = rule, appUserActivity = appUserActivity, progress = 1, completedAt = Instant.now()
             )
 
             ruleProgressTimeRepository.save(ruleProgress)
@@ -361,4 +361,26 @@ class AppController(
         val userUUID = UUID.fromString(authHeader.split(" ")[1])
         return appService.getUserByUUID(userUUID).let { UserResponse.fromEntity(it) }
     }
+
+    @Operation(
+        summary = "Add a new user to an app",
+        responses = [
+            ApiResponse(
+                responseCode = "201",
+            ),
+            ApiResponse(
+                responseCode = "400",
+                content = [Content(schema = Schema(implementation = ApiValidationError::class))]
+            )
+        ]
+    )
+    @PostMapping("/users")
+    @ResponseStatus(HttpStatus.CREATED)
+    fun addUserIntoApp(
+        @Valid @RequestBody request: AppUserCreateRequest,
+        @CurrentApp app: App
+    ): AppUserResponse {
+        return appService.addUser(app, request).let { AppUserResponse.fromEntity(it) }
+    }
+
 }

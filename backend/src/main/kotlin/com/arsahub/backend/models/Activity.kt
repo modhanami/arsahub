@@ -22,7 +22,7 @@ class Activity(
     var rules: MutableSet<Rule> = mutableSetOf(),
 
     @OneToMany(mappedBy = "activity")
-    var members: MutableSet<UserActivity> = mutableSetOf(),
+    var members: MutableSet<AppUserActivity> = mutableSetOf(),
 
     @OneToMany(mappedBy = "activity")
     var userActivityPointHistories: MutableSet<UserActivityPointHistory> = mutableSetOf(),

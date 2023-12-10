@@ -1,11 +1,11 @@
 "use client";
-import { useRouter } from "next/navigation";
-import { DashboardHeader } from "../../../../../components/header";
-import { DashboardShell } from "../../../../../components/shell";
-import { toast } from "../../../../../components/ui/use-toast";
-import { useMembers } from "../../../../../hooks/api";
-import { ContextProps } from "../../../../../types";
-import { MemberResponse } from "../../../../../types/generated-types";
+import {useRouter} from "next/navigation";
+import {DashboardHeader} from "../../../../../components/header";
+import {DashboardShell} from "../../../../../components/shell";
+import {toast} from "../../../../../components/ui/use-toast";
+import {useMembers} from "../../../../../hooks/api";
+import {ContextProps} from "../../../../../types";
+import {MemberResponse} from "../../../../../types/generated-types";
 
 export type Props = {
   searchParams: {
@@ -13,17 +13,15 @@ export type Props = {
   };
 } & ContextProps;
 
-export default function Page({ params, searchParams }: Props) {
+export default function Page({params, searchParams}: Props) {
   const members = [
     ...useMembers(Number(params.id)),
-    ...Array.from({ length: 20 }).map<MemberResponse>((_, i) => {
+    ...Array.from({length: 20}).map<MemberResponse>((_, i) => {
       const id = 1_000_000 + i;
       return {
-        memberId: id,
-        name: `NOT USER ${id}`,
-        username: `NOT USER ${id}`,
+        userId: String(id),
+        displayName: `NOT USER ${id}`,
         points: 0,
-        userId: id,
       };
     }),
   ];
@@ -36,7 +34,7 @@ export default function Page({ params, searchParams }: Props) {
     router.push(`/activities/${params.id}/members?userId=${member.userId}`);
 
     toast({
-      title: `User ${member.username} selected.`,
+      title: `User ${member.displayName} selected.`,
       description: "You can now view their profile.",
     });
   }
@@ -49,10 +47,10 @@ export default function Page({ params, searchParams }: Props) {
           {members.map((member) => (
             <div
               className="items-center justify-between p-4 cursor-pointer"
-              key={member.memberId}
+              key={member.userId}
               onClick={() => handleClick(member)}
             >
-              <div className="grid gap-1 max-w-lg">{member.name}</div>
+              <div className="grid gap-1 max-w-lg">{member.displayName}</div>
             </div>
           ))}
         </div>

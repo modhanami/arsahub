@@ -6,7 +6,7 @@ data class LeaderboardResponse(
 ) {
     data class Entry(
         val rank: Int,
-        val memberId: Long,
+        val userId: String,
         val memberName: String,
         val score: Int,
     )
