@@ -54,7 +54,9 @@ class ActivityServiceImpl(
     private val ruleRepository: RuleRepository,
     private val actionHandlerRegistry: ActionHandlerRegistry,
     private val appRepository: AppRepository,
-    private val appUserRepository: AppUserRepository
+    private val appUserRepository: AppUserRepository,
+    private val leaderboardServiceImpl: LeaderboardServiceImpl
+
 ) : ActivityService {
 
     override fun createActivity(app: App, activityCreateRequest: ActivityCreateRequest): Activity {
@@ -199,6 +201,13 @@ class ActivityServiceImpl(
                             points = newPoints
                         )
                     )
+                    socketIOService.broadcastToActivityRoom(
+                        activityId,
+                        LeaderboardUpdate(
+                            leaderboard = leaderboardServiceImpl.getTotalPointsLeaderboard(activityId)
+                        )
+                    )
+                    
                     socketIOService.broadcastToUserRoom(
                         userId,
                         PointsUpdate(
