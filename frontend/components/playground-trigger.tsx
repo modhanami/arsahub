@@ -164,7 +164,7 @@ export function PlaygroundTriggerForm({
                                 {triggers.map((trigger) => (
                                   <SelectItem
                                     key={trigger.id}
-                                    value={trigger.key}
+                                    value={trigger.key?.toString() || ""}
                                     className="flex items-center justify-between w-full"
                                   >
                                     {trigger.title}

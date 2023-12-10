@@ -1,7 +1,7 @@
-import { DashboardHeader } from "../../../../../components/header";
-import { PlaygroundTriggerForm } from "../../../../../components/playground-trigger";
-import { DashboardShell } from "../../../../../components/shell";
-import { ContextProps } from "../../../../../types";
+import {DashboardHeader} from "../../../../../components/header";
+import {PlaygroundTriggerForm} from "../../../../../components/playground-trigger";
+import {DashboardShell} from "../../../../../components/shell";
+import {ContextProps} from "../../../../../types";
 
 export type Playground = {
   id: number;
@@ -9,7 +9,7 @@ export type Playground = {
   description: string;
 } & ContextProps;
 
-export default async function PlaygroundPage({ params }: ContextProps) {
+export default async function PlaygroundPage({params}: ContextProps) {
   return (
     <DashboardShell>
       <DashboardHeader
@@ -19,7 +19,6 @@ export default async function PlaygroundPage({ params }: ContextProps) {
       <div>
         <PlaygroundTriggerForm
           activityId={Number(params.id)}
-          appId={Number(params.appId)}
         />
       </div>
     </DashboardShell>
