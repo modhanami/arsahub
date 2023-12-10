@@ -13,7 +13,7 @@ import {useRouter} from "next/navigation";
 import {API_URL, makeAppAuthHeader} from "@/hooks/api";
 import {Icons} from "@/components/icons";
 import {useCurrentApp} from "@/lib/current-app";
-import {useMutation, useQueryClient} from "react-query";
+import {useMutation, useQueryClient} from "@tanstack/react-query";
 import {AchievementCreateRequest, AchievementResponse} from "@/types/generated-types";
 import {ApiError} from "@/types";
 
@@ -69,10 +69,10 @@ export function AchievementCreateForm({activityId}: Props) {
   }
 
   const mutation = useMutation<AchievementResponse, ApiError, MutationData>(
-    ({activityId, newAchievement}: MutationData) => createAchievement(activityId, newAchievement),
     {
+      mutationFn: ({activityId, newAchievement}: MutationData) => createAchievement(activityId, newAchievement),
       onSuccess: () => {
-        queryClient.invalidateQueries(['achievements', activityId]);
+        queryClient.invalidateQueries({queryKey: ['achievements', activityId]});
 
         toast({
           title: "Achievement created",
@@ -152,7 +152,7 @@ export function AchievementCreateForm({activityId}: Props) {
                   </Button>
                 </DialogClose>
                 <Button type="submit"
-                        disabled={mutation.isLoading}
+                        disabled={mutation.isPending}
                 >Create</Button>
               </div>
             </form>

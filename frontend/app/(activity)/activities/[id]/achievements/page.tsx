@@ -2,7 +2,7 @@
 import {DashboardShell} from "@/components/shell";
 import {DashboardHeader} from "@/components/header";
 import {ContextProps} from "@/types";
-import {useQuery} from "react-query";
+import {useQuery} from "@tanstack/react-query";
 import {AchievementCreateForm} from "@/components/create-achievement";
 import {useCurrentApp} from "@/lib/current-app";
 import {API_URL, makeAppAuthHeader} from "@/hooks/api";
@@ -27,7 +27,7 @@ export default function Page({params: {id}}: ContextProps) {
     data: achievements,
     isLoading,
     isError
-  } = useQuery(['achievements', activityId], () => fetchAchievements(Number(activityId)));
+  } = useQuery({queryKey: ['achievements', activityId], queryFn: () => fetchAchievements(Number(activityId))});
 
   if (isLoading) return 'Loading...';
   if (isError) return 'An error occurred';

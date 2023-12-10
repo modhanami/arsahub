@@ -1,9 +1,9 @@
 "use client";
-import { useMutation, useQuery, useQueryClient } from "react-query";
-import { toast } from "../components/ui/use-toast";
-import { API_URL } from "../hooks/api";
-import { UserResponse } from "../types/generated-types";
-import { useCurrentApp } from "./current-app";
+import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
+import {toast} from "../components/ui/use-toast";
+import {API_URL} from "../hooks/api";
+import {UserResponse} from "../types/generated-types";
+import {useCurrentApp} from "./current-app";
 
 type UserResponseWithUUID = UserResponse & {
   uuid: string;
@@ -21,31 +21,29 @@ async function fetchUserByUUID(uuid: string): Promise<UserResponseWithUUID> {
   }
 
   const json = await response.json();
-  return { ...json, uuid };
+  return {...json, uuid};
 }
 
 export function useCurrentUser() {
   const uuid = localStorage.getItem("user-uuid");
   const queryClient = useQueryClient();
-  const { clearCurrentApp } = useCurrentApp();
+  const {clearCurrentApp} = useCurrentApp();
 
-  const { data: currentUser, isLoading } = useQuery<
+  const {data: currentUser, isLoading} = useQuery<
     UserResponseWithUUID,
     Error
-  >("currentUser", () => fetchUserByUUID(uuid!!), {
+  >({
+    queryKey: ["currentUser"], queryFn: () => fetchUserByUUID(uuid!!),
     enabled: uuid !== null,
     initialData: () => {
-      const userData =
-        queryClient.getQueryData<UserResponseWithUUID>("currentUser");
-      return userData;
+      return queryClient.getQueryData<UserResponseWithUUID>(["currentUser"]);
     },
   });
 
-  const { mutate: setCurrentUserWithUUID } = useMutation(
-    (newUuid: string) => fetchUserByUUID(newUuid),
-    {
+  const {mutate: setCurrentUserWithUUID} = useMutation({
+      mutationFn: (newUuid: string) => fetchUserByUUID(newUuid),
       onSuccess: (user) => {
-        queryClient.setQueryData("currentUser", user);
+        queryClient.setQueryData(["currentUser"], user);
         localStorage.setItem("user-uuid", user.uuid);
       },
       onError: () => {
@@ -59,10 +57,10 @@ export function useCurrentUser() {
   );
 
   const logoutCurrentUser = () => {
-    queryClient.removeQueries("currentUser");
+    queryClient.removeQueries({queryKey: ["currentUser"]});
     localStorage.removeItem("user-uuid");
     clearCurrentApp();
   };
 
-  return { currentUser, setCurrentUserWithUUID, logoutCurrentUser, isLoading };
+  return {currentUser, setCurrentUserWithUUID, logoutCurrentUser, isLoading};
 }

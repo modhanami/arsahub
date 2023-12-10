@@ -1,6 +1,6 @@
 import {ActivityAddMembersRequest, ActivityResponse, AppUserResponse, MemberResponse} from "@/types/generated-types";
 import {API_URL, makeAppAuthHeader} from "@/hooks/api";
-import {useMutation, useQuery, useQueryClient} from "react-query";
+import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
 import {useRouter} from "next/navigation";
 import {useCurrentApp} from "@/lib/current-app";
 import {ApiError} from "@/types";
@@ -81,9 +81,13 @@ export default function MemberAddForm({activityId}: Props) {
     return response.json();
   }
 
-  const membersQuery = useQuery(['members', activityId], () => fetchMembers(Number(activityId)));
+  const membersQuery = useQuery({
+    queryKey: ['members', activityId], queryFn: () => fetchMembers(Number(activityId))
+  });
 
-  const appUsersQuery = useQuery(['appUsers'], () => fetchAppUsers());
+  const appUsersQuery = useQuery({
+    queryKey: ['appUsers'], queryFn: () => fetchAppUsers()
+  });
 
   const availableAppUsers = useMemo(() => {
     const memberUserIds = new Set(membersQuery.data?.map((member) => member.userId));
@@ -91,10 +95,10 @@ export default function MemberAddForm({activityId}: Props) {
   }, [appUsersQuery.data, membersQuery.data]);
 
   const membersMutation = useMutation<ActivityResponse, ApiError, MutationData>(
-    ({activityId, newMember}: MutationData) => addMember(activityId, newMember),
     {
+      mutationFn: ({activityId, newMember}: MutationData) => addMember(activityId, newMember),
       onSuccess: () => {
-        queryClient.invalidateQueries(['members', activityId]);
+        queryClient.invalidateQueries({queryKey: ['members', activityId]});
 
         toast({
           title: "Member added",
@@ -166,7 +170,7 @@ export default function MemberAddForm({activityId}: Props) {
                 </Button>
               </DialogClose>
               <Button type="submit"
-                      disabled={membersMutation.isLoading}
+                      disabled={membersMutation.isPending}
               >Add</Button>
             </div>
           </form>
