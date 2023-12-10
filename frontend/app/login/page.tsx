@@ -13,6 +13,7 @@ import {
 } from "../../components/ui/form";
 import { Input } from "../../components/ui/input";
 import { useCurrentUser } from "../../lib/current-user";
+import { useEffect } from "react";
 
 export default function Page() {
   const defaultRedirect = "/activities";
@@ -27,9 +28,6 @@ export default function Page() {
   type FormData = z.infer<typeof loginSchema>;
 
   const { currentUser, setCurrentUserWithUUID } = useCurrentUser();
-  if (currentUser) {
-    router.push(defaultRedirect);
-  }
 
   const form = useForm<FormData>({
     resolver: zodResolver(loginSchema),
@@ -39,9 +37,19 @@ export default function Page() {
 
   const searchParams = useSearchParams();
 
+  useEffect(() => {
+    if (currentUser) {
+      router.push(defaultRedirect);
+    }
+  }, [currentUser]);
+
+  if (currentUser) {
+    return null;
+  }
+
   async function handleLogin(data: { uuid: string }) {
     try {
-      await setCurrentUserWithUUID(data.uuid);
+      setCurrentUserWithUUID(data.uuid);
       router.push(searchParams.get("redirect") || defaultRedirect);
     } catch (error: any) {
       console.log("Error", error);
@@ -77,7 +85,7 @@ export default function Page() {
                   <FormControl>
                     <Input
                       type="text"
-                      value={field.value}
+                      value={field.value || ""}
                       onChange={field.onChange}
                       placeholder="00000000-0000-0000-0000-000000000000"
                     />

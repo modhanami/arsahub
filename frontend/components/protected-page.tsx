@@ -3,18 +3,25 @@ import { usePathname, useRouter } from "next/navigation";
 import { useCurrentApp } from "../lib/current-app";
 import { useCurrentUser } from "../lib/current-user";
 import { toast } from "./ui/use-toast";
+import { useEffect } from "react";
 
 export function UserProtectedPage({ children }: { children: React.ReactNode }) {
   const { currentUser, isLoading } = useCurrentUser();
   const router = useRouter();
   const pathname = usePathname();
 
-  if (isLoading) {
-    return null;
-  }
+  useEffect(() => {
+    if (isLoading) {
+      return;
+    }
 
-  if (!currentUser) {
-    router.push(`/login?redirect=${pathname}`);
+    if (!currentUser) {
+      router.push(`/login?redirect=${pathname}`);
+    }
+  }, [currentUser, isLoading, pathname, router]);
+
+  if (isLoading || !currentUser) {
+    return null;
   }
 
   return children;
@@ -23,17 +30,24 @@ export function UserProtectedPage({ children }: { children: React.ReactNode }) {
 export function AppProtectedPage({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { currentApp, isLoading } = useCurrentApp();
+  const pathname = usePathname();
 
-  if (isLoading) {
-    return null;
-  }
+  useEffect(() => {
+    if (isLoading) {
+      return;
+    }
 
-  if (!currentApp) {
-    toast({
-      title: "No App Specified",
-      description: "You must specify an app API key to access this page.",
-    });
-    router.push("/");
+    if (!currentApp) {
+      toast({
+        title: "No App Specified",
+        description: "You must specify an app API key to access this page.",
+      });
+      router.push("/");
+      return;
+    }
+  }, [currentApp, isLoading, pathname, router]);
+
+  if (isLoading || !currentApp) {
     return null;
   }
 
