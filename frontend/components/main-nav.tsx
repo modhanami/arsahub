@@ -25,7 +25,10 @@ export function MainNav({items, children}: MainNavProps) {
       <CreateAppForm/>
       {/* <AppsSwitcher /> */}
       <Link href="/" className="hidden items-center space-x-2 md:flex">
-        <Icons.logo/>
+        {/*<Icons.logo/>*/}
+        <span className="text-xl">
+          👽
+        </span>
         <span className="hidden font-bold sm:inline-block">
           {siteConfig.name}
         </span>
