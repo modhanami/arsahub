@@ -9,6 +9,7 @@ import {
   CreditCard,
   Crown,
   Cuboid,
+  Dices,
   File,
   FileText,
   FlaskConical,
@@ -92,4 +93,5 @@ export const Icons = {
   general: Info,
   achievement: Medal,
   experiment: FlaskConical,
+  random: Dices,
 };
