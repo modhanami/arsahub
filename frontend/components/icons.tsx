@@ -1,37 +1,38 @@
 import {
   AlertTriangle,
+  ArrowLeft,
   ArrowRight,
   Check,
   ChevronLeft,
   ChevronRight,
   Command,
   CreditCard,
+  Crown,
+  Cuboid,
   File,
   FileText,
   HelpCircle,
+  type IconNode as LucideIcon,
   Image,
+  Info,
   Laptop,
   Loader2,
+  Lock,
   LucideProps,
+  Medal,
   Moon,
   MoreVertical,
   Pizza,
   Plus,
+  ScrollText,
   Settings,
   SunMedium,
+  ToyBrick,
   Trash,
   Twitter,
   User,
-  X,
-  Cuboid,
-  type IconNode as LucideIcon,
-  ScrollText,
-  ToyBrick,
-  ArrowLeft,
-  Crown,
   Users,
-  Lock,
-  Info,
+  X,
   Zap,
 } from "lucide-react";
 
@@ -61,7 +62,7 @@ export const Icons = {
   sun: SunMedium,
   moon: Moon,
   laptop: Laptop,
-  gitHub: ({ ...props }: LucideProps) => (
+  gitHub: ({...props}: LucideProps) => (
     <svg
       aria-hidden="true"
       focusable="false"
@@ -88,4 +89,5 @@ export const Icons = {
   lock: Lock,
   trigger: Zap,
   general: Info,
+  achievement: Medal,
 };

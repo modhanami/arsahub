@@ -38,6 +38,8 @@ interface ActivityService {
         @PathVariable activityId: Long,
         @Valid @RequestBody request: AchievementCreateRequest
     ): Achievement
+
+    fun listAchievements(activityId: Long): List<Achievement>
 }
 
 @Service
@@ -361,4 +363,8 @@ class ActivityServiceImpl(
         return achievement
     }
 
+    override fun listAchievements(activityId: Long): List<Achievement> {
+        val activity = getActivity(activityId) ?: throw Exception("Activity not found")
+        return achievementRepository.findAllByActivity(activity)
+    }
 }

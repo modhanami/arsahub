@@ -291,6 +291,30 @@ class ActivityController(
     }
 
     @Operation(
+        summary = "List achievements of an activity",
+        responses = [
+            ApiResponse(
+                responseCode = "200",
+            ),
+            ApiResponse(
+                responseCode = "404",
+                description = "Activity not found", content = [Content()]
+            )
+        ]
+    )
+    @GetMapping("/{activityId}/achievements")
+    fun getAchievements(
+        @PathVariable activityId: Long,
+        @CurrentApp app: App
+    ): List<AchievementResponse> {
+        if (!canPerformAction(activityId, app)) {
+            throw AccessDeniedException("You do not have access to this activity")
+        }
+
+        return activityService.listAchievements(activityId).map { AchievementResponse.fromEntity(it) }
+    }
+
+    @Operation(
         summary = "Update an achievement for an activity",
         responses = [
             ApiResponse(

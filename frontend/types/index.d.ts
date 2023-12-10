@@ -1,4 +1,4 @@
-import { Icons } from "../components/icons";
+import {Icons} from "../components/icons";
 
 export type NavItem = {
   title: string;
@@ -15,14 +15,14 @@ export type SidebarNavItem = {
   icon?: keyof typeof Icons;
 } & (
   | {
-      href: string;
-      items?: never;
-    }
+  href: string;
+  items?: never;
+}
   | {
-      href?: string;
-      items: NavLink[];
-    }
-);
+  href?: string;
+  items: NavLink[];
+}
+  );
 
 export type DashboardConfig = {
   mainNav: MainNavItem[];
@@ -34,3 +34,6 @@ export type ContextProps = {
     id: string;
   };
 };
+
+export type ApiError = { message: string };
+
