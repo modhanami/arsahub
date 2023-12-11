@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "../components/ui/use-toast";
 import { API_URL } from "../hooks/api";
 import { UserResponse } from "../types/generated-types";
-import { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import { useCurrentApp } from "@/lib/current-app";
 
 type UserResponseWithUUID = UserResponse & {
@@ -24,7 +24,7 @@ async function fetchUserByUUID(uuid: string): Promise<UserResponseWithUUID> {
 }
 
 export function useCurrentUser() {
-  const { uuid, updateUuid, clearUuid } = useUserUuid();
+  const { uuid, clearUuid, isLoading: isUserUuidLoading } = useUserUuid();
   const { clearCurrentApp } = useCurrentApp();
   const queryClient = useQueryClient();
 
@@ -56,7 +56,7 @@ export function useCurrentUser() {
 
   return {
     currentUser,
-    isLoading,
+    isLoading: isLoading || isUserUuidLoading,
     logoutCurrentUser,
   };
 }
@@ -65,6 +65,7 @@ export interface UserUuidContextType {
   uuid: string | null;
   updateUuid: (newUuid: string) => void;
   clearUuid: () => void;
+  isLoading: boolean;
 }
 
 const UserUuidContext = createContext<UserUuidContextType | undefined>(
@@ -72,9 +73,13 @@ const UserUuidContext = createContext<UserUuidContextType | undefined>(
 );
 
 export function UserUuidProvider({ children }: { children: React.ReactNode }) {
-  const [uuid, setUuid] = useState<string | null>(() =>
-    localStorage.getItem("user-uuid"),
-  );
+  const [uuid, setUuid] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    setUuid(localStorage.getItem("user-uuid"));
+    setIsLoading(false);
+  }, []);
 
   const updateUuid = (newUuid: string) => {
     localStorage.setItem("user-uuid", newUuid);
@@ -87,7 +92,9 @@ export function UserUuidProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <UserUuidContext.Provider value={{ uuid, updateUuid, clearUuid }}>
+    <UserUuidContext.Provider
+      value={{ uuid, updateUuid, clearUuid, isLoading }}
+    >
       {children}
     </UserUuidContext.Provider>
   );
