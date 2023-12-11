@@ -19,6 +19,7 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true, // TODO: Remove this when all errors are fixed
   },
+  output: "standalone",
 };
 
 module.exports = nextConfig;

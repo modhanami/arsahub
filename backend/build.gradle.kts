@@ -98,7 +98,7 @@ allOpen {
 
 jib {
     to {
-        image = "modhanami/arsahub-backend-dev"
+        image = "modhanami/arsahub-backend"
         setCredHelper("wincred")
     }
 }

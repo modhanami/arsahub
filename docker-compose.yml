@@ -1,0 +1,38 @@
+version: "3.1"
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: always
+    ports:
+      - "5434:5432"
+    env_file:
+      - .env
+    volumes:
+#      - db-data:/var/lib/postgresql/data
+      - ./database/init/dump.sql:/docker-entrypoint-initdb.d/init.sql
+
+  backend:
+    image: modhanami/arsahub-backend:latest
+    env_file:
+      - .env
+    ports:
+      - "8082:8080"
+
+  frontend:
+    build: ./frontend
+    image: modhanami/arsahub-frontend:latest
+    ports:
+      - "3002:3000"
+
+  reverse-proxy:
+    build: ./reverse-proxy
+    image: modhanami/arsahub-reverse-proxy:latest
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+      - frontend
+
+volumes:
+  db-data:
