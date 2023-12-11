@@ -1,23 +1,21 @@
 import Link from "next/link";
 
 import { Skeleton } from "@/components/ui/skeleton";
-import { Rule } from "../app/activity/[id]/rules/page";
+import { RuleResponse } from "@/types/generated-types";
 
 interface RuleItemProps {
-  rule: Rule;
+  rule: RuleResponse;
 }
 
-export function RuleItem({ rule: rule }: RuleItemProps) {
+export function RuleItem({ rule }: RuleItemProps) {
   return (
     <div className="flex items-center justify-between p-4 ">
       <div className="grid gap-1 max-w-lg">
         <Link href={`/`} className="font-semibold hover:underline break-words ">
           {rule.title}
         </Link>
-        <p>
-          <p className="text-sm  text-muted-foreground break-words">
-            {rule.description}
-          </p>
+        <p className="text-sm  text-muted-foreground break-words">
+          {rule.description}
         </p>
       </div>
     </div>
