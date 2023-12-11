@@ -23,6 +23,8 @@ class AppAuthenticationFilter(
             AntPathRequestMatcher("/api/activities/**/profile"),
             AntPathRequestMatcher("/api/apps", HttpMethod.GET.toString()),
             AntPathRequestMatcher("/api/apps/users/current", HttpMethod.GET.toString()),
+            AntPathRequestMatcher("/swagger-ui/**"),
+            AntPathRequestMatcher("/v3/api-docs/**"),
         )
 
         setRequestMatcher(NegatedRequestMatcher(OrRequestMatcher(matchers)))
