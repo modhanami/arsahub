@@ -9,6 +9,7 @@ import {
   PointsUpdate,
 } from "../../types/generated-types";
 import { Badge } from "./badge";
+import { SOCKET_IO_URL } from "@/lib/socket";
 
 interface UserProfileProps {
   userId: string;
@@ -101,7 +102,7 @@ export function UserProfileRealTime({
 
   const socketRef = useRef<Socket | undefined>(undefined);
   useEffect(() => {
-    const socket = io("http://localhost:9097/default");
+    const socket = io(`${SOCKET_IO_URL}/default`);
     socketRef.current = socket; // Store the connection in the ref
 
     socket.on("connect", async () => {

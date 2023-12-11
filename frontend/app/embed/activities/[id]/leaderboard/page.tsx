@@ -1,19 +1,27 @@
 "use client";
 
-import {ContextProps} from "../../../../../types";
-import {LeaderboardResponse} from "../../../../../types/generated-types";
-import {useAutoAnimate} from "@formkit/auto-animate/react";
+import { ContextProps } from "../../../../../types";
+import { LeaderboardResponse } from "../../../../../types/generated-types";
+import { useAutoAnimate } from "@formkit/auto-animate/react";
 
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow,} from "@/components/ui/table";
-import {useQuery, useQueryClient} from "@tanstack/react-query";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import io from "socket.io-client";
-import {API_URL} from "@/hooks/api";
-import React, {useEffect} from "react";
-import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
+import { API_URL } from "@/hooks/api";
+import React, { useEffect } from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { SOCKET_IO_URL } from "@/lib/socket";
 
 type Props = ContextProps;
 
-export default function LeaderboardEmbedPage({params}: ContextProps) {
+export default function LeaderboardEmbedPage({ params }: ContextProps) {
   const [animationLeaderboard] = useAutoAnimate();
   const leaderboard = useLeaderboard(Number(params.id), "total-points");
 
@@ -27,16 +35,13 @@ export default function LeaderboardEmbedPage({params}: ContextProps) {
           <Table className="min-w-full leading-normal">
             <TableHeader>
               <TableRow>
-                <TableHead
-                  className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                <TableHead className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   Rank
                 </TableHead>
-                <TableHead
-                  className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                <TableHead className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   Name
                 </TableHead>
-                <TableHead
-                  className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                <TableHead className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   Score
                 </TableHead>
               </TableRow>
@@ -65,26 +70,38 @@ export default function LeaderboardEmbedPage({params}: ContextProps) {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-async function fetchLeaderboard(activityId: number, type: string): Promise<LeaderboardResponse> {
-  const res = await fetch(`${API_URL}/activities/${activityId}/leaderboard?type=${type}`);
+async function fetchLeaderboard(
+  activityId: number,
+  type: string,
+): Promise<LeaderboardResponse> {
+  const res = await fetch(
+    `${API_URL}/activities/${activityId}/leaderboard?type=${type}`,
+  );
   return res.json();
 }
 
 const useLeaderboard = (activityId: number, type: string) => {
   const queryClient = useQueryClient();
-  const {data: leaderboard, error, isLoading} = useQuery({
-    queryKey: ['leaderboard', {
-      activityId,
-      type
-    }],
-    queryFn: () => fetchLeaderboard(activityId, type)
+  const {
+    data: leaderboard,
+    error,
+    isLoading,
+  } = useQuery({
+    queryKey: [
+      "leaderboard",
+      {
+        activityId,
+        type,
+      },
+    ],
+    queryFn: () => fetchLeaderboard(activityId, type),
   });
 
   useEffect(() => {
-    const socket = io("http://localhost:9097/default");
+    const socket = io(`${SOCKET_IO_URL}/default`);
 
     socket.on("connect", async () => {
       const result = await socket.emitWithAck("subscribe-activity", activityId);
@@ -92,19 +109,24 @@ const useLeaderboard = (activityId: number, type: string) => {
     });
 
     socket.on("activity-update", (updatedData) => {
-      if (updatedData.type === 'leaderboard-update')
+      if (updatedData.type === "leaderboard-update")
         console.log(`leaderboard-update: ${JSON.stringify(updatedData)}`);
-      queryClient.setQueryData(['leaderboard', {
-        activityId,
-        type
-      }], updatedData.data.leaderboard);
+      queryClient.setQueryData(
+        [
+          "leaderboard",
+          {
+            activityId,
+            type,
+          },
+        ],
+        updatedData.data.leaderboard,
+      );
     });
 
     return () => {
       socket.disconnect();
-    } // Disconnect when component is unmounted or leaderboard is updated
-
+    }; // Disconnect when component is unmounted or leaderboard is updated
   }, [activityId, queryClient, type]);
 
-  return {leaderboard, error, isLoading};
-}
+  return { leaderboard, error, isLoading };
+};
