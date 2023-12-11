@@ -22,7 +22,7 @@ export function useCurrentApp(): {
   isLoading: boolean;
   clearCurrentApp: () => void;
 } {
-  const { apiKey, clearApiKey } = useAppApiKey();
+  const { apiKey, clearApiKey, isLoading: isAppApiKeyLoading } = useAppApiKey();
   const queryClient = useQueryClient();
 
   const {
@@ -52,7 +52,7 @@ export function useCurrentApp(): {
 
   return {
     currentApp,
-    isLoading,
+    isLoading: isLoading || isAppApiKeyLoading,
     clearCurrentApp,
   };
 }
@@ -61,6 +61,7 @@ export interface AppApiKeyContextType {
   apiKey: string | null;
   updateApiKey: (newApiKey: string) => void;
   clearApiKey: () => void;
+  isLoading: boolean;
 }
 
 const AppApiKeyContext = createContext<AppApiKeyContextType | undefined>(
@@ -68,9 +69,13 @@ const AppApiKeyContext = createContext<AppApiKeyContextType | undefined>(
 );
 
 export function AppApiKeyProvider({ children }: { children: React.ReactNode }) {
-  const [apiKey, setApiKey] = useState<string | null>(() =>
-    localStorage.getItem("app-api-key"),
-  );
+  const [apiKey, setApiKey] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    setApiKey(localStorage.getItem("app-api-key"));
+    setIsLoading(false);
+  }, []);
 
   const updateApiKey = (newApiKey: string) => {
     localStorage.setItem("app-api-key", newApiKey);
@@ -83,7 +88,9 @@ export function AppApiKeyProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AppApiKeyContext.Provider value={{ apiKey, updateApiKey, clearApiKey }}>
+    <AppApiKeyContext.Provider
+      value={{ apiKey, updateApiKey, clearApiKey, isLoading }}
+    >
       {children}
     </AppApiKeyContext.Provider>
   );
