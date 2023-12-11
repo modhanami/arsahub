@@ -9,7 +9,4 @@ data class TriggerCreateRequest(
     val title: String?,
     @field:Size(max = 500, message = "Description cannot be longer than 500 characters")
     val description: String?,
-    @field:NotBlank(message = "Key is required")
-    val key: String?,
-
-    )
+)
