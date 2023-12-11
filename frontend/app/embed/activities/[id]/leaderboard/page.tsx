@@ -19,11 +19,59 @@ import React, { useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SOCKET_IO_URL } from "@/lib/socket";
 
-type Props = ContextProps;
-
 export default function LeaderboardEmbedPage({ params }: ContextProps) {
   const [animationLeaderboard] = useAutoAnimate();
-  const leaderboard = useLeaderboard(Number(params.id), "total-points");
+  const activityId = Number(params.id);
+  const type = "total-points";
+
+  const queryClient = useQueryClient();
+  const {
+    data: leaderboard,
+    error,
+    isLoading,
+  } = useQuery({
+    queryKey: [
+      "leaderboard",
+      {
+        activityId,
+        type,
+      },
+    ],
+    queryFn: () => fetchLeaderboard(activityId, type),
+  });
+
+  useEffect(() => {
+    const socket = io(`${SOCKET_IO_URL}/default`, { forceNew: true });
+
+    socket.on("connect", async () => {
+      const response = await socket.emitWithAck(
+        "subscribe-activity",
+        activityId,
+      );
+      console.log("subscribe-activity result", response);
+    });
+
+    socket.on("activity-update", (updatedData: any) => {
+      if (updatedData.type === "leaderboard-update")
+        console.log(`leaderboard-update: ${JSON.stringify(updatedData)}`);
+      queryClient.setQueryData(
+        [
+          "leaderboard",
+          {
+            activityId,
+            type,
+          },
+        ],
+        updatedData.data.leaderboard,
+      );
+    });
+
+    return () => {
+      if (socket.connected) {
+        socket.disconnect();
+      }
+    }; // Disconnect when component is unmounted or leaderboard is updated
+  }, [activityId, queryClient, type]);
 
   return (
     <div className="py-8">
@@ -47,7 +95,7 @@ export default function LeaderboardEmbedPage({ params }: ContextProps) {
               </TableRow>
             </TableHeader>
             <TableBody ref={animationLeaderboard}>
-              {leaderboard.leaderboard?.entries.map((entry) => (
+              {leaderboard?.entries.map((entry) => (
                 <TableRow key={entry.memberName} className="border-t">
                   <TableCell className="px-6 py-4">{entry.rank}</TableCell>
                   <TableCell className="px-6 py-4">
@@ -82,51 +130,3 @@ async function fetchLeaderboard(
   );
   return res.json();
 }
-
-const useLeaderboard = (activityId: number, type: string) => {
-  const queryClient = useQueryClient();
-  const {
-    data: leaderboard,
-    error,
-    isLoading,
-  } = useQuery({
-    queryKey: [
-      "leaderboard",
-      {
-        activityId,
-        type,
-      },
-    ],
-    queryFn: () => fetchLeaderboard(activityId, type),
-  });
-
-  useEffect(() => {
-    const socket = io(`${SOCKET_IO_URL}/default`);
-
-    socket.on("connect", async () => {
-      const result = await socket.emitWithAck("subscribe-activity", activityId);
-      console.log(result);
-    });
-
-    socket.on("activity-update", (updatedData) => {
-      if (updatedData.type === "leaderboard-update")
-        console.log(`leaderboard-update: ${JSON.stringify(updatedData)}`);
-      queryClient.setQueryData(
-        [
-          "leaderboard",
-          {
-            activityId,
-            type,
-          },
-        ],
-        updatedData.data.leaderboard,
-      );
-    });
-
-    return () => {
-      socket.disconnect();
-    }; // Disconnect when component is unmounted or leaderboard is updated
-  }, [activityId, queryClient, type]);
-
-  return { leaderboard, error, isLoading };
-};

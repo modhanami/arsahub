@@ -102,13 +102,13 @@ export function UserProfileRealTime({
 
   const socketRef = useRef<Socket | undefined>(undefined);
   useEffect(() => {
-    const socket = io(`${SOCKET_IO_URL}/default`);
+    const socket = io(`${SOCKET_IO_URL}/default`, { forceNew: true });
     socketRef.current = socket; // Store the connection in the ref
 
     socket.on("connect", async () => {
       console.log("connected");
       const response = await socket.emitWithAck("subscribe-user", props.userId);
-      console.log(response);
+      console.log("subscribe-user result", response);
     });
 
     // Return a clean-up function
