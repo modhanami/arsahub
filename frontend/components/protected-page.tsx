@@ -30,7 +30,6 @@ export function UserProtectedPage({ children }: { children: React.ReactNode }) {
 export function AppProtectedPage({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { currentApp, isLoading } = useCurrentApp();
-  const pathname = usePathname();
 
   useEffect(() => {
     if (isLoading) {
@@ -45,9 +44,13 @@ export function AppProtectedPage({ children }: { children: React.ReactNode }) {
       router.push("/");
       return;
     }
-  }, [currentApp, isLoading, pathname, router]);
+  }, [currentApp, isLoading, router]);
 
-  if (isLoading || !currentApp) {
+  if (isLoading) {
+    return "Loading app...";
+  }
+
+  if (!currentApp) {
     return null;
   }
 

@@ -4,6 +4,7 @@ import { Inter } from "next/font/google";
 import { WrappedQueryClientProvider } from "../components/query-client-provider";
 import { Toaster } from "../components/ui/toaster";
 import "./globals.css";
+import { AppApiKeyProvider } from "@/lib/current-app";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -26,11 +27,13 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <WrappedQueryClientProvider>
-            {/* <ModeToggle /> */}
-            {children}
-            <Toaster />
-          </WrappedQueryClientProvider>
+          <AppApiKeyProvider>
+            <WrappedQueryClientProvider>
+              {/* <ModeToggle /> */}
+              {children}
+              <Toaster />
+            </WrappedQueryClientProvider>
+          </AppApiKeyProvider>
         </ThemeProvider>
       </body>
     </html>
