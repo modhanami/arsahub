@@ -1,9 +1,9 @@
 "use client";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "../components/ui/use-toast";
 import { API_URL } from "../hooks/api";
 import { UserResponse } from "../types/generated-types";
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { useCurrentApp } from "@/lib/current-app";
 
 type UserResponseWithUUID = UserResponse & {
@@ -28,29 +28,25 @@ export function useCurrentUser() {
   const { clearCurrentApp } = useCurrentApp();
   const queryClient = useQueryClient();
 
-  const { data: currentUser, isLoading } = useQuery<
-    UserResponseWithUUID,
-    Error
-  >({
+  const {
+    data: currentUser,
+    isLoading,
+    error,
+  } = useQuery<UserResponseWithUUID, Error>({
     queryKey: ["currentUser"],
     queryFn: () => fetchUserByUUID(uuid!),
     enabled: !!uuid,
   });
 
-  const { mutate: setCurrentUserWithUUID } = useMutation({
-    mutationFn: fetchUserByUUID,
-    onSuccess: (user) => {
-      queryClient.setQueryData(["currentUser"], user);
-      updateUuid(user.uuid);
-    },
-    onError: (error: Error) => {
+  useEffect(() => {
+    if (error) {
       toast({
         title: "Invalid user UUID",
         description: error.message,
         variant: "destructive",
       });
-    },
-  });
+    }
+  }, [error]);
 
   const logoutCurrentUser = () => {
     clearUuid();
@@ -60,7 +56,6 @@ export function useCurrentUser() {
 
   return {
     currentUser,
-    setCurrentUserWithUUID,
     isLoading,
     logoutCurrentUser,
   };

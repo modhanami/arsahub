@@ -1,9 +1,9 @@
 "use client";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "../components/ui/use-toast";
 import { API_URL } from "../hooks/api";
 import { AppResponse } from "../types/generated-types";
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 
 async function fetchAppByApiKey(apiKey: string): Promise<AppResponse> {
   const response = await fetch(`${API_URL}/apps/current`, {
@@ -19,32 +19,31 @@ async function fetchAppByApiKey(apiKey: string): Promise<AppResponse> {
 
 export function useCurrentApp(): {
   currentApp: AppResponse | undefined;
-  setCurrentAppWithApiKey: (apiKey: string) => void;
   isLoading: boolean;
   clearCurrentApp: () => void;
 } {
-  const { apiKey, updateApiKey, clearApiKey } = useApiKey();
+  const { apiKey, clearApiKey } = useAppApiKey();
   const queryClient = useQueryClient();
 
-  const { data: currentApp, isLoading } = useQuery<AppResponse, Error>({
+  const {
+    data: currentApp,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["currentApp"],
     queryFn: () => fetchAppByApiKey(apiKey!!),
     enabled: !!apiKey,
   });
 
-  const { mutate: setCurrentAppWithApiKey } = useMutation({
-    mutationFn: (newApiKey: string) => fetchAppByApiKey(newApiKey),
-    onSuccess: (app) => {
-      queryClient.setQueryData(["currentApp"], app);
-    },
-    onError: (error: Error) => {
+  useEffect(() => {
+    if (error) {
       toast({
         title: "Invalid API key",
         description: error.message,
         variant: "destructive",
       });
-    },
-  });
+    }
+  }, [error]);
 
   const clearCurrentApp = () => {
     clearApiKey();
@@ -53,7 +52,6 @@ export function useCurrentApp(): {
 
   return {
     currentApp,
-    setCurrentAppWithApiKey,
     isLoading,
     clearCurrentApp,
   };
@@ -91,7 +89,7 @@ export function AppApiKeyProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-export const useApiKey = (): AppApiKeyContextType => {
+export const useAppApiKey = (): AppApiKeyContextType => {
   const context = useContext(AppApiKeyContext);
   if (!context) {
     throw new Error("useApiKey must be used within a ApiKeyProvider");

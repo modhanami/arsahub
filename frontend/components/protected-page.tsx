@@ -17,10 +17,15 @@ export function UserProtectedPage({ children }: { children: React.ReactNode }) {
 
     if (!currentUser) {
       router.push(`/login?redirect=${pathname}`);
+      return;
     }
   }, [currentUser, isLoading, pathname, router]);
 
-  if (isLoading || !currentUser) {
+  if (isLoading) {
+    return "Loading user...";
+  }
+
+  if (!currentUser) {
     return null;
   }
 

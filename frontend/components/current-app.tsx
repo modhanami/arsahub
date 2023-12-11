@@ -3,11 +3,12 @@ import React, { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
 import { Input } from "../components/ui/input";
 import { Button } from "./ui/button";
-import { useCurrentApp } from "../lib/current-app";
+import { useAppApiKey, useCurrentApp } from "../lib/current-app";
 import Link from "next/link";
 
 export function CurrentAppForm() {
-  const { currentApp, setCurrentAppWithApiKey } = useCurrentApp();
+  const { currentApp } = useCurrentApp();
+  const { updateApiKey } = useAppApiKey();
 
   const [key, setToken] = useState(currentApp?.apiKey || "");
   const [previousKey, setPreviousKey] = useState(key);
@@ -18,7 +19,7 @@ export function CurrentAppForm() {
   };
 
   const handleSaveToken = () => {
-    setCurrentAppWithApiKey(key);
+    updateApiKey(key);
     setIsEditing(false);
     setPreviousKey(key);
   };

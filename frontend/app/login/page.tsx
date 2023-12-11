@@ -12,7 +12,7 @@ import {
   FormMessage,
 } from "../../components/ui/form";
 import { Input } from "../../components/ui/input";
-import { useCurrentUser } from "../../lib/current-user";
+import { useCurrentUser, useUserUuid } from "../../lib/current-user";
 import { useEffect } from "react";
 
 export default function Page() {
@@ -27,7 +27,8 @@ export default function Page() {
   });
   type FormData = z.infer<typeof loginSchema>;
 
-  const { currentUser, setCurrentUserWithUUID } = useCurrentUser();
+  const { currentUser } = useCurrentUser();
+  const { updateUuid } = useUserUuid();
 
   const form = useForm<FormData>({
     resolver: zodResolver(loginSchema),
@@ -41,7 +42,7 @@ export default function Page() {
     if (currentUser) {
       router.push(defaultRedirect);
     }
-  }, [currentUser]);
+  }, [currentUser, router]);
 
   if (currentUser) {
     return null;
@@ -49,7 +50,7 @@ export default function Page() {
 
   async function handleLogin(data: { uuid: string }) {
     try {
-      setCurrentUserWithUUID(data.uuid);
+      updateUuid(data.uuid);
       router.push(searchParams.get("redirect") || defaultRedirect);
     } catch (error: any) {
       console.log("Error", error);
