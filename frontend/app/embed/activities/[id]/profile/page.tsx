@@ -1,19 +1,25 @@
-import {UserProfileRealTime} from "../../../../../components/ui/team-members";
-import {API_URL} from "../../../../../hooks/api";
-import {ContextProps} from "../../../../../types";
-import {UserActivityProfileResponse} from "../../../../../types/generated-types";
+"use client";
 
-async function getUserProfile(
+import { UserProfileRealTime } from "../../../../../components/ui/team-members";
+import { API_URL } from "../../../../../hooks/api";
+import { ContextProps } from "../../../../../types";
+import { UserActivityProfileResponse } from "../../../../../types/generated-types";
+import { useQuery } from "@tanstack/react-query";
+
+async function fetchUserProfile(
   activityId: string,
-  userId: string
+  userId: string,
 ): Promise<UserActivityProfileResponse> {
-  const res = await fetch(`${API_URL}/activities/1/profile?userId=${userId}`);
+  const res = await fetch(
+    `${API_URL}/activities/${activityId}/profile?userId=${userId}`,
+  );
 
+  const data = await res.json();
   if (!res.ok) {
-    throw new Error("Failed to fetch data");
+    throw new Error(data);
   }
 
-  return res.json();
+  return data;
 }
 
 type Props = ContextProps & {
@@ -22,14 +28,17 @@ type Props = ContextProps & {
   };
 };
 
-export default async function Page({
-                                     params,
-                                     searchParams: {userId},
-                                   }: Props) {
-  const data = await getUserProfile(params.id, userId);
-  console.log(data);
+export default function Page({ params, searchParams: { userId } }: Props) {
+  const activityId = params.id;
+  const { data, error, isLoading } = useQuery({
+    queryKey: ["userProfile", activityId, userId],
+    queryFn: () => fetchUserProfile(activityId, userId),
+  });
 
-  if (data.user === null) {
+  if (isLoading) return "Loading...";
+  if (error) return "An error has occurred: " + error.message;
+
+  if (data?.user === null) {
     return <div>User not found</div>;
   }
 
@@ -37,10 +46,10 @@ export default async function Page({
     <main>
       <UserProfileRealTime
         userId={userId}
-        name={data.user.displayName || ""}
+        name={data?.user.displayName || ""}
         avatar="X"
-        points={data.points}
-        achievements={data.achievements || []}
+        points={data?.points || 0}
+        achievements={data?.achievements || []}
       />
     </main>
   );
