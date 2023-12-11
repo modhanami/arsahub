@@ -5,6 +5,7 @@ import { WrappedQueryClientProvider } from "../components/query-client-provider"
 import { Toaster } from "../components/ui/toaster";
 import "./globals.css";
 import { AppApiKeyProvider } from "@/lib/current-app";
+import { UserUuidProvider } from "@/lib/current-user";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -28,11 +29,13 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AppApiKeyProvider>
-            <WrappedQueryClientProvider>
-              {/* <ModeToggle /> */}
-              {children}
-              <Toaster />
-            </WrappedQueryClientProvider>
+            <UserUuidProvider>
+              <WrappedQueryClientProvider>
+                {/* <ModeToggle /> */}
+                {children}
+                <Toaster />
+              </WrappedQueryClientProvider>
+            </UserUuidProvider>
           </AppApiKeyProvider>
         </ThemeProvider>
       </body>

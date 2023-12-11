@@ -3,8 +3,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "../components/ui/use-toast";
 import { API_URL } from "../hooks/api";
 import { UserResponse } from "../types/generated-types";
-import { useCurrentApp } from "./current-app";
-import { useEffect, useState } from "react";
+import { createContext, useContext, useState } from "react";
+import { useCurrentApp } from "@/lib/current-app";
 
 type UserResponseWithUUID = UserResponse & {
   uuid: string;
@@ -16,73 +16,92 @@ async function fetchUserByUUID(uuid: string): Promise<UserResponseWithUUID> {
       Authorization: `Bearer ${uuid}`,
     },
   });
-
   if (!response.ok) {
     throw new Error("Invalid user UUID");
   }
-
   const json = await response.json();
   return { ...json, uuid };
 }
 
-let initiating = true;
-
 export function useCurrentUser() {
-  const [uuid, setUuid] = useState<string | undefined>();
-  const queryClient = useQueryClient();
+  const { uuid, updateUuid, clearUuid } = useUserUuid();
   const { clearCurrentApp } = useCurrentApp();
+  const queryClient = useQueryClient();
 
   const { data: currentUser, isLoading } = useQuery<
     UserResponseWithUUID,
     Error
   >({
     queryKey: ["currentUser"],
-    queryFn: () => fetchUserByUUID(uuid!!),
-    enabled: uuid !== undefined,
-    initialData: () => {
-      return queryClient.getQueryData<UserResponseWithUUID>(["currentUser"]);
-    },
+    queryFn: () => fetchUserByUUID(uuid!),
+    enabled: !!uuid,
   });
 
   const { mutate: setCurrentUserWithUUID } = useMutation({
-    mutationFn: (newUuid: string) => fetchUserByUUID(newUuid),
+    mutationFn: fetchUserByUUID,
     onSuccess: (user) => {
       queryClient.setQueryData(["currentUser"], user);
-      localStorage.setItem("user-uuid", user.uuid);
-      setUuid(user.uuid);
+      updateUuid(user.uuid);
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
         title: "Invalid user UUID",
-        description: "The user UUID you entered is invalid.",
+        description: error.message,
         variant: "destructive",
       });
     },
   });
 
-  useEffect(() => {
-    if (!initiating) {
-      return;
-    }
-
-    const storedUuid = localStorage.getItem("user-uuid");
-    if (storedUuid) {
-      setCurrentUserWithUUID(storedUuid);
-    }
-
-    initiating = false;
-  }, []);
-
   const logoutCurrentUser = () => {
-    queryClient.removeQueries({ queryKey: ["currentUser"] });
-    localStorage.removeItem("user-uuid");
+    clearUuid();
     clearCurrentApp();
+    queryClient.removeQueries({ queryKey: ["currentUser"] });
   };
 
   return {
     currentUser,
     setCurrentUserWithUUID,
-    isLoading: isLoading || initiating,
+    isLoading,
     logoutCurrentUser,
   };
 }
+
+export interface UserUuidContextType {
+  uuid: string | null;
+  updateUuid: (newUuid: string) => void;
+  clearUuid: () => void;
+}
+
+const UserUuidContext = createContext<UserUuidContextType | undefined>(
+  undefined,
+);
+
+export function UserUuidProvider({ children }: { children: React.ReactNode }) {
+  const [uuid, setUuid] = useState<string | null>(() =>
+    localStorage.getItem("user-uuid"),
+  );
+
+  const updateUuid = (newUuid: string) => {
+    localStorage.setItem("user-uuid", newUuid);
+    setUuid(newUuid);
+  };
+
+  const clearUuid = () => {
+    localStorage.removeItem("user-uuid");
+    setUuid(null);
+  };
+
+  return (
+    <UserUuidContext.Provider value={{ uuid, updateUuid, clearUuid }}>
+      {children}
+    </UserUuidContext.Provider>
+  );
+}
+
+export const useUserUuid = (): UserUuidContextType => {
+  const context = useContext(UserUuidContext);
+  if (!context) {
+    throw new Error("useUserUuid must be used within a UserUuidProvider");
+  }
+  return context;
+};
