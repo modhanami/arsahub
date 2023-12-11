@@ -33,7 +33,7 @@ export function useCurrentUser() {
     isLoading,
     error,
   } = useQuery<UserResponseWithUUID, Error>({
-    queryKey: ["currentUser"],
+    queryKey: ["currentUser", uuid],
     queryFn: () => fetchUserByUUID(uuid!),
     enabled: !!uuid,
   });
@@ -45,8 +45,9 @@ export function useCurrentUser() {
         description: error.message,
         variant: "destructive",
       });
+      clearUuid();
     }
-  }, [error]);
+  }, [clearUuid, error]);
 
   const logoutCurrentUser = () => {
     clearUuid();

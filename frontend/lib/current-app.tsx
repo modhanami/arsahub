@@ -30,7 +30,7 @@ export function useCurrentApp(): {
     isLoading,
     error,
   } = useQuery({
-    queryKey: ["currentApp"],
+    queryKey: ["currentApp", apiKey],
     queryFn: () => fetchAppByApiKey(apiKey!!),
     enabled: !!apiKey,
   });
@@ -42,8 +42,9 @@ export function useCurrentApp(): {
         description: error.message,
         variant: "destructive",
       });
+      clearApiKey();
     }
-  }, [error]);
+  }, [clearApiKey, error]);
 
   const clearCurrentApp = () => {
     clearApiKey();

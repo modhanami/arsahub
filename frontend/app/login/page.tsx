@@ -16,7 +16,7 @@ import { useCurrentUser, useUserUuid } from "../../lib/current-user";
 import { useEffect } from "react";
 
 export default function Page() {
-  const defaultRedirect = "/activities";
+  const defaultRedirect = "/";
   const router = useRouter();
   const loginSchema = z.object({
     uuid: z

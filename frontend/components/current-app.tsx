@@ -7,7 +7,7 @@ import { useAppApiKey, useCurrentApp } from "../lib/current-app";
 import Link from "next/link";
 
 export function CurrentAppForm() {
-  const { currentApp } = useCurrentApp();
+  const { currentApp, isLoading } = useCurrentApp();
   const { updateApiKey } = useAppApiKey();
 
   const [key, setToken] = useState(currentApp?.apiKey || "");
@@ -31,7 +31,9 @@ export function CurrentAppForm() {
 
   return (
     <div className="gap-4 grid">
-      {isEditing ? (
+      {isLoading ? (
+        <p>Loading app...</p>
+      ) : isEditing ? (
         <>
           <div>
             <Input
