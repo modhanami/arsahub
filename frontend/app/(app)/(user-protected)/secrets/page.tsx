@@ -48,7 +48,7 @@ export default function Page() {
             <Button onClick={() => setShowSecret(!showSecret)}>
               {showSecret ? "Hide" : "Show"}
             </Button>
-            <Button onClick={copyToClipboard}>Copy</Button>
+            {/*<Button onClick={copyToClipboard}>Copy</Button>*/}
           </div>
         </div>
       )}
