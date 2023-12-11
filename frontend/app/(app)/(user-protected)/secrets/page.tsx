@@ -6,24 +6,26 @@ import { Button } from "../../../../components/ui/button";
 import { DashboardHeader } from "../../../../components/header";
 import { DashboardShell } from "../../../../components/shell";
 import { toast } from "../../../../components/ui/use-toast";
+import { useUserUuid } from "@/lib/current-user";
 
 export default function Page() {
-  const { data, loading } = useApp("4c1250f9-e442-45d6-ae67-2b41b0e3d4b9");
+  const { uuid } = useUserUuid();
+  const { data, isLoading } = useApp(uuid);
   const [showSecret, setShowSecret] = useState(false);
 
-  const copyToClipboard = () => {
-    if (data?.apiKey == null) {
+  const copyToClipboard = async () => {
+    if (!data?.apiKey) {
       return;
     }
 
-    navigator.clipboard.writeText(data.apiKey);
+    await navigator.clipboard.writeText(data.apiKey);
     toast({
       title: "Copied to clipboard",
       description: "Your API key was copied to clipboard.",
     });
   };
 
-  if (loading) {
+  if (isLoading) {
     return <div>Loading...</div>;
   }
 

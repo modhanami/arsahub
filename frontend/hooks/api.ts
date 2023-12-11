@@ -11,7 +11,7 @@
 //   }
 
 import React from "react";
-import {toast} from "../components/ui/use-toast";
+import { toast } from "../components/ui/use-toast";
 import {
   ActivityResponse,
   AppResponse,
@@ -20,7 +20,8 @@ import {
   TriggerResponse,
   UserActivityProfileResponse,
 } from "../types/generated-types";
-import {useCurrentApp} from "../lib/current-app";
+import { useCurrentApp } from "../lib/current-app";
+import { useQuery } from "@tanstack/react-query";
 
 // export function fetchTriggers(activityId: number) {
 //     return fetch(`${API_URL}/activities/${activityId}/triggers`, {
@@ -50,7 +51,7 @@ import {useCurrentApp} from "../lib/current-app";
 //   }
 
 export function makeAppAuthHeader(
-  app: AppResponse | undefined
+  app: AppResponse | undefined,
 ): Record<string, string> {
   if (!app) {
     return {};
@@ -63,7 +64,7 @@ export function makeAppAuthHeader(
 
 export function useMembers(activityId: number) {
   const [members, setMembers] = React.useState<MemberResponse[]>([]);
-  const {currentApp} = useCurrentApp();
+  const { currentApp } = useCurrentApp();
   React.useEffect(() => {
     async function fetchMembers() {
       const response = await fetch(
@@ -77,7 +78,7 @@ export function useMembers(activityId: number) {
           next: {
             tags: [`members`],
           },
-        }
+        },
       );
 
       if (!response?.ok) {
@@ -113,7 +114,7 @@ export interface Trigger {
 
 export function useTriggers() {
   const [triggers, setTriggers] = React.useState<TriggerResponse[]>([]);
-  const {currentApp, isLoading} = useCurrentApp();
+  const { currentApp, isLoading } = useCurrentApp();
 
   React.useEffect(() => {
     if (isLoading) {
@@ -157,7 +158,7 @@ export function useTriggers() {
 
 export function useActions() {
   const [actions, setActions] = React.useState<Action[]>([]);
-  const {currentApp} = useCurrentApp();
+  const { currentApp } = useCurrentApp();
   React.useEffect(() => {
     async function fetchActions() {
       const response = await fetch(`${API_URL}/activities/actions`, {
@@ -243,7 +244,7 @@ export interface Rule {
 
 export function useRules(activityId: number) {
   const [rules, setRules] = React.useState<RuleResponse[]>([]);
-  const {currentApp} = useCurrentApp();
+  const { currentApp } = useCurrentApp();
   React.useEffect(() => {
     async function fetchRules() {
       const response = await fetch(
@@ -257,7 +258,7 @@ export function useRules(activityId: number) {
           next: {
             tags: [`rules`],
           },
-        }
+        },
       );
 
       if (!response?.ok) {
@@ -294,7 +295,7 @@ export interface Action {
 export function useUserProfile(activityId: number, userId: string) {
   const [profile, setProfile] =
     React.useState<UserActivityProfileResponse | null>(null);
-  const {currentApp} = useCurrentApp();
+  const { currentApp } = useCurrentApp();
   React.useEffect(() => {
     async function fetchProfile() {
       if (!userId) {
@@ -310,7 +311,7 @@ export function useUserProfile(activityId: number, userId: string) {
           next: {
             tags: [`profile`],
           },
-        }
+        },
       );
 
       if (!response?.ok) {
@@ -365,18 +366,11 @@ async function fetchApps(userId: number, currentApp: AppResponse | undefined) {
   return response.json();
 }
 
-async function fetchApp(
-  userUUID: UserUUID,
-  currentApp: AppResponse | undefined
-) {
+async function fetchApp(userUUID: UserUUID) {
   const response = await fetch(`${API_URL}/apps?userUUID=${userUUID}`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
-      ...makeAppAuthHeader(currentApp),
-    },
-    next: {
-      tags: [`apps`],
     },
   });
 
@@ -392,38 +386,18 @@ async function fetchApp(
   return response.json();
 }
 
-export function useApp(userUUID: UserUUID) {
-  const [loading, setLoading] = React.useState<boolean>(true); // Always start with loading as true
-  const [app, setApp] = React.useState<AppResponse | null>(null);
-  const {currentApp} = useCurrentApp();
-  React.useEffect(() => {
-    fetchApp(userUUID, currentApp).then((app) => {
-      if (!app) {
-        return;
-      }
-      setApp(app);
-      setLoading(false); // Set loading to false once data is fetched.
-    });
-  }, [userUUID, currentApp]);
-
-  function refetch() {
-    setLoading(true);
-    fetchApp(userUUID, currentApp).then((app) => {
-      if (!app) {
-        return;
-      }
-      setApp(app);
-      setLoading(false);
-    });
-  }
-
-  return {loading, data: app, refetch};
+export function useApp(userUUID: UserUUID | null) {
+  return useQuery({
+    queryKey: ["appData", userUUID],
+    queryFn: () => fetchApp(userUUID!!),
+    enabled: !!userUUID,
+  });
 }
 
 export function useApps(userId: number) {
   const [loading, setLoading] = React.useState<boolean>(true); // Always start with loading as true
   const [apps, setApps] = React.useState<App[]>([]);
-  const {currentApp} = useCurrentApp();
+  const { currentApp } = useCurrentApp();
   React.useEffect(() => {
     fetchApps(userId, currentApp).then((apps) => {
       if (!apps) {
@@ -445,7 +419,7 @@ export function useApps(userId: number) {
     });
   }
 
-  return {loading, data: apps, refetch};
+  return { loading, data: apps, refetch };
 }
 
 type TriggerTemplate = Trigger;
@@ -459,7 +433,7 @@ export interface AppTemplate {
 
 export function useAppTemplates() {
   const [templates, setTemplates] = React.useState<AppTemplate[]>([]);
-  const {currentApp} = useCurrentApp();
+  const { currentApp } = useCurrentApp();
   React.useEffect(() => {
     async function fetchTemplates() {
       const response = await fetch(`${API_URL}/apps/templates`, {
@@ -498,7 +472,7 @@ export function useAppTemplates() {
 
 export function useActivities() {
   const [activities, setActivities] = React.useState<ActivityResponse[]>([]);
-  const {currentApp, isLoading} = useCurrentApp();
+  const { currentApp, isLoading } = useCurrentApp();
 
   React.useEffect(() => {
     if (isLoading) {
