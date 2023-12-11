@@ -105,7 +105,7 @@ export function TriggerCreateForm() {
         </DialogTrigger>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <CardTitle>Create activity</CardTitle>
+            <CardTitle>Create trigger</CardTitle>
             {/* <DialogTitle>Are you sure absolutely sure?</DialogTitle> */}
           </DialogHeader>
           {/* <CardDescription>Deploy your new activity in one-click.</CardDescription> */}
