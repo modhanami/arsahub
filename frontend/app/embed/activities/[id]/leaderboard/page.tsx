@@ -41,7 +41,10 @@ export default function LeaderboardEmbedPage({ params }: ContextProps) {
   });
 
   useEffect(() => {
-    const socket = io(`${SOCKET_IO_URL}/default`, { forceNew: true });
+    const socket = io(`${SOCKET_IO_URL}/default`, {
+      forceNew: true,
+      timestampRequests: true,
+    });
 
     socket.on("connect", async () => {
       const response = await socket.emitWithAck(

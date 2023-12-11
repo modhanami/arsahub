@@ -102,7 +102,10 @@ export function UserProfileRealTime({
 
   const socketRef = useRef<Socket | undefined>(undefined);
   useEffect(() => {
-    const socket = io(`${SOCKET_IO_URL}/default`, { forceNew: true });
+    const socket = io(`${SOCKET_IO_URL}/default`, {
+      forceNew: true,
+      timestampRequests: true,
+    });
     socketRef.current = socket; // Store the connection in the ref
 
     socket.on("connect", async () => {
