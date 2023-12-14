@@ -1,0 +1,28 @@
+version: "3.1"
+
+services:
+  db:
+    image: postgres
+    restart: always
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_PASSWORD: 123456
+      POSTGRES_DB: arsahub
+    volumes:
+      - ./ArsaHub_Local-2023_11_28_23_07_57-dump.sql:/docker-entrypoint-initdb.d/ArsaHub_Local-2023_11_28_23_07_57-dump.sql
+
+  backend:
+    image: modhanami/arsahub-backend-dev:latest
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/arsahub?user=postgres&password=123456
+    ports:
+      - "9000:8080"
+
+#  frontend:
+#    build: ../frontend
+#    image: modhanami/arsahub-frontend-dev:latest
+#    ports:
+#      - "3002:3000"
+#    environment:
+#      NODE_ENV: development

@@ -1,0 +1,186 @@
+### Get members
+GET http://localhost:8080/api/activities/{{activityId}}/members
+
+###
+GET {{host}}/api/activities
+
+###
+POST {{host}}/api/activities/{{activityId}}/members
+Content-Type: application/json
+
+{
+  "userIds": [
+    "user1",
+    "user2"
+  ]
+}
+
+### Create rule
+POST {{host}}/api/activities/{{activityId}}/rules
+Content-Type: application/json
+
+{
+  "name": "rule1",
+  "description": "rule1",
+  "trigger": {
+    "key": "join_activity"
+  },
+  "action": {
+    "key": "add_points",
+    "params": {
+      "value": 100
+    }
+  }
+}
+
+### Create rule (unlock_achievement)
+POST {{host}}/api/activities/{{activityId}}/rules
+Content-Type: application/json
+
+{
+  "name": "Unlock achievement on join",
+  "trigger": {
+    "key": "join_activity"
+  },
+  "action": {
+    "key": "unlock_achievement",
+    "params": {
+      "achievementId": "2"
+    }
+  }
+}
+
+### Create rule with params (how many times to trigger before action)
+POST {{host}}/api/activities/{{activityId}}/rules
+Content-Type: application/json
+
+{
+  "name": "rule1",
+  "description": "rule1",
+  "trigger": {
+    "key": "join_activity"
+  },
+  "action": {
+    "key": "add_points",
+    "params": {
+      "value": "100"
+    }
+  },
+  "condition": {
+    "type": "times",
+    "params": {
+      "count": "2"
+    }
+  }
+}
+
+### Create milestone rule "when points reached 1000, add 1 points" (one time)
+POST {{host}}/api/activities/{{activityId}}/rules
+Content-Type: application/json
+
+{
+  "name": "Give 1 point when points reached 1000",
+  "trigger": {
+    "key": "points_reached",
+    "params": {
+      "value": "1000"
+    }
+  },
+  "action": {
+    "key": "add_points",
+    "params": {
+      "value": "1"
+    }
+  }
+}
+
+
+### Trigger join_activity
+POST {{host}}/api/activities/{{activityId}}/trigger
+Content-Type: application/json
+
+{
+  "key": "join_activity",
+  "userId": "i_am_user1",
+  "params": {}
+}
+
+### Create rule with params (how many streak of some period to trigger before action)
+POST {{host}}/api/activities/{{activityId}}/rules
+Content-Type: application/json
+
+{
+  "name": "rrrr",
+  "description": "rule1",
+  "trigger": {
+    "key": "join_activity"
+  },
+  "action": {
+    "key": "add_points",
+    "params": {
+      "value": 100
+    }
+  },
+  "condition": {
+    "type": "streak",
+    "params": {
+      "period": "day",
+      "count": 2
+    }
+  }
+}
+
+### Create trigger for activity (without custom fields)
+POST {{host}}/api/apps/triggers
+Content-Type: application/json
+
+{
+  "title": "Share activity",
+  "description": "ddd",
+  "key": "share_activity2"
+}
+
+###
+POST {{host}}/api/activities/{{activityId}}/achievements
+Content-Type: application/json
+
+{
+  "title": "Achievement 1"
+}
+
+###
+GET {{host}}/api/activities/{{activityId}}/leaderboard?type=total-points
+
+###
+GET {{host}}/api/activities/{{activityId}}/profile?userId={{userId}}
+
+### Create activity
+POST {{host}}/api/activities
+Content-Type: application/json
+
+{
+  "title": "Activity Bing Bong",
+  "description": "we are bing bonging with this one"
+}
+
+### Get rules
+GET {{host}}/api/activities/{{activityId}}/rules
+
+### Increment unit
+POST http://localhost:8080/api/apps/{{activityId}}/increment-unit
+Content-Type: application/json
+
+{
+  "userId": "i_am_user1",
+  "unitKey": "steps",
+  "amount": 10
+}
+
+### Create custom unit
+POST http://localhost:8080/api/apps/custom-units
+Content-Type: application/json
+
+{
+  "key": "We We We We",
+  "name": "wewewewe "
+}
