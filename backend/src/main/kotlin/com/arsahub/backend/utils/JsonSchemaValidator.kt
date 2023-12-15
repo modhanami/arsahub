@@ -5,10 +5,16 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.networknt.schema.JsonSchemaFactory
 import com.networknt.schema.SchemaValidatorsConfig
 import com.networknt.schema.SpecVersionDetector
+import org.springframework.stereotype.Component
 
+val defaultSchemaValidatorsConfig: SchemaValidatorsConfig = SchemaValidatorsConfig().apply {
+    isTypeLoose = true
+}
+
+@Component
 class JsonSchemaValidator(
     private val objectMapper: ObjectMapper = ObjectMapper(),
-    private val schemaValidatorsConfig: SchemaValidatorsConfig = SchemaValidatorsConfig()
+    private val schemaValidatorsConfig: SchemaValidatorsConfig = defaultSchemaValidatorsConfig
 ) {
 
     fun validate(jsonSchema: JsonNode, jsonNode: JsonNode): JsonSchemaValidationResult {

@@ -1,25 +1,19 @@
 package com.arsahub.backend.controllers
 
 import com.arsahub.backend.dtos.*
-import com.arsahub.backend.exceptions.ConflictException
-import com.arsahub.backend.models.*
+import com.arsahub.backend.models.App
 import com.arsahub.backend.repositories.*
 import com.arsahub.backend.security.auth.CurrentApp
 import com.arsahub.backend.services.ActivityService
 import com.arsahub.backend.services.AppService
-import com.arsahub.backend.utils.JsonSchemaValidator
-import com.networknt.schema.SchemaValidatorsConfig
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
-import jakarta.persistence.EntityNotFoundException
 import jakarta.validation.Valid
-import org.springframework.data.repository.findByIdOrNull
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
-import java.time.Instant
 import java.util.*
 
 @RestController
@@ -34,66 +28,66 @@ class AppController(
     private val activityService: ActivityService,
     private val appService: AppService,
 ) {
-    @Operation(
-        summary = "Create a custom unit (globally)", // TODO: make custom unit scoped to app
-        description = "Create a custom unit that can be used in activities and rules. Following triggers will be created automatically: {custom_unit_key}_reached",
-        responses = [
-            ApiResponse(
-                responseCode = "201",
-            ),
-            ApiResponse(
-                responseCode = "400",
-                content = [Content(schema = Schema(implementation = ApiValidationError::class))]
-            ),
-            ApiResponse(
-                responseCode = "409",
-                description = "Custom unit with the same key already exists",
-                content = [Content(schema = Schema(implementation = ApiError::class))]
-            )
-        ]
-    )
-    @PostMapping("/custom-units")
-    fun createCustomUnit(
-        @RequestBody request: CustomUnitCreateRequest
-    ): CustomUnitResponse {
-        val existingCustomUnit = customUnitRepository.findByKey(request.key)
-        if (existingCustomUnit != null) {
-            throw ConflictException("Custom unit with key ${request.key} already exists")
-        }
-        val customUnit = CustomUnit(
-            name = request.name,
-            key = request.key,
-        )
-
-        customUnitRepository.save(customUnit)
-        val triggerSchema = """
-        {
-            "type": "object",
-            "${'$'}schema": "http://json-schema.org/draft-04/schema#",
-            "required": [
-                "value"
-            ],
-            "properties": {
-                "value": {
-                    "type": "number"
-                }
-            }
-        }
-    """.trimIndent()
-        val schemaValidatorsConfig = SchemaValidatorsConfig()
-        schemaValidatorsConfig.isTypeLoose = true
-        val validator = JsonSchemaValidator(schemaValidatorsConfig = schemaValidatorsConfig)
-        val trigger = Trigger(
-            title = "${customUnit.name} reached",
-            description = "Triggered when ${customUnit.name} reached a certain value",
-            key = "${customUnit.key}_reached",
-            jsonSchema = validator.convertJsonStringToMap(triggerSchema).toMutableMap(),
-        )
-
-        triggerRepository.save(trigger)
-
-        return CustomUnitResponse.fromEntity(customUnit)
-    }
+//    @Operation(
+//        summary = "Create a custom unit (globally)", // TODO: make custom unit scoped to app
+//        description = "Create a custom unit that can be used in activities and rules. Following triggers will be created automatically: {custom_unit_key}_reached",
+//        responses = [
+//            ApiResponse(
+//                responseCode = "201",
+//            ),
+//            ApiResponse(
+//                responseCode = "400",
+//                content = [Content(schema = Schema(implementation = ApiValidationError::class))]
+//            ),
+//            ApiResponse(
+//                responseCode = "409",
+//                description = "Custom unit with the same key already exists",
+//                content = [Content(schema = Schema(implementation = ApiError::class))]
+//            )
+//        ]
+//    )
+//    @PostMapping("/custom-units")
+//    fun createCustomUnit(
+//        @RequestBody request: CustomUnitCreateRequest
+//    ): CustomUnitResponse {
+//        val existingCustomUnit = customUnitRepository.findByKey(request.key)
+//        if (existingCustomUnit != null) {
+//            throw ConflictException("Custom unit with key ${request.key} already exists")
+//        }
+//        val customUnit = CustomUnit(
+//            name = request.name,
+//            key = request.key,
+//        )
+//
+//        customUnitRepository.save(customUnit)
+//        val triggerSchema = """
+//        {
+//            "type": "object",
+//            "${'$'}schema": "http://json-schema.org/draft-04/schema#",
+//            "required": [
+//                "value"
+//            ],
+//            "properties": {
+//                "value": {
+//                    "type": "number"
+//                }
+//            }
+//        }
+//    """.trimIndent()
+//        val schemaValidatorsConfig = SchemaValidatorsConfig()
+//        schemaValidatorsConfig.isTypeLoose = true
+//        val validator = JsonSchemaValidator(schemaValidatorsConfig = schemaValidatorsConfig)
+//        val trigger = Trigger(
+//            title = "${customUnit.name} reached",
+//            description = "Triggered when ${customUnit.name} reached a certain value",
+//            key = "${customUnit.key}_reached",
+//            jsonSchema = validator.convertJsonStringToMap(triggerSchema).toMutableMap(),
+//        )
+//
+//        triggerRepository.save(trigger)
+//
+//        return CustomUnitResponse.fromEntity(customUnit)
+//    }
 
     data class IncrementUnitRequest(
         val unitKey: String,
@@ -101,84 +95,84 @@ class AppController(
         val userId: String,
     )
 
-    @Operation(
-        summary = "Increment a custom unit for a user in an activity",
-        responses = [
-            ApiResponse(
-                responseCode = "200",
-            ),
-            ApiResponse(
-                responseCode = "400",
-                content = [Content(schema = Schema(implementation = ApiValidationError::class))]
-            ),
-            ApiResponse(
-                responseCode = "404",
-                content = [Content(schema = Schema(implementation = ApiError::class))]
-            )
-        ]
-    )
-    @PostMapping("/{activityId}/increment-unit")
-    fun incrementUnit(
-        @PathVariable activityId: Long,
-        @RequestBody request: IncrementUnitRequest
-    ) {
-        val customUnit = customUnitRepository.findByKey(request.unitKey)
-            ?: throw EntityNotFoundException("Custom unit with key ${request.unitKey} not found")
-        val activity = activityRepository.findByIdOrNull(activityId)
-            ?: throw EntityNotFoundException("Activity with ID $activityId not found")
-        val appUserActivity = activity.members.find { it.appUser?.userId == request.userId }
-            ?: throw EntityNotFoundException("User with ID ${request.userId} not found")
-        var currentProgress = appUserActivity.userActivityProgresses.find { it.customUnit?.key == request.unitKey }
-        if (currentProgress != null) {
-            currentProgress.progressValue = currentProgress.progressValue?.plus(request.amount)
-            userActivityProgressRepository.save(currentProgress)
-
-            println("Incremented progress ${customUnit.name} for user ${appUserActivity.appUser?.userId} in activity ${activity.title} by ${request.amount} to ${currentProgress.progressValue}")
-        } else {
-            currentProgress = UserActivityProgress(
-                activity = activity,
-                appUserActivity = appUserActivity,
-                customUnit = customUnit,
-                progressValue = request.amount
-            )
-            userActivityProgressRepository.save(currentProgress)
-
-            println("Created progress ${customUnit.name} for user ${appUserActivity.appUser?.userId} in activity ${activity.title} with value ${request.amount}")
-        }
-        val matchingRules = activity.rules.filter { it.trigger?.key == "${customUnit.key}_reached" }
-        println("Found ${matchingRules.size} rules for ${customUnit.name} reached")
-        matchingRules.forEach { rule ->
-            val value = rule.triggerParams?.get("value")?.toString()?.toInt()
-                ?: throw Exception("Value not found for rule ${rule.title} (${rule.id})")
-
-            if ((currentProgress.progressValue ?: 0) < value) {
-                println("Skipping rule ${rule.title} (${rule.id}) for user ${appUserActivity.appUser?.userId} in activity ${activity.title} because progress is ${currentProgress.progressValue} and value is $value")
-                return@forEach
-            }
-            // check if the rule has already been activated from rule_progress_time
-            if (ruleProgressTimeRepository.findByRuleAndAppUserActivity(rule, appUserActivity) != null) {
-                println("Skipping rule ${rule.title} (${rule.id}) for user ${appUserActivity.appUser?.userId} in activity ${activity.title} because it has already been activated")
-                return@forEach
-            }
-
-            println("User reached ${currentProgress.progressValue} ${customUnit.name}, activating rule ${rule.title} (${rule.id})")
-
-            activityService.trigger(
-                activityId,
-                ActivityTriggerRequest(
-                    key = "${customUnit.key}_reached",
-                    params = emptyMap(),
-                    userId = request.userId
-                )
-            )
-            // mark the rule as activated for the user
-            val ruleProgress = RuleProgressTime(
-                rule = rule, appUserActivity = appUserActivity, progress = 1, completedAt = Instant.now()
-            )
-
-            ruleProgressTimeRepository.save(ruleProgress)
-        }
-    }
+//    @Operation(
+//        summary = "Increment a custom unit for a user in an activity",
+//        responses = [
+//            ApiResponse(
+//                responseCode = "200",
+//            ),
+//            ApiResponse(
+//                responseCode = "400",
+//                content = [Content(schema = Schema(implementation = ApiValidationError::class))]
+//            ),
+//            ApiResponse(
+//                responseCode = "404",
+//                content = [Content(schema = Schema(implementation = ApiError::class))]
+//            )
+//        ]
+//    )
+//    @PostMapping("/{activityId}/increment-unit")
+//    fun incrementUnit(
+//        @PathVariable activityId: Long,
+//        @RequestBody request: IncrementUnitRequest
+//    ) {
+//        val customUnit = customUnitRepository.findByKey(request.unitKey)
+//            ?: throw EntityNotFoundException("Custom unit with key ${request.unitKey} not found")
+//        val activity = activityRepository.findByIdOrNull(activityId)
+//            ?: throw EntityNotFoundException("Activity with ID $activityId not found")
+//        val appUserActivity = activity.members.find { it.appUser?.userId == request.userId }
+//            ?: throw EntityNotFoundException("User with ID ${request.userId} not found")
+//        var currentProgress = appUserActivity.userActivityProgresses.find { it.customUnit?.key == request.unitKey }
+//        if (currentProgress != null) {
+//            currentProgress.progressValue = currentProgress.progressValue?.plus(request.amount)
+//            userActivityProgressRepository.save(currentProgress)
+//
+//            println("Incremented progress ${customUnit.name} for user ${appUserActivity.appUser?.userId} in activity ${activity.title} by ${request.amount} to ${currentProgress.progressValue}")
+//        } else {
+//            currentProgress = UserActivityProgress(
+//                activity = activity,
+//                appUserActivity = appUserActivity,
+//                customUnit = customUnit,
+//                progressValue = request.amount
+//            )
+//            userActivityProgressRepository.save(currentProgress)
+//
+//            println("Created progress ${customUnit.name} for user ${appUserActivity.appUser?.userId} in activity ${activity.title} with value ${request.amount}")
+//        }
+//        val matchingRules = activity.rules.filter { it.trigger?.key == "${customUnit.key}_reached" }
+//        println("Found ${matchingRules.size} rules for ${customUnit.name} reached")
+//        matchingRules.forEach { rule ->
+//            val value = rule.triggerParams?.get("value")?.toString()?.toInt()
+//                ?: throw Exception("Value not found for rule ${rule.title} (${rule.id})")
+//
+//            if ((currentProgress.progressValue ?: 0) < value) {
+//                println("Skipping rule ${rule.title} (${rule.id}) for user ${appUserActivity.appUser?.userId} in activity ${activity.title} because progress is ${currentProgress.progressValue} and value is $value")
+//                return@forEach
+//            }
+//            // check if the rule has already been activated from rule_progress_time
+//            if (ruleProgressTimeRepository.findByRuleAndAppUserActivity(rule, appUserActivity) != null) {
+//                println("Skipping rule ${rule.title} (${rule.id}) for user ${appUserActivity.appUser?.userId} in activity ${activity.title} because it has already been activated")
+//                return@forEach
+//            }
+//
+//            println("User reached ${currentProgress.progressValue} ${customUnit.name}, activating rule ${rule.title} (${rule.id})")
+//
+//            activityService.trigger(
+//                activityId,
+//                ActivityTriggerRequest(
+//                    key = "${customUnit.key}_reached",
+//                    params = emptyMap(),
+//                    userId = request.userId
+//                )
+//            )
+//            // mark the rule as activated for the user
+//            val ruleProgress = RuleProgressTime(
+//                rule = rule, appUserActivity = appUserActivity, progress = 1, completedAt = Instant.now()
+//            )
+//
+//            ruleProgressTimeRepository.save(ruleProgress)
+//        }
+//    }
 
     @Operation(
         summary = "Create a trigger for an app",

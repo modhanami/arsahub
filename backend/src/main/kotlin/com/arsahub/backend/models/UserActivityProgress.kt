@@ -1,16 +1,13 @@
 package com.arsahub.backend.models
 
+import io.hypersistence.utils.hibernate.type.array.ListArrayType
 import jakarta.persistence.*
 import jakarta.validation.constraints.NotNull
+import org.hibernate.annotations.Type
 
 @Entity
 @Table(name = "app_user_activity_progress")
 class UserActivityProgress(
-
-    @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "activity_id", nullable = false)
-    var activity: Activity? = null,
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -22,9 +19,12 @@ class UserActivityProgress(
     @JoinColumn(name = "unit_id", nullable = false)
     var customUnit: CustomUnit? = null,
 
-    @NotNull
-    @Column(name = "progress_value", nullable = false)
-    var progressValue: Int? = null,
+    @Column(name = "value_int")
+    var valueInt: Int? = 0,
+
+    @Column(name = "value_int_array")
+    @Type(ListArrayType::class)
+    var valueIntArray: MutableList<Int>? = null,
 ) : AuditedEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

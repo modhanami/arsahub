@@ -9,6 +9,7 @@ import com.arsahub.backend.services.actionhandlers.ActionResult
 import com.arsahub.backend.utils.JsonSchemaValidationResult
 import com.arsahub.backend.utils.JsonSchemaValidator
 import com.networknt.schema.SchemaValidatorsConfig
+import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.persistence.EntityNotFoundException
 import jakarta.validation.Valid
 import org.springframework.data.repository.findByIdOrNull
@@ -41,6 +42,8 @@ interface ActivityService {
     fun listAchievements(activityId: Long): List<Achievement>
 }
 
+private val logger = KotlinLogging.logger {}
+
 @Service
 class ActivityServiceImpl(
     private val activityRepository: ActivityRepository,
@@ -55,7 +58,10 @@ class ActivityServiceImpl(
     private val actionHandlerRegistry: ActionHandlerRegistry,
     private val appRepository: AppRepository,
     private val appUserRepository: AppUserRepository,
-    private val leaderboardServiceImpl: LeaderboardServiceImpl
+    private val leaderboardServiceImpl: LeaderboardServiceImpl,
+    private val customUnitRepository: CustomUnitRepository,
+    private val userActivityProgressRepository: UserActivityProgressRepository,
+    private val jsonSchemaValidator: JsonSchemaValidator
 
 ) : ActivityService {
 
@@ -129,11 +135,29 @@ class ActivityServiceImpl(
 
         val trigger = triggerRepository.findByKey(request.key) ?: throw Exception("Trigger not found")
 
+        // validate trigger against schema
+        val triggerSchema = trigger.jsonSchema
+        val triggerValidationResult = if (triggerSchema != null) {
+            if (request.params.isNullOrEmpty()) {
+                throw Exception("Trigger params must be provided when trigger has a schema (key: ${trigger.key})")
+            }
+
+            jsonSchemaValidator.validate(triggerSchema, request.params)
+        } else {
+            JsonSchemaValidationResult.valid()
+        }
+
+        logger.debug { "Trigger validation result: ${if (triggerValidationResult.isValid) "passed" else "failed"} ${triggerValidationResult.errors}" }
+        if (!triggerValidationResult.isValid) {
+            throw Exception("Trigger definition is not valid (${triggerValidationResult.errors})")
+        }
+
         existingActivity.rules.filter { it.trigger?.key == trigger.key }.forEach { rule ->
             val triggerType: TriggerType? = rule.triggerType
             if (triggerType == null) {
                 println("Trigger type not found for rule ${rule.title} (${rule.id}), repeating")
             }
+
 
 //            // handle pre-built trigger types and rule user progress
 //            var isProgressCompleted = false
@@ -207,7 +231,7 @@ class ActivityServiceImpl(
                             leaderboard = leaderboardServiceImpl.getTotalPointsLeaderboard(activityId)
                         )
                     )
-                    
+
                     socketIOService.broadcastToUserRoom(
                         userId,
                         PointsUpdate(
@@ -253,6 +277,51 @@ class ActivityServiceImpl(
                     rule = rule, appUserActivity = member, progress = 1, completedAt = Instant.now()
                 )
                 ruleProgressTimeRepository.save(ruleProgress)
+            }
+        }
+
+        // handle custom units, extracting values from params based on the unit's key
+        // - unit of type "Integer" => Increment value to unit's progress
+        // - unit of type "Integer Array" => Add new value to unit's progress array
+        if (!request.params.isNullOrEmpty()) {
+            for (joinedCustomUnit in trigger.customUnits) {
+                val customUnit = joinedCustomUnit.customUnit!!
+                val unitKey = customUnit.key
+                val unitType = customUnit.type?.name
+                val unitValue = request.params[unitKey]
+
+                if (unitValue == null) {
+                    logger.debug("Unit value not found for key $unitKey, skipping")
+                    continue
+                }
+
+                val userActivityProgress = userActivityProgressRepository.findByAppUserActivityAndCustomUnit(
+                    member, customUnit
+                ) ?: UserActivityProgress(
+                    appUserActivity = member, customUnit = customUnit
+                )
+
+                val valueInt = unitValue.toInt()
+                when (unitType) {
+                    "Integer" -> {
+                        val currentValue = userActivityProgress.valueInt ?: 0
+                        val newValue = currentValue + valueInt
+                        userActivityProgress.valueInt = newValue
+                        userActivityProgressRepository.save(userActivityProgress)
+                        logger.debug { "User ${member.appUser?.displayName} (${member.appUser?.userId}) progress 'Integer' $valueInt for unit $unitKey (${customUnit.id}) in activity $activityId" }
+                    }
+
+                    "Integer Set" -> {
+                        val currentValueSet = (userActivityProgress.valueIntArray ?: mutableListOf()).toMutableSet()
+                        if (currentValueSet.add(valueInt)) {
+                            userActivityProgress.valueIntArray = currentValueSet.toMutableList()
+                            userActivityProgressRepository.save(userActivityProgress)
+                            logger.debug { "User ${member.appUser?.displayName} (${member.appUser?.userId}) progress 'Integer Set' $valueInt for unit $unitKey (${customUnit.id}) in activity $activityId" }
+                        } else {
+                            logger.debug { "Skipping. User ${member.appUser?.displayName} (${member.appUser?.userId}) already has progress 'Integer Set' $valueInt for unit $unitKey (${customUnit.id}) in activity $activityId" }
+                        }
+                    }
+                }
             }
         }
     }

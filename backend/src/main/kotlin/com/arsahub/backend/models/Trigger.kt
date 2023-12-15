@@ -33,9 +33,12 @@ class Trigger(
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "app_id", nullable = false)
-    var app: App? = null
+    var app: App? = null,
 
-) : AuditedEntity() {
+    @OneToMany(mappedBy = "trigger")
+    var customUnits: MutableSet<TriggerCustomUnit> = mutableSetOf(),
+
+    ) : AuditedEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "trigger_id", nullable = false)
