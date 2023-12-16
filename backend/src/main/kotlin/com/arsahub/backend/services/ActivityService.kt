@@ -152,7 +152,7 @@ class ActivityServiceImpl(
             throw Exception("Trigger definition is not valid (${triggerValidationResult.errors})")
         }
 
-        existingActivity.rules.filter { it.trigger?.key == trigger.key }.forEach { rule ->
+        existingActivity.rules.filter { it.trigger?.key == trigger.key }.forEach { rule -> // TODO: fetch from DB?
             val triggerType: TriggerType? = rule.triggerType
             if (triggerType == null) {
                 println("Trigger type not found for rule ${rule.title} (${rule.id}), repeating")
@@ -287,11 +287,16 @@ class ActivityServiceImpl(
             for (joinedCustomUnit in trigger.customUnits) {
                 val customUnit = joinedCustomUnit.customUnit!!
                 val unitKey = customUnit.key
+                // if the current trigger is also the custom unit related trigger, skip it
+                if (request.key.endsWith("_reached")) {
+                    continue
+                }
+
                 val unitType = customUnit.type?.name
                 val unitValue = request.params[unitKey]
 
                 if (unitValue == null) {
-                    logger.debug("Unit value not found for key $unitKey, skipping")
+                    logger.debug { "Unit value not found for key $unitKey, skipping" }
                     continue
                 }
 
@@ -322,8 +327,50 @@ class ActivityServiceImpl(
                         }
                     }
                 }
+
+                // activate rules with custom unit triggers
+                val unitReachedRules =
+                    existingActivity.rules.filter { it.trigger?.key == "${unitKey}_reached" } // TODO: fetch from DB?
+                if (unitReachedRules.isEmpty()) {
+                    logger.debug { "No chain rules found for unit $unitKey (${customUnit.id}) in activity $activityId" }
+                    continue
+                } else {
+                    logger.debug { "Found ${unitReachedRules.size} chain rules for unit $unitKey (${customUnit.id}) in activity $activityId, activating" }
+                }
+                for (rule in unitReachedRules) {
+                    val triggerParams = rule.triggerParams
+                    val triggerValue = triggerParams?.get("value")?.toString()?.toInt()
+                        ?: throw Exception("Value not found for rule ${rule.title} (${rule.id})")
+
+                    if (ruleProgressTimeRepository.findByRuleAndAppUserActivity(rule, member) != null) {
+                        logger.debug { "User ${member.appUser?.displayName} (${member.appUser?.userId}) has already reached $triggerValue for unit $unitKey (${customUnit.id}) in activity $activityId, skipping rule ${rule.title} (${rule.id})" }
+                        continue
+                    }
+
+                    if ((userActivityProgress.valueInt ?: 0) >= triggerValue) {
+                        logger.debug { "User ${member.appUser?.displayName} (${member.appUser?.userId}) has reached $triggerValue for unit $unitKey (${customUnit.id}) in activity $activityId, activating rule ${rule.title} (${rule.id})" }
+                        trigger(
+                            activityId,
+                            ActivityTriggerRequest(
+                                key = "${unitKey}_reached",
+                                params = triggerParams.mapValues { it.value.toString() },
+                                userId = userId
+                            )
+                        )
+
+                        // mark the rule as activated for the user
+                        val ruleProgress = RuleProgressTime(
+                            rule = rule, appUserActivity = member, progress = 1, completedAt = Instant.now()
+                        )
+                        ruleProgressTimeRepository.save(ruleProgress)
+
+                    } else {
+                        logger.debug { "User ${member.appUser?.displayName} (${member.appUser?.userId}) has not reached $triggerValue for unit $unitKey (${customUnit.id}) in activity $activityId, skipping rule ${rule.title} (${rule.id})" }
+                    }
+                }
             }
         }
+
     }
 
     override fun createRule(

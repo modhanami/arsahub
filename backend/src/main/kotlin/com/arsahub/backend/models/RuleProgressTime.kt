@@ -9,7 +9,7 @@ import java.time.Instant
 class RuleProgressTime(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "rule_progress_single_id", nullable = false)
+    @Column(name = "rule_progress_times_id", nullable = false)
     var id: Long? = null,
 
     @NotNull
