@@ -283,93 +283,93 @@ class ActivityServiceImpl(
         // handle custom units, extracting values from params based on the unit's key
         // - unit of type "Integer" => Increment value to unit's progress
         // - unit of type "Integer Array" => Add new value to unit's progress array
-        if (!request.params.isNullOrEmpty()) {
-            for (joinedCustomUnit in trigger.customUnits) {
-                val customUnit = joinedCustomUnit.customUnit!!
-                val unitKey = customUnit.key
-                // if the current trigger is also the custom unit related trigger, skip it
-                if (request.key.endsWith("_reached")) {
-                    continue
-                }
-
-                val unitType = customUnit.type?.name
-                val unitValue = request.params[unitKey]
-
-                if (unitValue == null) {
-                    logger.debug { "Unit value not found for key $unitKey, skipping" }
-                    continue
-                }
-
-                val userActivityProgress = userActivityProgressRepository.findByAppUserActivityAndCustomUnit(
-                    member, customUnit
-                ) ?: UserActivityProgress(
-                    appUserActivity = member, customUnit = customUnit
-                )
-
-                val valueInt = unitValue.toInt()
-                when (unitType) {
-                    "Integer" -> {
-                        val currentValue = userActivityProgress.valueInt ?: 0
-                        val newValue = currentValue + valueInt
-                        userActivityProgress.valueInt = newValue
-                        userActivityProgressRepository.save(userActivityProgress)
-                        logger.debug { "User ${member.appUser?.displayName} (${member.appUser?.userId}) progress 'Integer' $valueInt for unit $unitKey (${customUnit.id}) in activity $activityId" }
-                    }
-
-                    "Integer Set" -> {
-                        val currentValueSet = (userActivityProgress.valueIntArray ?: mutableListOf()).toMutableSet()
-                        if (currentValueSet.add(valueInt)) {
-                            userActivityProgress.valueIntArray = currentValueSet.toMutableList()
-                            userActivityProgressRepository.save(userActivityProgress)
-                            logger.debug { "User ${member.appUser?.displayName} (${member.appUser?.userId}) progress 'Integer Set' $valueInt for unit $unitKey (${customUnit.id}) in activity $activityId" }
-                        } else {
-                            logger.debug { "Skipping. User ${member.appUser?.displayName} (${member.appUser?.userId}) already has progress 'Integer Set' $valueInt for unit $unitKey (${customUnit.id}) in activity $activityId" }
-                        }
-                    }
-                }
-
-                // activate rules with custom unit triggers
-                val unitReachedRules =
-                    existingActivity.rules.filter { it.trigger?.key == "${unitKey}_reached" } // TODO: fetch from DB?
-                if (unitReachedRules.isEmpty()) {
-                    logger.debug { "No chain rules found for unit $unitKey (${customUnit.id}) in activity $activityId" }
-                    continue
-                } else {
-                    logger.debug { "Found ${unitReachedRules.size} chain rules for unit $unitKey (${customUnit.id}) in activity $activityId, activating" }
-                }
-                for (rule in unitReachedRules) {
-                    val triggerParams = rule.triggerParams
-                    val triggerValue = triggerParams?.get("value")?.toString()?.toInt()
-                        ?: throw Exception("Value not found for rule ${rule.title} (${rule.id})")
-
-                    if (ruleProgressTimeRepository.findByRuleAndAppUserActivity(rule, member) != null) {
-                        logger.debug { "User ${member.appUser?.displayName} (${member.appUser?.userId}) has already reached $triggerValue for unit $unitKey (${customUnit.id}) in activity $activityId, skipping rule ${rule.title} (${rule.id})" }
-                        continue
-                    }
-
-                    if ((userActivityProgress.valueInt ?: 0) >= triggerValue) {
-                        logger.debug { "User ${member.appUser?.displayName} (${member.appUser?.userId}) has reached $triggerValue for unit $unitKey (${customUnit.id}) in activity $activityId, activating rule ${rule.title} (${rule.id})" }
-                        trigger(
-                            activityId,
-                            ActivityTriggerRequest(
-                                key = "${unitKey}_reached",
-                                params = triggerParams.mapValues { it.value.toString() },
-                                userId = userId
-                            )
-                        )
-
-                        // mark the rule as activated for the user
-                        val ruleProgress = RuleProgressTime(
-                            rule = rule, appUserActivity = member, progress = 1, completedAt = Instant.now()
-                        )
-                        ruleProgressTimeRepository.save(ruleProgress)
-
-                    } else {
-                        logger.debug { "User ${member.appUser?.displayName} (${member.appUser?.userId}) has not reached $triggerValue for unit $unitKey (${customUnit.id}) in activity $activityId, skipping rule ${rule.title} (${rule.id})" }
-                    }
-                }
-            }
-        }
+//        if (!request.params.isNullOrEmpty()) {
+//            for (joinedCustomUnit in trigger.customUnits) {
+//                val customUnit = joinedCustomUnit.customUnit!!
+//                val unitKey = customUnit.key
+//                // if the current trigger is also the custom unit related trigger, skip it
+//                if (request.key.endsWith("_reached")) {
+//                    continue
+//                }
+//
+//                val unitType = customUnit.type?.name
+//                val unitValue = request.params[unitKey]
+//
+//                if (unitValue == null) {
+//                    logger.debug { "Unit value not found for key $unitKey, skipping" }
+//                    continue
+//                }
+//
+//                val userActivityProgress = userActivityProgressRepository.findByAppUserActivityAndCustomUnit(
+//                    member, customUnit
+//                ) ?: UserActivityProgress(
+//                    appUserActivity = member, customUnit = customUnit
+//                )
+//
+//                val valueInt = unitValue.toInt()
+//                when (unitType) {
+//                    "Integer" -> {
+//                        val currentValue = userActivityProgress.valueInt ?: 0
+//                        val newValue = currentValue + valueInt
+//                        userActivityProgress.valueInt = newValue
+//                        userActivityProgressRepository.save(userActivityProgress)
+//                        logger.debug { "User ${member.appUser?.displayName} (${member.appUser?.userId}) progress 'Integer' $valueInt for unit $unitKey (${customUnit.id}) in activity $activityId" }
+//                    }
+//
+//                    "Integer Set" -> {
+//                        val currentValueSet = (userActivityProgress.valueIntArray ?: mutableListOf()).toMutableSet()
+//                        if (currentValueSet.add(valueInt)) {
+//                            userActivityProgress.valueIntArray = currentValueSet.toMutableList()
+//                            userActivityProgressRepository.save(userActivityProgress)
+//                            logger.debug { "User ${member.appUser?.displayName} (${member.appUser?.userId}) progress 'Integer Set' $valueInt for unit $unitKey (${customUnit.id}) in activity $activityId" }
+//                        } else {
+//                            logger.debug { "Skipping. User ${member.appUser?.displayName} (${member.appUser?.userId}) already has progress 'Integer Set' $valueInt for unit $unitKey (${customUnit.id}) in activity $activityId" }
+//                        }
+//                    }
+//                }
+//
+//                // activate rules with custom unit triggers
+//                val unitReachedRules =
+//                    existingActivity.rules.filter { it.trigger?.key == "${unitKey}_reached" } // TODO: fetch from DB?
+//                if (unitReachedRules.isEmpty()) {
+//                    logger.debug { "No chain rules found for unit $unitKey (${customUnit.id}) in activity $activityId" }
+//                    continue
+//                } else {
+//                    logger.debug { "Found ${unitReachedRules.size} chain rules for unit $unitKey (${customUnit.id}) in activity $activityId, activating" }
+//                }
+//                for (rule in unitReachedRules) {
+//                    val triggerParams = rule.triggerParams
+//                    val triggerValue = triggerParams?.get("value")?.toString()?.toInt()
+//                        ?: throw Exception("Value not found for rule ${rule.title} (${rule.id})")
+//
+//                    if (ruleProgressTimeRepository.findByRuleAndAppUserActivity(rule, member) != null) {
+//                        logger.debug { "User ${member.appUser?.displayName} (${member.appUser?.userId}) has already reached $triggerValue for unit $unitKey (${customUnit.id}) in activity $activityId, skipping rule ${rule.title} (${rule.id})" }
+//                        continue
+//                    }
+//
+//                    if ((userActivityProgress.valueInt ?: 0) >= triggerValue) {
+//                        logger.debug { "User ${member.appUser?.displayName} (${member.appUser?.userId}) has reached $triggerValue for unit $unitKey (${customUnit.id}) in activity $activityId, activating rule ${rule.title} (${rule.id})" }
+//                        trigger(
+//                            activityId,
+//                            ActivityTriggerRequest(
+//                                key = "${unitKey}_reached",
+//                                params = triggerParams.mapValues { it.value.toString() },
+//                                userId = userId
+//                            )
+//                        )
+//
+//                        // mark the rule as activated for the user
+//                        val ruleProgress = RuleProgressTime(
+//                            rule = rule, appUserActivity = member, progress = 1, completedAt = Instant.now()
+//                        )
+//                        ruleProgressTimeRepository.save(ruleProgress)
+//
+//                    } else {
+//                        logger.debug { "User ${member.appUser?.displayName} (${member.appUser?.userId}) has not reached $triggerValue for unit $unitKey (${customUnit.id}) in activity $activityId, skipping rule ${rule.title} (${rule.id})" }
+//                    }
+//                }
+//            }
+//        }
 
     }
 
