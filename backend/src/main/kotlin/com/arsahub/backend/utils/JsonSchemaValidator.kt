@@ -14,9 +14,9 @@ val defaultSchemaValidatorsConfig: SchemaValidatorsConfig = SchemaValidatorsConf
 
 @Component
 class JsonSchemaValidator(
-    private val objectMapper: ObjectMapper = ObjectMapper(),
-    private val schemaValidatorsConfig: SchemaValidatorsConfig = defaultSchemaValidatorsConfig
+    private val objectMapper: ObjectMapper,
 ) {
+    private val schemaValidatorsConfig: SchemaValidatorsConfig = defaultSchemaValidatorsConfig
 
     fun validate(jsonSchema: JsonNode, jsonNode: JsonNode): JsonSchemaValidationResult {
         val factory = JsonSchemaFactory.getInstance(SpecVersionDetector.detect(jsonSchema))

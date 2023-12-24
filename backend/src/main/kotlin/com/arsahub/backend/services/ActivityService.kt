@@ -29,7 +29,7 @@ interface ActivityService {
     fun addMembers(activityId: Long, request: ActivityAddMembersRequest): ActivityAddMembersResult
     fun listMembers(activityId: Long): List<AppUserActivity>
     fun listActivities(appId: Long): List<Activity>
-    fun trigger(activityId: Long, request: ActivityTriggerRequest)
+    fun trigger(activityId: Long, request: ActivityTriggerRequest, json: Map<String, Any>? = null)
     fun createRule(
         activityId: Long, request: RuleCreateRequest
     ): Rule
@@ -61,6 +61,7 @@ class ActivityServiceImpl(
     private val leaderboardServiceImpl: LeaderboardServiceImpl,
     private val customUnitRepository: CustomUnitRepository,
     private val userActivityProgressRepository: UserActivityProgressRepository,
+    private val triggerLogRepository: TriggerLogRepository,
     private val jsonSchemaValidator: JsonSchemaValidator
 
 ) : ActivityService {
@@ -125,7 +126,7 @@ class ActivityServiceImpl(
         return activityRepository.findAllByAppId(appId)
     }
 
-    override fun trigger(activityId: Long, request: ActivityTriggerRequest) {
+    override fun trigger(activityId: Long, request: ActivityTriggerRequest, json: Map<String, Any>?) {
         val existingActivity = activityRepository.findByIdOrNull(activityId)
             ?: throw EntityNotFoundException("Activity with ID $activityId not found")
         val userId = request.userId
@@ -134,6 +135,15 @@ class ActivityServiceImpl(
             existingActivity.members.find { it.appUser?.userId == userId } ?: throw Exception("User not found")
 
         val trigger = triggerRepository.findByKey(request.key) ?: throw Exception("Trigger not found")
+
+        // save trigger log before any validation
+        val triggerLog = TriggerLog(
+            trigger = trigger,
+            requestBody = json?.toMutableMap(),
+            app = existingActivity.app,
+            appUser = member.appUser
+        )
+        triggerLogRepository.save(triggerLog)
 
         // validate trigger against schema
         val triggerSchema = trigger.jsonSchema
@@ -386,7 +396,6 @@ class ActivityServiceImpl(
 
         val schemaValidatorsConfig = SchemaValidatorsConfig()
         schemaValidatorsConfig.isTypeLoose = true
-        val validator = JsonSchemaValidator(schemaValidatorsConfig = schemaValidatorsConfig)
 
         // trigger schema validation
         println("Trigger definition: ${request.trigger}")
@@ -397,7 +406,7 @@ class ActivityServiceImpl(
                 throw Exception("Trigger params must be provided when trigger has a schema (key: ${trigger.key})")
             }
 
-            validator.validate(triggerSchema, request.trigger.params)
+            jsonSchemaValidator.validate(triggerSchema, request.trigger.params)
         } else {
             JsonSchemaValidationResult.valid()
         }
@@ -412,7 +421,7 @@ class ActivityServiceImpl(
         println("Action schema: ${action.jsonSchema}")
         val actionSchema = action.jsonSchema
         val actionValidationResult = if (actionSchema != null) {
-            validator.validate(actionSchema, request.action.params)
+            jsonSchemaValidator.validate(actionSchema, request.action.params)
         } else {
             JsonSchemaValidationResult.valid()
         }
@@ -445,7 +454,7 @@ class ActivityServiceImpl(
 //            println("Condition schema: ${triggerType.jsonSchema}")
 //            val conditionSchema = triggerType.jsonSchema
 //            val conditionValidate = if (conditionSchema != null) {
-//                validator.validate(conditionSchema, request.condition.params)
+//                jsonSchemaValidator.validate(conditionSchema, request.condition.params)
 //            } else {
 //                JsonSchemaValidationResult.valid()
 //            }

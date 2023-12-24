@@ -23,6 +23,9 @@ ALTER TABLE IF EXISTS ONLY public.app_user_activity_point_history DROP CONSTRAIN
 ALTER TABLE IF EXISTS ONLY public.app_user_activity_achievement DROP CONSTRAINT IF EXISTS user_activity_achievement_ibfk_2;
 ALTER TABLE IF EXISTS ONLY public.app_user_activity_achievement DROP CONSTRAINT IF EXISTS user_activity_achievement_ibfk_1;
 ALTER TABLE IF EXISTS ONLY public.trigger_template DROP CONSTRAINT IF EXISTS trigger_template_app_template_app_template_id_fk;
+ALTER TABLE IF EXISTS ONLY public.trigger_log DROP CONSTRAINT IF EXISTS trigger_log_trigger_trigger_id_fk;
+ALTER TABLE IF EXISTS ONLY public.trigger_log DROP CONSTRAINT IF EXISTS trigger_log_app_user_app_user_id_fk;
+ALTER TABLE IF EXISTS ONLY public.trigger_log DROP CONSTRAINT IF EXISTS trigger_log_app_app_id_fk;
 ALTER TABLE IF EXISTS ONLY public.trigger_custom_unit DROP CONSTRAINT IF EXISTS trigger_custom_unit_trigger_trigger_id_fk;
 ALTER TABLE IF EXISTS ONLY public.trigger_custom_unit DROP CONSTRAINT IF EXISTS trigger_custom_unit_custom_unit_unit_id_fk;
 ALTER TABLE IF EXISTS ONLY public.trigger DROP CONSTRAINT IF EXISTS trigger_app_app_id_fk;
@@ -64,6 +67,7 @@ ALTER TABLE IF EXISTS ONLY public.app_user_activity_progress DROP CONSTRAINT IF 
 ALTER TABLE IF EXISTS ONLY public.custom_unit DROP CONSTRAINT IF EXISTS unit_pkey;
 ALTER TABLE IF EXISTS ONLY public.trigger_type DROP CONSTRAINT IF EXISTS trigger_type_un;
 ALTER TABLE IF EXISTS ONLY public.trigger_template DROP CONSTRAINT IF EXISTS trigger_template_pk;
+ALTER TABLE IF EXISTS ONLY public.trigger_log DROP CONSTRAINT IF EXISTS trigger_log_pk;
 ALTER TABLE IF EXISTS ONLY public.trigger_custom_unit DROP CONSTRAINT IF EXISTS trigger_custom_unit_pk;
 ALTER TABLE IF EXISTS ONLY public.rule_activation_type DROP CONSTRAINT IF EXISTS rule_type_pk;
 ALTER TABLE IF EXISTS ONLY public.rule_template DROP CONSTRAINT IF EXISTS rule_template_pk;
@@ -85,6 +89,7 @@ ALTER TABLE IF EXISTS ONLY public.app_user DROP CONSTRAINT IF EXISTS app_user_pk
 ALTER TABLE IF EXISTS ONLY public.app_template DROP CONSTRAINT IF EXISTS app_template_pk;
 ALTER TABLE IF EXISTS ONLY public.action DROP CONSTRAINT IF EXISTS action_un;
 ALTER TABLE IF EXISTS public.trigger_template ALTER COLUMN trigger_template_id DROP DEFAULT;
+ALTER TABLE IF EXISTS public.trigger_log ALTER COLUMN trigger_log_id DROP DEFAULT;
 ALTER TABLE IF EXISTS public.trigger_custom_unit ALTER COLUMN custom_unit_id DROP DEFAULT;
 ALTER TABLE IF EXISTS public.trigger_custom_unit ALTER COLUMN trigger_id DROP DEFAULT;
 ALTER TABLE IF EXISTS public.trigger_custom_unit ALTER COLUMN trigger_custom_unit_id DROP DEFAULT;
@@ -96,6 +101,8 @@ DROP TABLE IF EXISTS public."user";
 DROP TABLE IF EXISTS public.trigger_type;
 DROP SEQUENCE IF EXISTS public.trigger_template_app_tempalte_id_seq;
 DROP TABLE IF EXISTS public.trigger_template;
+DROP SEQUENCE IF EXISTS public.trigger_log_trigger_log_id_seq;
+DROP TABLE IF EXISTS public.trigger_log;
 DROP SEQUENCE IF EXISTS public.trigger_custom_unit_trigger_id_seq;
 DROP SEQUENCE IF EXISTS public.trigger_custom_unit_trigger_custom_unit_seq;
 DROP SEQUENCE IF EXISTS public.trigger_custom_unit_custom_unit_id_seq;
@@ -742,6 +749,42 @@ ALTER SEQUENCE public.trigger_custom_unit_trigger_id_seq OWNED BY public.trigger
 
 
 --
+-- Name: trigger_log; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.trigger_log (
+    trigger_log_id bigint NOT NULL,
+    trigger_id integer,
+    request_body jsonb NOT NULL,
+    app_id bigint NOT NULL,
+    app_user_id bigint NOT NULL
+);
+
+
+ALTER TABLE public.trigger_log OWNER TO postgres;
+
+--
+-- Name: trigger_log_trigger_log_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.trigger_log_trigger_log_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.trigger_log_trigger_log_id_seq OWNER TO postgres;
+
+--
+-- Name: trigger_log_trigger_log_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.trigger_log_trigger_log_id_seq OWNED BY public.trigger_log.trigger_log_id;
+
+
+--
 -- Name: trigger_template; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -956,6 +999,13 @@ ALTER TABLE ONLY public.trigger_custom_unit ALTER COLUMN trigger_id SET DEFAULT 
 --
 
 ALTER TABLE ONLY public.trigger_custom_unit ALTER COLUMN custom_unit_id SET DEFAULT nextval('public.trigger_custom_unit_custom_unit_id_seq'::regclass);
+
+
+--
+-- Name: trigger_log trigger_log_id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.trigger_log ALTER COLUMN trigger_log_id SET DEFAULT nextval('public.trigger_log_trigger_log_id_seq'::regclass);
 
 
 --
@@ -1315,7 +1365,7 @@ COPY public.app_user_activity_point_history (app_user_activity_point_history_id,
 
 COPY public.app_user_activity_progress (app_user_activity_progress_id, app_user_activity_id, unit_id, created_at, updated_at, value_int, value_int_array) FROM stdin;
 3	1	3	2023-12-15 09:46:58.974791	2023-12-15 09:47:19.144739	0	{1,3}
-4	1	4	2023-12-16 07:58:37.852386	2023-12-16 08:51:42.678812	50	\N
+4	1	4	2023-12-16 07:58:37.852386	2023-12-24 09:02:47.667293	140	\N
 \.
 
 
@@ -1395,8 +1445,9 @@ COPY public.rule_template (rule_template_id, name, description, trigger_template
 COPY public.trigger (trigger_id, title, description, created_at, updated_at, key, json_schema, app_id) FROM stdin;
 3	Points reached	Points reached	2023-11-25 16:15:26.439378+07	2023-11-25 16:15:26.439378+07	points_reached	{"type": "object", "$schema": "http://json-schema.org/draft-04/schema#", "required": ["value"], "properties": {"value": {"type": "number"}}}	1
 31	TRIGGER ME NOW	\N	2023-11-28 22:30:32.850449+07	2023-11-28 22:30:32.850449+07	trigger_me_now	\N	1
-43	Workshop Completed	\N	2023-12-15 13:58:28.381994+07	2023-12-15 13:58:28.381994+07	workshop_completed	{"type": "object", "$schema": "http://json-schema.org/draft-07/schema#", "required": ["workshopId", "score", "timeSpent"], "properties": {"score": {"type": "integer"}, "timeSpent": {"type": "string", "format": "duration"}, "workshopId": {"type": "integer"}}}	1
+43	Workshop Completed	\N	2023-12-15 13:58:28.381994+07	2023-12-15 13:58:28.381994+07	workshop_completed	{"type": "object", "$schema": "http://json-schema.org/draft-07/schema#", "required": ["workshopId"], "properties": {"workshopId": {"type": "integer"}}}	1
 44	Workshop Score reached	\N	2023-12-16 14:30:13.733637+07	2023-12-16 14:30:13.733637+07	score_reached	{"type": "object", "$schema": "http://json-schema.org/draft-07/schema#", "required": ["value"], "properties": {"value": {"type": "integer"}}}	1
+61	title	\N	2023-12-24 19:13:30.05858+07	2023-12-24 19:13:30.05858+07	title	{"type": "object", "$schema": "http://json-schema.org/draft-07/schema#", "required": ["workshopId", "score", "timeSpent"], "properties": {"score": {"type": "integer"}, "timeSpent": {"type": "string", "format": "duration"}, "workshopId": {"type": "integer"}}}	1
 \.
 
 
@@ -1407,6 +1458,23 @@ COPY public.trigger (trigger_id, title, description, created_at, updated_at, key
 COPY public.trigger_custom_unit (trigger_custom_unit_id, trigger_id, custom_unit_id) FROM stdin;
 1	43	3
 2	43	4
+\.
+
+
+--
+-- Data for Name: trigger_log; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.trigger_log (trigger_log_id, trigger_id, request_body, app_id, app_user_id) FROM stdin;
+1	43	{"score": "10", "timeSpent": "P1M", "workshopId": "1"}	1	2
+2	43	{"score": "10", "timeSpent": "P1M", "workshopId": "1"}	1	2
+3	43	{"score": "10", "timeSpent": "P1M", "workshopId": "1"}	1	2
+4	43	{"score": "10", "timeSpent": "P1M", "workshopId": "1"}	1	2
+5	43	{"key": "workshop_completed", "params": {"score": 10, "timeSpent": "P1M", "workshopId": 1}, "userId": "user1"}	1	2
+6	43	{"key": "workshop_completed", "params": {"score": 10, "timeSpent": "P1M", "workshopId": 1}, "userId": "user1"}	1	2
+7	43	{"key": "workshop_completed", "params": {"score": 10, "timeSpent": "P1M", "workshdopId": 1}, "userId": "user1"}	1	2
+8	43	{"key": "workshop_completed", "userId": "user1", "padrams": {"score": 10, "timeSpent": "P1M", "workshopId": 1}}	1	2
+9	43	{"key": "workshop_completed", "params": {"score": 10, "timeSpent": "P1M", "workshopId": 1}, "userId": "user1"}	1	2
 \.
 
 
@@ -1560,6 +1628,13 @@ SELECT pg_catalog.setval('public.trigger_custom_unit_trigger_id_seq', 1, false);
 
 
 --
+-- Name: trigger_log_trigger_log_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.trigger_log_trigger_log_id_seq', 9, true);
+
+
+--
 -- Name: trigger_template_app_tempalte_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
@@ -1570,7 +1645,7 @@ SELECT pg_catalog.setval('public.trigger_template_app_tempalte_id_seq', 17, true
 -- Name: trigger_trigger_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.trigger_trigger_id_seq', 44, true);
+SELECT pg_catalog.setval('public.trigger_trigger_id_seq', 61, true);
 
 
 --
@@ -1773,6 +1848,14 @@ ALTER TABLE ONLY public.rule_activation_type
 
 ALTER TABLE ONLY public.trigger_custom_unit
     ADD CONSTRAINT trigger_custom_unit_pk PRIMARY KEY (trigger_custom_unit_id);
+
+
+--
+-- Name: trigger_log trigger_log_pk; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.trigger_log
+    ADD CONSTRAINT trigger_log_pk PRIMARY KEY (trigger_log_id);
 
 
 --
@@ -2088,6 +2171,30 @@ ALTER TABLE ONLY public.trigger_custom_unit
 
 ALTER TABLE ONLY public.trigger_custom_unit
     ADD CONSTRAINT trigger_custom_unit_trigger_trigger_id_fk FOREIGN KEY (trigger_id) REFERENCES public.trigger(trigger_id);
+
+
+--
+-- Name: trigger_log trigger_log_app_app_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.trigger_log
+    ADD CONSTRAINT trigger_log_app_app_id_fk FOREIGN KEY (app_id) REFERENCES public.app(app_id);
+
+
+--
+-- Name: trigger_log trigger_log_app_user_app_user_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.trigger_log
+    ADD CONSTRAINT trigger_log_app_user_app_user_id_fk FOREIGN KEY (app_user_id) REFERENCES public.app_user(app_user_id);
+
+
+--
+-- Name: trigger_log trigger_log_trigger_trigger_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.trigger_log
+    ADD CONSTRAINT trigger_log_trigger_trigger_id_fk FOREIGN KEY (trigger_id) REFERENCES public.trigger(trigger_id);
 
 
 --

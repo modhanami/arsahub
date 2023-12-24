@@ -9,6 +9,9 @@ import com.arsahub.backend.repositories.ActivityRepository
 import com.arsahub.backend.security.auth.CurrentApp
 import com.arsahub.backend.services.ActivityService
 import com.arsahub.backend.services.LeaderboardService
+import com.fasterxml.jackson.core.type.TypeReference
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.node.ObjectNode
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
@@ -32,6 +35,7 @@ class ActivityController(
     private val leaderboardService: LeaderboardService,
     private val actionRepository: ActionRepository,
     private val achievementRepository: AchievementRepository,
+    private val objectMapper: ObjectMapper
 ) {
     @Operation(
         summary = "Create an activity an app",
@@ -185,13 +189,19 @@ class ActivityController(
     )
     @PostMapping("/{activityId}/trigger")
     fun trigger(
-        @RequestBody request: ActivityTriggerRequest, @PathVariable activityId: Long,
+        @PathVariable activityId: Long,
+        @RequestBody json: ObjectNode,
         @CurrentApp app: App
     ) {
         if (!canPerformAction(activityId, app)) {
             throw AccessDeniedException("You do not have access to this activity")
         }
-        return activityService.trigger(activityId, request)
+        val request = objectMapper.treeToValue(json, ActivityTriggerRequest::class.java)
+        println("Request: $request")
+        val jsonMap: Map<String, Any> = objectMapper.convertValue(json, object : TypeReference<Map<String, Any>>() {})
+
+        return activityService.trigger(activityId, request, jsonMap)
+
     }
 
     @Operation(
