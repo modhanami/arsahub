@@ -11,41 +11,14 @@ import com.arsahub.backend.utils.JsonSchemaValidator
 import com.networknt.schema.SchemaValidatorsConfig
 import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.persistence.EntityNotFoundException
-import jakarta.validation.Valid
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.RequestBody
 import java.time.Instant
-
-interface ActivityService {
-    fun createActivity(app: App, activityCreateRequest: ActivityCreateRequest): Activity
-    fun updateActivity(
-        activityId: Long,
-        activityUpdateRequest: ActivityUpdateRequest
-    ): ActivityResponse
-
-    fun getActivity(activityId: Long): Activity?
-    fun addMembers(activityId: Long, request: ActivityAddMembersRequest): ActivityAddMembersResult
-    fun listMembers(activityId: Long): List<AppUserActivity>
-    fun listActivities(appId: Long): List<Activity>
-    fun trigger(activityId: Long, request: ActivityTriggerRequest, json: Map<String, Any>? = null)
-    fun createRule(
-        activityId: Long, request: RuleCreateRequest
-    ): Rule
-
-    fun createAchievement(
-        @PathVariable activityId: Long,
-        @Valid @RequestBody request: AchievementCreateRequest
-    ): Achievement
-
-    fun listAchievements(activityId: Long): List<Achievement>
-}
 
 private val logger = KotlinLogging.logger {}
 
 @Service
-class ActivityServiceImpl(
+class ActivityService(
     private val activityRepository: ActivityRepository,
     private val userRepository: UserRepository,
     private val userActivityRepository: UserActivityRepository,
@@ -58,15 +31,14 @@ class ActivityServiceImpl(
     private val actionHandlerRegistry: ActionHandlerRegistry,
     private val appRepository: AppRepository,
     private val appUserRepository: AppUserRepository,
-    private val leaderboardServiceImpl: LeaderboardServiceImpl,
+    private val leaderboardService: LeaderboardService,
     private val customUnitRepository: CustomUnitRepository,
     private val userActivityProgressRepository: UserActivityProgressRepository,
     private val triggerLogRepository: TriggerLogRepository,
     private val jsonSchemaValidator: JsonSchemaValidator
+) {
 
-) : ActivityService {
-
-    override fun createActivity(app: App, activityCreateRequest: ActivityCreateRequest): Activity {
+    fun createActivity(app: App, activityCreateRequest: ActivityCreateRequest): Activity {
         val existingApp = appRepository.findById(app.id!!)
             .orElseThrow { Exception("App not found") }
         val activityToSave = Activity(
@@ -77,7 +49,7 @@ class ActivityServiceImpl(
         return activityRepository.save(activityToSave)
     }
 
-    override fun updateActivity(activityId: Long, activityUpdateRequest: ActivityUpdateRequest): ActivityResponse {
+    fun updateActivity(activityId: Long, activityUpdateRequest: ActivityUpdateRequest): ActivityResponse {
         val existingActivity = activityRepository.findByIdOrNull(activityId)
             ?: throw EntityNotFoundException("Activity with ID $activityId not found")
 
@@ -88,11 +60,11 @@ class ActivityServiceImpl(
         return ActivityResponse.fromEntity(updatedActivity)
     }
 
-    override fun getActivity(activityId: Long): Activity? {
+    fun getActivity(activityId: Long): Activity? {
         return activityRepository.findByIdOrNull(activityId)
     }
 
-    override fun addMembers(
+    fun addMembers(
         activityId: Long, request: ActivityAddMembersRequest
     ): ActivityAddMembersResult {
         val existingActivity = activityRepository.findByIdOrNull(activityId)
@@ -115,18 +87,18 @@ class ActivityServiceImpl(
         )
     }
 
-    override fun listMembers(activityId: Long): List<AppUserActivity> {
+    fun listMembers(activityId: Long): List<AppUserActivity> {
         val existingEvent = activityRepository.findByIdOrNull(activityId)
             ?: throw EntityNotFoundException("Activity with ID $activityId not found")
 
         return existingEvent.members.toList()
     }
 
-    override fun listActivities(appId: Long): List<Activity> {
+    fun listActivities(appId: Long): List<Activity> {
         return activityRepository.findAllByAppId(appId)
     }
 
-    override fun trigger(activityId: Long, request: ActivityTriggerRequest, json: Map<String, Any>?) {
+    fun trigger(activityId: Long, request: ActivityTriggerRequest, json: Map<String, Any>? = null) {
         val existingActivity = activityRepository.findByIdOrNull(activityId)
             ?: throw EntityNotFoundException("Activity with ID $activityId not found")
         val userId = request.userId
@@ -238,7 +210,7 @@ class ActivityServiceImpl(
                     socketIOService.broadcastToActivityRoom(
                         activityId,
                         LeaderboardUpdate(
-                            leaderboard = leaderboardServiceImpl.getTotalPointsLeaderboard(activityId)
+                            leaderboard = leaderboardService.getTotalPointsLeaderboard(activityId)
                         )
                     )
 
@@ -383,7 +355,7 @@ class ActivityServiceImpl(
 
     }
 
-    override fun createRule(
+    fun createRule(
         activityId: Long, request: RuleCreateRequest
     ): Rule {
         val trigger = triggerRepository.findByKey(request.trigger.key) ?: throw Exception("Trigger not found")
@@ -480,7 +452,7 @@ class ActivityServiceImpl(
         return ruleRepository.save(rule)
     }
 
-    override fun createAchievement(
+    fun createAchievement(
         activityId: Long,
         request: AchievementCreateRequest
     ): Achievement {
@@ -496,7 +468,7 @@ class ActivityServiceImpl(
         return achievement
     }
 
-    override fun listAchievements(activityId: Long): List<Achievement> {
+    fun listAchievements(activityId: Long): List<Achievement> {
         val activity = getActivity(activityId) ?: throw Exception("Activity not found")
         return achievementRepository.findAllByActivity(activity)
     }

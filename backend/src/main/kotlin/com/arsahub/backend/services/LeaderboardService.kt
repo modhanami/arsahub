@@ -4,15 +4,11 @@ import com.arsahub.backend.dtos.LeaderboardResponse
 import com.arsahub.backend.repositories.UserActivityRepository
 import org.springframework.stereotype.Service
 
-interface LeaderboardService {
-    fun getTotalPointsLeaderboard(activityId: Long): LeaderboardResponse
-}
-
 @Service
-class LeaderboardServiceImpl(
+class LeaderboardService(
     private val userActivityRepository: UserActivityRepository
-) : LeaderboardService {
-    override fun getTotalPointsLeaderboard(activityId: Long): LeaderboardResponse {
+) {
+    fun getTotalPointsLeaderboard(activityId: Long): LeaderboardResponse {
         val entries = userActivityRepository.findAllByActivity_ActivityId(activityId)
             .sortedByDescending { it.points }
             .mapIndexed { index, member ->
