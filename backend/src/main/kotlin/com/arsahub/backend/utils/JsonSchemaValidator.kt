@@ -6,6 +6,7 @@ import com.networknt.schema.JsonSchemaFactory
 import com.networknt.schema.SchemaValidatorsConfig
 import com.networknt.schema.SpecVersionDetector
 import org.springframework.stereotype.Component
+import java.net.URI
 
 val defaultSchemaValidatorsConfig: SchemaValidatorsConfig = SchemaValidatorsConfig().apply {
     isTypeLoose = true
@@ -38,6 +39,15 @@ class JsonSchemaValidator(
     fun convertJsonStringToMap(json: String): Map<String, Any> {
         val typeRef = object : com.fasterxml.jackson.core.type.TypeReference<Map<String, Any>>() {}
         return objectMapper.readValue(json, typeRef)
+    }
+
+    fun validateAgainstMetaSchema(jsonSchema: Map<String, Any>): Boolean {
+        val jsonSchemaJsonNode = objectMapper.valueToTree<JsonNode>(jsonSchema)
+        val versionFlag = SpecVersionDetector.detect(jsonSchemaJsonNode)
+        val factory = JsonSchemaFactory.getInstance(versionFlag)
+        val metaSchema = factory.getSchema(URI(versionFlag.id))
+        val errors = metaSchema.validate(jsonSchemaJsonNode)
+        return errors.isEmpty()
     }
 }
 
