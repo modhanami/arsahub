@@ -1,7 +1,6 @@
 package com.arsahub.backend.models
 
 import jakarta.persistence.*
-import jakarta.validation.constraints.NotNull
 
 @Entity
 @Table(name = "achievement")
@@ -17,12 +16,11 @@ class Achievement(
     var imageUrl: String? = null,
 
     @OneToMany(mappedBy = "achievement")
-    var userActivityAchievements: MutableSet<UserActivityAchievement> = mutableSetOf(),
+    var appUserAchievements: MutableSet<AppUserAchievement> = mutableSetOf(),
 
-    @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "activity_id", nullable = false)
-    var activity: Activity? = null
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "app_id")
+    var app: App? = null
 ) : AuditedEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

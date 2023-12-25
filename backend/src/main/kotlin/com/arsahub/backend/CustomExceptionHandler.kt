@@ -1,7 +1,7 @@
 package com.arsahub.backend
 
-import com.arsahub.backend.dtos.ApiError
-import com.arsahub.backend.dtos.ApiValidationError
+import com.arsahub.backend.dtos.response.ApiError
+import com.arsahub.backend.dtos.response.ApiValidationError
 import com.arsahub.backend.exceptions.ConflictException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -14,7 +14,7 @@ import org.springframework.web.server.ResponseStatusException
 class CustomExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException::class)
     fun handleValidationExceptions(ex: MethodArgumentNotValidException): ResponseEntity<ApiValidationError> {
-        val errors = ex.bindingResult.fieldErrors.associate { it.field to (it.defaultMessage ?: "Validation failed") }
+        val errors = ex.bindingResult.fieldErrors.associate { it.field to (it.defaultMessage ?: "Unknown error") }
         val response = ApiValidationError(errors)
         return ResponseEntity(response, HttpStatus.BAD_REQUEST)
     }

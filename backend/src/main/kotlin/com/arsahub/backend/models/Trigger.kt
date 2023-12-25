@@ -35,9 +35,6 @@ class Trigger(
     @JoinColumn(name = "app_id", nullable = false)
     var app: App? = null,
 
-    @OneToMany(mappedBy = "trigger")
-    var customUnits: MutableSet<TriggerCustomUnit> = mutableSetOf(),
-
     ) : AuditedEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

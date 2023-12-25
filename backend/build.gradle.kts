@@ -37,6 +37,8 @@ repositories {
     gradlePluginPortal()
 }
 
+val kotestVersion = "5.8.0"
+
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-web")
@@ -66,7 +68,7 @@ dependencies {
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-starter-actuator")
-//    testImplementation("org.springframework.security:spring-security-test")
+    testImplementation("org.springframework.security:spring-security-test")
     testImplementation("io.mockk:mockk:1.13.8")
     testImplementation("org.junit.jupiter:junit-jupiter:5.8.1")
     testImplementation("org.testcontainers:testcontainers:1.19.2")
@@ -74,6 +76,12 @@ dependencies {
     testImplementation("org.testcontainers:postgresql")
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.springframework.boot:spring-boot-devtools")
+    testImplementation("com.ninja-squad:springmockk:4.0.2")
+//    testImplementation("io.kotest:kotest-property:$kotestVersion")
+//    testImplementation("io.kotest:kotest-runner-junit5:$kotestVersion")
+//    testImplementation("io.kotest:kotest-runner-junit5-jvm:$kotestVersion")
+//    testImplementation("io.kotest:kotest-assertions-core:$kotestVersion")
+//    testImplementation("io.kotest.extensions:kotest-extensions-spring:1.1.3")
 }
 
 tasks.withType<KotlinCompile> {
@@ -81,10 +89,6 @@ tasks.withType<KotlinCompile> {
         freeCompilerArgs += "-Xjsr305=strict"
         jvmTarget = "17"
     }
-}
-
-tasks.withType<Test> {
-    useJUnitPlatform()
 }
 
 hibernate {
@@ -127,4 +131,8 @@ tasks.register("generateTypesForFrontend") {
 
 tasks.test {
     useJUnitPlatform()
+
+    jvmArgs(
+        "--add-opens", "java.base/java.lang.reflect=ALL-UNNAMED"
+    )
 }

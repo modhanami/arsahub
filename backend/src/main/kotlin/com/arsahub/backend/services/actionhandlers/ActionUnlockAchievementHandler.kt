@@ -1,36 +1,36 @@
 package com.arsahub.backend.services.actionhandlers
 
-import com.arsahub.backend.models.AppUserActivity
+import com.arsahub.backend.models.AppUser
 import com.arsahub.backend.models.Rule
 import com.arsahub.backend.repositories.AchievementRepository
-import com.arsahub.backend.repositories.UserActivityAchievementRepository
+import com.arsahub.backend.repositories.AppUserAchievementRepository
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Component
 
 @Component
 class ActionUnlockAchievementHandler(
     private val achievementRepository: AchievementRepository,
-    private val userActivityAchievementRepository: UserActivityAchievementRepository
+    private val appUserAchievementRepository: AppUserAchievementRepository
 ) : ActionHandler {
-    override fun handleAction(rule: Rule, member: AppUserActivity): ActionResult {
+    override fun handleAction(rule: Rule, appUser: AppUser): ActionResult {
         val achievementId = rule.actionParams?.get("achievementId")?.toString()?.toLong()
             ?: throw Exception("Achievement ID not found")
         val achievement =
             achievementRepository.findByIdOrNull(achievementId) ?: throw Exception("Achievement not found")
 
         // precondition: user must not have unlocked the achievement
-        if (member.userActivityAchievements.any { it.achievement?.achievementId == achievementId }) {
+        if (appUser.achievements.any { it.achievement?.achievementId == achievementId }) {
             val message =
-                "User ${member.appUser?.displayName}` (${member.appUser?.userId}) already unlocked achievement"
+                "User ${appUser.displayName}` (${appUser.userId}) already unlocked achievement"
             println(message)
             return ActionResult.Nothing(message)
         }
 
-        member.addAchievement(achievement)
+        appUser.addAchievement(achievement)
         // save from the owning side
-        userActivityAchievementRepository.saveAll(member.userActivityAchievements)
+        appUserAchievementRepository.saveAll(appUser.achievements)
 
-        println("User ${member.appUser?.displayName}` (${member.appUser?.userId}) unlocked achievement `${achievement.title}` (${achievement.achievementId}) for activity `${rule.activity?.title}` (${rule.activity?.activityId}) from rule `${rule.title}` (${rule.id})")
+        println("User ${appUser.displayName}` (${appUser.userId}) unlocked achievement `${achievement.title}` (${achievement.achievementId}) from rule `${rule.title}` (${rule.id})")
 
         return ActionResult.AchievementUpdate(achievement)
     }

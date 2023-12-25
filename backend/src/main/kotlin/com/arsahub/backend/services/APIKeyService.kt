@@ -10,12 +10,6 @@ class APIKeyService {
         val hashedAPIKey: String
     )
 
-    fun generateKey(
-    ): APIKeyWithHashed {
-        val uuid = java.util.UUID.randomUUID().toString()
-        return APIKeyWithHashed(uuid, "")
-    }
-
     fun validateKeyForApp(
         app: App,
         key: String

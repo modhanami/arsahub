@@ -22,6 +22,6 @@ class User(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_id")
-    val userId: Long? = 0
+    var userId: Long? = null
 
 }

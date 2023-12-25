@@ -21,17 +21,8 @@ class Rule(
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "activity_id", nullable = false)
-    var activity: Activity? = null,
-
-    @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "trigger_id", nullable = false)
     var trigger: Trigger? = null,
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "trigger_type_id")
-    var triggerType: TriggerType? = null,
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -39,25 +30,19 @@ class Rule(
     var action: Action? = null,
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "trigger_type_params")
-    var triggerTypeParams: MutableMap<String, Any>? = null,
-
-    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "action_params")
     var actionParams: MutableMap<String, Any>? = null,
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "trigger_params")
-    var triggerParams: MutableMap<String, Any>? = null
+    var triggerParams: MutableMap<String, Any>? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "app_id")
+    var app: App? = null,
 ) : AuditedEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "rule_id", nullable = false)
     var id: Long? = null
-
-//    @OneToMany(mappedBy = "rule")
-//    var ruleProgressStreaks: MutableSet<RuleProgressStreak> = mutableSetOf()
-//
-//    @OneToMany(mappedBy = "rule")
-//    var ruleProgressTimes: MutableSet<RuleProgressTime> = mutableSetOf()
 }
