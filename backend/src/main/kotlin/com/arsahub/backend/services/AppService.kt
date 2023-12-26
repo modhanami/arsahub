@@ -201,41 +201,6 @@ class AppService(
 
         }
 
-        // find all rules with points_reached as a trigger to activate the corresponding actions
-        if (request.key != "points_reached") {
-            val pointsReachedRules = ruleRepository.findAllByTrigger_Key("points_reached")
-            for (rule in pointsReachedRules) {
-                val value = rule.triggerParams?.get("value")?.toString()?.toInt()
-                    ?: throw Exception("Value not found for rule ${rule.title} (${rule.id})")
-
-                if ((appUser.points ?: 0) < value) {
-                    continue
-                }
-
-                // check if the rule has already been activated from rule_progress_time
-                if (ruleProgressTimeRepository.findByRuleAndAppUser(rule, appUser) != null) {
-                    continue
-                }
-
-                println("User reached ${appUser.points} points, activating rule ${rule.title} (${rule.id})")
-
-                trigger(
-                    app,
-                    TriggerSendRequest(
-                        key = "points_reached",
-                        params = emptyMap(),
-                        userId = userId
-                    )
-                )
-
-                // mark the rule as activated for the user
-                val ruleProgress = RuleProgressTime(
-                    rule = rule, appUser = appUser, progress = 1, completedAt = Instant.now()
-                )
-                ruleProgressTimeRepository.save(ruleProgress)
-            }
-        }
-
     }
 
     fun createRule(
