@@ -1,5 +1,6 @@
 package com.arsahub.backend.utils
 
+import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.networknt.schema.JsonSchemaFactory
@@ -13,7 +14,7 @@ val defaultSchemaValidatorsConfig: SchemaValidatorsConfig = SchemaValidatorsConf
 }
 
 @Component
-class JsonSchemaValidator(
+class JsonUtils(
     private val objectMapper: ObjectMapper,
 ) {
     private val schemaValidatorsConfig: SchemaValidatorsConfig = defaultSchemaValidatorsConfig
@@ -30,15 +31,17 @@ class JsonSchemaValidator(
         )
     }
 
-    fun validate(jsonSchema: MutableMap<String, Any>, json: Map<String, String>): JsonSchemaValidationResult {
+    fun validate(jsonSchema: MutableMap<String, Any>, json: Map<String, Any>): JsonSchemaValidationResult {
         val jsonSchemaJsonNode = objectMapper.valueToTree<JsonNode>(jsonSchema)
         val jsonNode = objectMapper.valueToTree<JsonNode>(json)
         return validate(jsonSchemaJsonNode, jsonNode)
     }
 
-    fun convertJsonStringToMap(json: String): Map<String, Any> {
-        val typeRef = object : com.fasterxml.jackson.core.type.TypeReference<Map<String, Any>>() {}
-        return objectMapper.readValue(json, typeRef)
+    fun convertJsonStringToMutableMap(json: String): MutableMap<String, Any> {
+        return objectMapper.convertValue(
+            objectMapper.readTree(json),
+            object : TypeReference<MutableMap<String, Any>>() {}
+        )
     }
 
     fun validateAgainstMetaSchema(jsonSchema: Map<String, Any>): Boolean {

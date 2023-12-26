@@ -40,9 +40,19 @@ class Rule(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "app_id")
     var app: App? = null,
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "conditions")
+    var conditions: MutableMap<String, Any>? = null,
+
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "rule_activation_type_id", nullable = false)
+    var ruleActivationType: RuleActivationType? = null
 ) : AuditedEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "rule_id", nullable = false)
     var id: Long? = null
+
 }

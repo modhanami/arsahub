@@ -11,7 +11,10 @@ import com.arsahub.backend.services.AppService
 import com.arsahub.backend.services.LeaderboardService
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.cfg.CoercionAction
+import com.fasterxml.jackson.databind.cfg.CoercionInputShape
 import com.fasterxml.jackson.databind.node.ObjectNode
+import com.fasterxml.jackson.databind.type.LogicalType
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
@@ -53,7 +56,7 @@ class AppController(
         @Valid @RequestBody request: TriggerCreateRequest,
         @CurrentApp app: App
     ): TriggerResponse {
-        return appService.createTrigger(app, request)
+        return appService.createTrigger(app, request).let { TriggerResponse.fromEntity(it) }
     }
 
     @Operation(
@@ -90,7 +93,6 @@ class AppController(
         @CurrentApp app: App
     ) {
         val request = objectMapper.treeToValue(json, TriggerSendRequest::class.java)
-        println("Request: $request")
         val jsonMap: Map<String, Any> = objectMapper.convertValue(json, object : TypeReference<Map<String, Any>>() {})
 
         return appService.trigger(app, request, jsonMap)

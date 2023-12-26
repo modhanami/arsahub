@@ -4,25 +4,30 @@ import com.arsahub.backend.SocketIOService
 import com.arsahub.backend.controllers.utils.AuthSetup
 import com.arsahub.backend.controllers.utils.AuthTestUtils.performWithAppAuth
 import com.arsahub.backend.controllers.utils.AuthTestUtils.setupAuth
+import com.arsahub.backend.dtos.request.TriggerCreateRequest
 import com.arsahub.backend.models.Action
 import com.arsahub.backend.models.AppUser
-import com.arsahub.backend.repositories.ActionRepository
-import com.arsahub.backend.repositories.AppRepository
-import com.arsahub.backend.repositories.AppUserRepository
-import com.arsahub.backend.repositories.UserRepository
+import com.arsahub.backend.models.Rule
+import com.arsahub.backend.models.RuleActivationType
+import com.arsahub.backend.repositories.*
 import com.arsahub.backend.services.APIKeyService
 import com.arsahub.backend.services.AppService
+import com.arsahub.backend.utils.JsonUtils
 import com.corundumstudio.socketio.SocketIOServer
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.ninjasquad.springmockk.MockkBean
 import com.ninjasquad.springmockk.SpykBean
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection
+import org.springframework.data.domain.Example
 import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
@@ -45,6 +50,21 @@ import java.util.*
 @Transactional
 class AppControllerTest {
     @Autowired
+    private lateinit var ruleActivationTypeRepository: RuleActivationTypeRepository
+
+    @Autowired
+    private lateinit var ruleRepository: RuleRepository
+
+    @Autowired
+    private lateinit var jsonUtils: JsonUtils
+
+    @Autowired
+    private lateinit var triggerRepository: TriggerRepository
+
+    @Autowired
+    private lateinit var jacksonObjectMapper: ObjectMapper
+
+    @Autowired
     private lateinit var appService: AppService
 
     @Autowired
@@ -64,6 +84,7 @@ class AppControllerTest {
 
     @MockkBean
     lateinit var apiKeyService: APIKeyService
+
 
     private lateinit var authSetup: AuthSetup
 
@@ -94,51 +115,24 @@ class AppControllerTest {
     }
 
     @Test
-    fun `returns list of actions with 200`() {
+    fun `returns list of default actions with 200`() {
         // Arrange
-        val action1 = Action(
-            title = "Test Action 1",
-            description = "Test Action Description 1",
-            jsonSchema = mutableMapOf(
-                "type" to "object",
-                "properties" to mutableMapOf(
-                    "value" to mutableMapOf(
-                        "type" to "number"
-                    )
-                )
-            ),
-            key = "test-action-1",
-        )
-        val action2 = Action(
-            title = "Test Action 2",
-            description = "Test Action Description 2",
-            jsonSchema = mutableMapOf(
-                "type" to "object",
-                "properties" to mutableMapOf(
-                    "value" to mutableMapOf(
-                        "type" to "number"
-                    )
-                )
-            ),
-            key = "test-action-2",
-        )
-        actionRepository.saveAll(listOf(action1, action2))
+        // In resources/init.sql
 
         // Act & Assert
         mockMvc.performWithAppAuth(
             get("/api/apps/actions")
         )
             .andExpect(status().isOk)
+            //INSERT INTO action (title, description, json_schema, created_at, updated_at, key) VALUES ('Add points', null, '{"type": "object", "$schema": "http://json-schema.org/draft-04/schema#", "required": ["value"], "properties": {"value": {"type": "number"}}}', '2023-10-31 13:54:49.958514 +00:00', '2023-10-31 13:54:49.958514 +00:00', 'add_points');
+            //INSERT INTO action (title, description, json_schema, created_at, updated_at, key) VALUES ('Unlock achievement', null, '{"type": "object", "$schema": "http://json-schema.org/draft-04/schema#", "required": ["achievementId"], "properties": {"achievementId": {"type": "number"}}}', '2023-10-31 14:08:24.064419 +00:00', '2023-10-31 14:08:24.064419 +00:00', 'unlock_achievement');
             .andExpect(jsonPath("$.length()").value(2))
-            .andExpect(jsonPath("$[0].title").value("Test Action 1"))
-            .andExpect(jsonPath("$[0].description").value("Test Action Description 1"))
-            .andExpect(jsonPath("$[0].key").value("test-action-1"))
-            .andExpect(jsonPath("$[1].title").value("Test Action 2"))
-            .andExpect(jsonPath("$[1].description").value("Test Action Description 2"))
-            .andExpect(jsonPath("$[1].key").value("test-action-2"))
-
-            .andExpect(jsonPath("$[0].jsonSchema.type").value("object"))
-            .andExpect(jsonPath("$[0].jsonSchema.properties.value.type").value("number"))
+            .andExpect(jsonPath("$[0].title").value("Add points"))
+            .andExpect(jsonPath("$[0].description").value(null))
+            .andExpect(jsonPath("$[0].key").value("add_points"))
+            .andExpect(jsonPath("$[1].title").value("Unlock achievement"))
+            .andExpect(jsonPath("$[1].description").value(null))
+            .andExpect(jsonPath("$[1].key").value("unlock_achievement"))
     }
 
     @Test
@@ -210,9 +204,110 @@ class AppControllerTest {
 
         // Assert DB
         val triggers = appService.getTriggers(authSetup.app)
-        assert(triggers.size == 1)
-        assert(triggers[0].title == "My Title")
-        assert(triggers[0].key == "my_key")
+        assertEquals(1, triggers.size)
+        assertEquals("My Title", triggers[0].title)
+        assertEquals("my_key", triggers[0].key)
     }
 
+    @Test
+    fun `triggers matching rules - one trigger custom field (workshopId) with unlimited repeatability`() {
+        // Arrange
+        val trigger = appService.createTrigger(
+            authSetup.app,
+            TriggerCreateRequest(
+                title = "Workshop Completed",
+                key = "workshop_completed",
+                jsonSchema = jsonUtils.convertJsonStringToMutableMap(
+                    """
+                       {
+                            "type": "object",
+                            "${'$'}schema": "http://json-schema.org/draft-07/schema#",
+                            "required": [
+                                "workshopId"
+                            ],
+                            "properties": {
+                                "workshopId": {
+                                    "type": "integer"
+                                }
+                            }
+                       }
+                    """.trimIndent()
+                )
+            )
+        )
+
+        val actionAddPoints = actionRepository.findOne(Example.of(Action(key = "add_points"))).get()
+
+        val ruleActivationType = ruleActivationTypeRepository.save(
+            RuleActivationType(
+                name = "Repeatable",
+            )
+        )
+        val rule = ruleRepository.save(
+            Rule(
+                title = "When workshop completed, add 100 points",
+                trigger = trigger,
+                action = actionAddPoints,
+                actionParams = mutableMapOf(
+                    "value" to 100
+                ),
+                app = authSetup.app,
+                conditions = mutableMapOf(
+                    "workshopId" to 1
+                ),
+                ruleActivationType = ruleActivationType
+            )
+        )
+
+        val appUser = appUserRepository.save(
+            AppUser(
+                userId = UUID.fromString("00000000-0000-0000-0000-000000000001").toString(),
+                displayName = "User1",
+                app = authSetup.app,
+                points = 1000,
+            )
+        )
+
+        // Act & Assert
+        repeat(2) { // 2 times matching trigger
+            mockMvc.performWithAppAuth(
+                post("/api/apps/trigger")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        """
+                        {
+                            "key": "workshop_completed",
+                            "params": {
+                                "workshopId": 1
+                            },
+                            "userId": "${appUser.userId}"
+                        }
+                    """.trimIndent()
+                    )
+            )
+                .andExpect(status().isOk)
+        }
+        repeat(2) { // 2 times not matching trigger
+            mockMvc.performWithAppAuth(
+                post("/api/apps/trigger")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        """
+                        {
+                            "key": "workshop_completed",
+                            "params": {
+                                "workshopId": 2
+                            },
+                            "userId": "${appUser.userId}"
+                        }
+                    """.trimIndent()
+                    )
+            )
+                .andExpect(status().isOk)
+        }
+
+        // Assert DB
+        val appUserAfter = appUserRepository.findById(appUser.id!!).get()
+        assertEquals(1200, appUserAfter.points)
+    }
 }

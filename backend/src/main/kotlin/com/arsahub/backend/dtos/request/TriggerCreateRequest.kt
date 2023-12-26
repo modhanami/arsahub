@@ -18,7 +18,7 @@ data class TriggerCreateRequest(
     val key: String?,
 
     @field:Size(max = 500, message = "Description cannot be longer than 500 characters")
-    val description: String?,
+    val description: String? = null,
 
-    val jsonSchema: Map<String, Any>?
+    val jsonSchema: Map<String, Any>? = null,
 )

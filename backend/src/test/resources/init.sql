@@ -169,7 +169,8 @@ create table rule
         references rule_activation_type,
     app_id                  bigint
         constraint rule_app_app_id_fk
-        references app
+        references app,
+    conditions              jsonb
 );
 
 create index idx_16438_action_id
@@ -230,4 +231,10 @@ create table app_user_achievement
         references app_user,
     completed_at            timestamp
 );
+
+
+
+-- data
+INSERT INTO action (title, description, json_schema, created_at, updated_at, key) VALUES ('Add points', null, '{"type": "object", "$schema": "http://json-schema.org/draft-04/schema#", "required": ["value"], "properties": {"value": {"type": "number"}}}', '2023-10-31 13:54:49.958514 +00:00', '2023-10-31 13:54:49.958514 +00:00', 'add_points');
+INSERT INTO action (title, description, json_schema, created_at, updated_at, key) VALUES ('Unlock achievement', null, '{"type": "object", "$schema": "http://json-schema.org/draft-04/schema#", "required": ["achievementId"], "properties": {"achievementId": {"type": "number"}}}', '2023-10-31 14:08:24.064419 +00:00', '2023-10-31 14:08:24.064419 +00:00', 'unlock_achievement');
 
