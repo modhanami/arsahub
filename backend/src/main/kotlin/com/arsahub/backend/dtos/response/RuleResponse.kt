@@ -14,7 +14,9 @@ data class RuleResponse(
     val action: String? = null,
     val actionPoints: Int? = null,
     val actionAchievement: AchievementResponse? = null,
-    val id: Long? = null
+    val id: Long? = null,
+    val repeatability: String? = null,
+    val conditions: MutableMap<String, Any>? = null,
 ) {
 
     companion object {
@@ -28,7 +30,9 @@ data class RuleResponse(
                 action = rule.action,
                 actionPoints = rule.actionPoints,
                 actionAchievement = rule.actionAchievement?.let { AchievementResponse.fromEntity(it) },
-                id = rule.id
+                id = rule.id,
+                conditions = rule.conditions,
+                repeatability = rule.repeatability,
             )
         }
     }

@@ -1,6 +1,6 @@
 package com.arsahub.backend.dtos.request
 
-data class TriggerDefinition(
+data class KeyAndParams(
     val key: String,
     val params: Map<String, String>? = null
 )

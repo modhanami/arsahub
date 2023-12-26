@@ -230,6 +230,7 @@ class AppController(
         ]
     )
     @PostMapping("/rules")
+    @ResponseStatus(HttpStatus.CREATED)
     fun createRule(
         @CurrentApp app: App,
         @Valid @RequestBody request: RuleCreateRequest,

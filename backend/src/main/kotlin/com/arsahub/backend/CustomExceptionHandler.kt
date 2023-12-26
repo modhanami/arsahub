@@ -19,6 +19,12 @@ class CustomExceptionHandler {
         return ResponseEntity(response, HttpStatus.BAD_REQUEST)
     }
 
+    @ExceptionHandler(IllegalArgumentException::class)
+    fun handleIllegalArgumentExceptions(ex: IllegalArgumentException): ResponseEntity<ApiError> {
+        val response = ApiError(ex.message ?: "Illegal argument")
+        return ResponseEntity(response, HttpStatus.BAD_REQUEST)
+    }
+
     @ExceptionHandler(ConflictException::class)
     fun handleConflictExceptions(ex: ConflictException): ResponseEntity<ApiError> {
         val response = ApiError(ex.message ?: "Conflict")

@@ -37,11 +37,6 @@ class Rule(
     var conditions: MutableMap<String, Any>? = null,
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "rule_activation_type_id", nullable = false)
-    var ruleActivationType: RuleActivationType? = null,
-
-    @NotNull
     @Column(name = "action", nullable = false, length = Integer.MAX_VALUE)
     var action: String? = null,
 
@@ -51,10 +46,13 @@ class Rule(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "action_achievement_id")
     var actionAchievement: Achievement? = null,
+
+    @NotNull
+    @Column(name = "repeatability", nullable = false, length = Integer.MAX_VALUE)
+    var repeatability: String? = null
 ) : AuditedEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "rule_id", nullable = false)
     var id: Long? = null
-
 }

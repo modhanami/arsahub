@@ -15,7 +15,6 @@ import com.arsahub.backend.utils.JsonSchemaValidationResult
 import com.arsahub.backend.utils.JsonUtils
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
-import java.time.Instant
 import java.util.*
 
 
@@ -28,11 +27,11 @@ class AppService(
     private val jsonUtils: JsonUtils,
     private val achievementRepository: AchievementRepository,
     private val socketIOService: SocketIOService,
-    private val ruleProgressTimeRepository: RuleProgressTimeRepository,
     private val ruleRepository: RuleRepository,
     private val actionHandlerRegistry: ActionHandlerRegistry,
     private val leaderboardService: LeaderboardService,
     private val triggerLogRepository: TriggerLogRepository,
+    private val ruleProgressRepository: RuleProgressRepository,
 ) {
     private val logger = KotlinLogging.logger {}
 
@@ -126,7 +125,16 @@ class AppService(
         for (rule in matchingRules) {
             logger.debug { "Checking rule ${rule.title} (${rule.id})" }
 
-            // check the params against the rule conditions first, if any
+            // check repeatability
+            if (rule.repeatability == RuleRepeatability.ONCE_PER_USER) {
+                val ruleProgress = ruleProgressRepository.findByRuleAndAppUser(rule, appUser)
+                if (ruleProgress != null) {
+                    logger.debug { "Rule ${rule.title} (${rule.id}) has already been activated for user ${appUser.userId}" }
+                    continue
+                }
+            }
+
+            // check the params against the rule conditions, if any
             if (rule.conditions != null) {
                 val conditions = rule.conditions!!
                 val conditionsMatch = conditions.all { condition ->
@@ -199,6 +207,14 @@ class AppService(
                 is ActionResult.Nothing -> {}
             }
 
+            // update rule progress
+            val ruleProgress = ruleProgressRepository.findByRuleAndAppUser(rule, appUser) ?: RuleProgress(
+                rule = rule,
+                appUser = appUser,
+            )
+
+            ruleProgress.activationCount = (ruleProgress.activationCount ?: 0) + 1
+            ruleProgressRepository.save(ruleProgress)
         }
 
     }
@@ -207,6 +223,12 @@ class AppService(
         app: App, request: RuleCreateRequest
     ): Rule {
         val trigger = triggerRepository.findByKey(request.trigger.key) ?: throw Exception("Trigger not found")
+
+        // validate action definition
+        val parsedAction = parseActionDefinition(request.action)
+
+        // validate repeatability
+        val ruleRepeatability = RuleRepeatability.valueOf(request.repeatability)
 
         // trigger schema validation
         println("Trigger definition: ${request.trigger}")
@@ -227,24 +249,27 @@ class AppService(
             throw Exception("Trigger definition is not valid")
         }
 
+        // TODO: validate conditions
+
         val rule = Rule(
             app = app,
-            title = request.name,
+            title = request.title,
             description = request.description,
             trigger = trigger,
             triggerParams = request.trigger.params?.toMutableMap(),
+            conditions = request.conditions?.toMutableMap(),
+            repeatability = ruleRepeatability.key,
         )
 
-        val actionDefinition: ActionDefinition = request.action
-        rule.action = actionDefinition.key
-        when (actionDefinition) {
+        rule.action = parsedAction.key
+        when (parsedAction) {
             is AddPointsAction -> {
-                require(actionDefinition.points > 0) { "Points must be greater than 0" }
-                rule.actionPoints = actionDefinition.points
+                require(parsedAction.points > 0) { "Points must be greater than 0" }
+                rule.actionPoints = parsedAction.points
             }
 
             is UnlockAchievementAction -> {
-                val achievement = achievementRepository.findById(actionDefinition.achievementId)
+                val achievement = achievementRepository.findById(parsedAction.achievementId)
                 if (achievement.isEmpty) {
                     throw IllegalArgumentException("Achievement not found")
                 }
@@ -253,6 +278,32 @@ class AppService(
         }
 
         return ruleRepository.save(rule)
+    }
+
+    private fun parseActionDefinition(actionDefinition: ActionDefinition): Action {
+        val actionKey = actionDefinition.key
+        val params = actionDefinition.params
+        return when (actionKey) {
+            "add_points" -> {
+                val rawPoints = params?.get("points")
+                val points = rawPoints?.toIntOrNull()
+                if (points == null || points <= 0) {
+                    throw IllegalArgumentException("Points is invalid")
+                }
+                AddPointsAction(points)
+            }
+
+            "unlock_achievement" -> {
+                val rawAchievementId = params?.get("achievementId")
+                val achievementId = rawAchievementId?.toLongOrNull()
+                if (achievementId == null || achievementId <= 0) {
+                    throw IllegalArgumentException("Achievement ID is invalid")
+                }
+                UnlockAchievementAction(achievementId)
+            }
+
+            else -> throw IllegalArgumentException("Unknown action key: $actionKey")
+        }
     }
 
     fun createAchievement(
@@ -272,6 +323,10 @@ class AppService(
 
     fun listAchievements(app: App): List<Achievement> {
         return achievementRepository.findAllByApp(app)
+    }
+
+    fun listRules(app: App): List<Rule> {
+        return ruleRepository.findAllByApp(app)
     }
 }
 

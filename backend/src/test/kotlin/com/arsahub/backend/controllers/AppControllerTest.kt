@@ -4,17 +4,19 @@ import com.arsahub.backend.SocketIOService
 import com.arsahub.backend.controllers.utils.AuthSetup
 import com.arsahub.backend.controllers.utils.AuthTestUtils.performWithAppAuth
 import com.arsahub.backend.controllers.utils.AuthTestUtils.setupAuth
-import com.arsahub.backend.dtos.request.ActionKeys
+import com.arsahub.backend.dtos.request.Action
 import com.arsahub.backend.dtos.request.TriggerCreateRequest
 import com.arsahub.backend.models.AppUser
 import com.arsahub.backend.models.Rule
-import com.arsahub.backend.models.RuleActivationType
-import com.arsahub.backend.repositories.*
+import com.arsahub.backend.models.RuleRepeatability
+import com.arsahub.backend.repositories.AppRepository
+import com.arsahub.backend.repositories.AppUserRepository
+import com.arsahub.backend.repositories.RuleRepository
+import com.arsahub.backend.repositories.UserRepository
 import com.arsahub.backend.services.APIKeyService
 import com.arsahub.backend.services.AppService
 import com.arsahub.backend.utils.JsonUtils
 import com.corundumstudio.socketio.SocketIOServer
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.ninjasquad.springmockk.MockkBean
 import com.ninjasquad.springmockk.SpykBean
 import org.junit.jupiter.api.AfterEach
@@ -48,19 +50,10 @@ import java.util.*
 @Transactional
 class AppControllerTest {
     @Autowired
-    private lateinit var ruleActivationTypeRepository: RuleActivationTypeRepository
-
-    @Autowired
     private lateinit var ruleRepository: RuleRepository
 
     @Autowired
     private lateinit var jsonUtils: JsonUtils
-
-    @Autowired
-    private lateinit var triggerRepository: TriggerRepository
-
-    @Autowired
-    private lateinit var jacksonObjectMapper: ObjectMapper
 
     @Autowired
     private lateinit var appService: AppService
@@ -169,7 +162,6 @@ class AppControllerTest {
                 .content(jsonBody)
         )
             .andExpect(status().isCreated)
-            // print the response
             .andExpect(jsonPath("$.title").value("My Title"))
             .andExpect(jsonPath("$.key").value("my_key"))
             .andExpect(jsonPath("$.jsonSchema.type").value("object"))
@@ -184,7 +176,7 @@ class AppControllerTest {
     }
 
     @Test
-    fun `triggers matching rules - one trigger custom field (workshopId) with unlimited repeatability`() {
+    fun `triggers matching rules - one trigger with custom field (workshopId) and unlimited repeatability`() {
         // Arrange
         val trigger = appService.createTrigger(
             authSetup.app,
@@ -210,22 +202,17 @@ class AppControllerTest {
             )
         )
 
-        val ruleActivationType = ruleActivationTypeRepository.save(
-            RuleActivationType(
-                name = "Repeatable",
-            )
-        )
         val rule = ruleRepository.save(
             Rule(
                 title = "When workshop completed, add 100 points",
                 trigger = trigger,
-                action = ActionKeys.ADD_POINTS,
+                action = Action.ADD_POINTS,
                 actionPoints = 100,
                 app = authSetup.app,
                 conditions = mutableMapOf(
                     "workshopId" to 1
                 ),
-                ruleActivationType = ruleActivationType
+                repeatability = RuleRepeatability.UNLIMITED,
             )
         )
 
@@ -279,5 +266,174 @@ class AppControllerTest {
         // Assert DB
         val appUserAfter = appUserRepository.findById(appUser.id!!).get()
         assertEquals(1200, appUserAfter.points)
+    }
+
+    @Test
+    fun `triggers matching rules - one trigger with custom field (workshopId) and once per user repeatability`() {
+        // Arrange
+        val trigger = appService.createTrigger(
+            authSetup.app,
+            TriggerCreateRequest(
+                title = "Workshop Completed",
+                key = "workshop_completed",
+                jsonSchema = jsonUtils.convertJsonStringToMutableMap(
+                    """
+                       {
+                            "type": "object",
+                            "${'$'}schema": "http://json-schema.org/draft-07/schema#",
+                            "required": [
+                                "workshopId"
+                            ],
+                            "properties": {
+                                "workshopId": {
+                                    "type": "integer"
+                                }
+                            }
+                       }
+                    """.trimIndent()
+                )
+            )
+        )
+
+        val rule = ruleRepository.save(
+            Rule(
+                title = "When workshop completed, add 100 points",
+                trigger = trigger,
+                action = Action.ADD_POINTS,
+                actionPoints = 100,
+                app = authSetup.app,
+                conditions = mutableMapOf(
+                    "workshopId" to 1
+                ),
+                repeatability = RuleRepeatability.ONCE_PER_USER,
+            )
+        )
+
+        val appUser = appUserRepository.save(
+            AppUser(
+                userId = UUID.fromString("00000000-0000-0000-0000-000000000001").toString(),
+                displayName = "User1",
+                app = authSetup.app,
+                points = 1000,
+            )
+        )
+
+        // Act & Assert
+        repeat(2) { // 2 times matching trigger
+            mockMvc.performWithAppAuth(
+                post("/api/apps/trigger")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        """
+                        {
+                            "key": "workshop_completed",
+                            "params": {
+                                "workshopId": 1
+                            },
+                            "userId": "${appUser.userId}"
+                        }
+                    """.trimIndent()
+                    )
+            )
+                .andExpect(status().isOk)
+        }
+        repeat(2) { // 2 times not matching trigger
+            mockMvc.performWithAppAuth(
+                post("/api/apps/trigger")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        """
+                        {
+                            "key": "workshop_completed",
+                            "params": {
+                                "workshopId": 2
+                            },
+                            "userId": "${appUser.userId}"
+                        }
+                    """.trimIndent()
+                    )
+            )
+                .andExpect(status().isOk)
+        }
+
+        // Assert DB
+        val appUserAfter = appUserRepository.findById(appUser.id!!).get()
+        assertEquals(1100, appUserAfter.points)
+
+    }
+
+    @Test
+    fun `creates a rule with 201`() {
+        // Arrange
+        val trigger = appService.createTrigger(
+            authSetup.app,
+            TriggerCreateRequest(
+                title = "Workshop Completed",
+                key = "workshop_completed",
+                jsonSchema = jsonUtils.convertJsonStringToMutableMap(
+                    """
+                       {
+                            "type": "object",
+                            "${'$'}schema": "http://json-schema.org/draft-07/schema#",
+                            "required": [
+                                "workshopId"
+                            ],
+                            "properties": {
+                                "workshopId": {
+                                    "type": "integer"
+                                }
+                            }
+                       }
+                    """.trimIndent()
+                )
+            )
+        )
+
+        val jsonBody = """
+            {
+              "title": "When workshop ID 1 completed, add 100 points, unlimited",
+              "trigger": {
+                "key": "${trigger.key}",
+                "params": {
+                  "workshopId": 1
+                }
+              },
+              "action": {
+                "key": "add_points",
+                "params": {
+                  "points": 100
+                }
+              },
+              "conditions": {
+                "workshopId": 1
+              },
+              "repeatability": "unlimited"
+            }
+        """.trimIndent()
+
+        // Act & Assert HTTP
+        mockMvc.performWithAppAuth(
+            post("/api/apps/rules")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonBody)
+        )
+            .andExpect(status().isCreated)
+            .andExpect(jsonPath("$.title").value("When workshop ID 1 completed, add 100 points, unlimited"))
+            .andExpect(jsonPath("$.trigger.key").value("workshop_completed"))
+            .andExpect(jsonPath("$.action").value("add_points"))
+            .andExpect(jsonPath("$.actionPoints").value(100))
+            .andExpect(jsonPath("$.conditions.workshopId").value(1))
+            .andExpect(jsonPath("$.repeatability").value("unlimited"))
+
+        // Assert DB
+        val rules = appService.listRules(authSetup.app)
+        assertEquals(1, rules.size)
+        val rule = rules[0]
+        assertEquals("When workshop ID 1 completed, add 100 points, unlimited", rule.title)
+        assertEquals("workshop_completed", rule.trigger?.key)
+        assertEquals("add_points", rule.action)
+        assertEquals(100, rule.actionPoints)
+        assertEquals(1, rule.conditions?.get("workshopId"))
+        assertEquals("unlimited", rule.repeatability)
     }
 }
