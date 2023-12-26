@@ -15,7 +15,7 @@ class ActionHandlerRegistry(
     )
 
     override fun handleAction(rule: Rule, appUser: AppUser): ActionResult {
-        val handler = handlers[rule.action?.key] ?: throw Exception("Action handler not found")
+        val handler = handlers[rule.action] ?: throw Exception("Action handler not found")
         return handler.handleAction(rule, appUser)
     }
 }

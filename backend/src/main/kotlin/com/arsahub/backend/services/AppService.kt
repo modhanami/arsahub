@@ -29,7 +29,6 @@ class AppService(
     private val achievementRepository: AchievementRepository,
     private val socketIOService: SocketIOService,
     private val ruleProgressTimeRepository: RuleProgressTimeRepository,
-    private val actionRepository: ActionRepository,
     private val ruleRepository: RuleRepository,
     private val actionHandlerRegistry: ActionHandlerRegistry,
     private val leaderboardService: LeaderboardService,
@@ -243,7 +242,6 @@ class AppService(
         app: App, request: RuleCreateRequest
     ): Rule {
         val trigger = triggerRepository.findByKey(request.trigger.key) ?: throw Exception("Trigger not found")
-        val action = actionRepository.findByKey(request.action.key) ?: throw Exception("Action not found")
 
         // trigger schema validation
         println("Trigger definition: ${request.trigger}")
@@ -264,46 +262,30 @@ class AppService(
             throw Exception("Trigger definition is not valid")
         }
 
-        // action schema validation
-        println("Action definition: ${request.action}")
-        println("Action schema: ${action.jsonSchema}")
-        val actionSchema = action.jsonSchema
-        val actionValidationResult = if (actionSchema != null) {
-            jsonUtils.validate(actionSchema, request.action.params)
-        } else {
-            JsonSchemaValidationResult.valid()
-        }
-
-        println("Action validation result: ${actionValidationResult.errors} (passed: $actionValidationResult.isValid)")
-        if (!actionValidationResult.isValid) {
-            throw Exception("Action definition is not valid")
-        }
-
-        // extra validation not covered by schema, like a param must reference a valid ID of an achievement to be awarded (achievementId)
-        // checks like nullability, type, etc. are covered by the schema
-        try {
-            when (request.action.key) {
-                "unlock_achievement" -> {
-                    val achievementId = request.action.params["achievementId"]!!.toLong()
-                    val achievement = achievementRepository.findById(achievementId)
-                    if (achievement.isEmpty) {
-                        throw Exception("Achievement not found")
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            throw Exception("Action definition is not valid", e)
-        }
-
         val rule = Rule(
             app = app,
             title = request.name,
             description = request.description,
             trigger = trigger,
-            action = action,
-            actionParams = request.action.params.toMutableMap(),
             triggerParams = request.trigger.params?.toMutableMap(),
         )
+
+        val actionDefinition: ActionDefinition = request.action
+        rule.action = actionDefinition.key
+        when (actionDefinition) {
+            is AddPointsAction -> {
+                require(actionDefinition.points > 0) { "Points must be greater than 0" }
+                rule.actionPoints = actionDefinition.points
+            }
+
+            is UnlockAchievementAction -> {
+                val achievement = achievementRepository.findById(actionDefinition.achievementId)
+                if (achievement.isEmpty) {
+                    throw IllegalArgumentException("Achievement not found")
+                }
+                rule.actionAchievement = achievement.get()
+            }
+        }
 
         return ruleRepository.save(rule)
     }

@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component
 @Component
 class ActionAddPointsHandler(private val appUserRepository: AppUserRepository) : ActionHandler {
     override fun handleAction(rule: Rule, appUser: AppUser): ActionResult {
-        val points = rule.actionParams?.get("value")?.toString()?.toInt() ?: throw Exception("Points not found")
+        val points = rule.actionPoints ?: throw Exception("Action points not found")
         val previousPoints = appUser.points ?: 0
         val newPoints = previousPoints + points
         appUser.addPoints(points)

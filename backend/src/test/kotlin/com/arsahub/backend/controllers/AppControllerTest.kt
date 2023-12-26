@@ -4,8 +4,8 @@ import com.arsahub.backend.SocketIOService
 import com.arsahub.backend.controllers.utils.AuthSetup
 import com.arsahub.backend.controllers.utils.AuthTestUtils.performWithAppAuth
 import com.arsahub.backend.controllers.utils.AuthTestUtils.setupAuth
+import com.arsahub.backend.dtos.request.ActionKeys
 import com.arsahub.backend.dtos.request.TriggerCreateRequest
-import com.arsahub.backend.models.Action
 import com.arsahub.backend.models.AppUser
 import com.arsahub.backend.models.Rule
 import com.arsahub.backend.models.RuleActivationType
@@ -20,14 +20,12 @@ import com.ninjasquad.springmockk.SpykBean
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection
-import org.springframework.data.domain.Example
 import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
@@ -71,9 +69,6 @@ class AppControllerTest {
     private lateinit var appUserRepository: AppUserRepository
 
     @Autowired
-    private lateinit var actionRepository: ActionRepository
-
-    @Autowired
     private lateinit var mockMvc: MockMvc
 
     @SpykBean
@@ -112,27 +107,6 @@ class AppControllerTest {
     @AfterEach
     fun tearDown() {
 
-    }
-
-    @Test
-    fun `returns list of default actions with 200`() {
-        // Arrange
-        // In resources/init.sql
-
-        // Act & Assert
-        mockMvc.performWithAppAuth(
-            get("/api/apps/actions")
-        )
-            .andExpect(status().isOk)
-            //INSERT INTO action (title, description, json_schema, created_at, updated_at, key) VALUES ('Add points', null, '{"type": "object", "$schema": "http://json-schema.org/draft-04/schema#", "required": ["value"], "properties": {"value": {"type": "number"}}}', '2023-10-31 13:54:49.958514 +00:00', '2023-10-31 13:54:49.958514 +00:00', 'add_points');
-            //INSERT INTO action (title, description, json_schema, created_at, updated_at, key) VALUES ('Unlock achievement', null, '{"type": "object", "$schema": "http://json-schema.org/draft-04/schema#", "required": ["achievementId"], "properties": {"achievementId": {"type": "number"}}}', '2023-10-31 14:08:24.064419 +00:00', '2023-10-31 14:08:24.064419 +00:00', 'unlock_achievement');
-            .andExpect(jsonPath("$.length()").value(2))
-            .andExpect(jsonPath("$[0].title").value("Add points"))
-            .andExpect(jsonPath("$[0].description").value(null))
-            .andExpect(jsonPath("$[0].key").value("add_points"))
-            .andExpect(jsonPath("$[1].title").value("Unlock achievement"))
-            .andExpect(jsonPath("$[1].description").value(null))
-            .andExpect(jsonPath("$[1].key").value("unlock_achievement"))
     }
 
     @Test
@@ -236,8 +210,6 @@ class AppControllerTest {
             )
         )
 
-        val actionAddPoints = actionRepository.findOne(Example.of(Action(key = "add_points"))).get()
-
         val ruleActivationType = ruleActivationTypeRepository.save(
             RuleActivationType(
                 name = "Repeatable",
@@ -247,10 +219,8 @@ class AppControllerTest {
             Rule(
                 title = "When workshop completed, add 100 points",
                 trigger = trigger,
-                action = actionAddPoints,
-                actionParams = mutableMapOf(
-                    "value" to 100
-                ),
+                action = ActionKeys.ADD_POINTS,
+                actionPoints = 100,
                 app = authSetup.app,
                 conditions = mutableMapOf(
                     "workshopId" to 1

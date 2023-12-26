@@ -3,7 +3,6 @@ package com.arsahub.backend.controllers
 import com.arsahub.backend.dtos.request.*
 import com.arsahub.backend.dtos.response.*
 import com.arsahub.backend.models.App
-import com.arsahub.backend.repositories.ActionRepository
 import com.arsahub.backend.repositories.AppUserRepository
 import com.arsahub.backend.repositories.RuleRepository
 import com.arsahub.backend.security.auth.CurrentApp
@@ -11,10 +10,7 @@ import com.arsahub.backend.services.AppService
 import com.arsahub.backend.services.LeaderboardService
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.cfg.CoercionAction
-import com.fasterxml.jackson.databind.cfg.CoercionInputShape
 import com.fasterxml.jackson.databind.node.ObjectNode
-import com.fasterxml.jackson.databind.type.LogicalType
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
@@ -32,7 +28,6 @@ import java.util.*
 class AppController(
     private val appService: AppService,
     private val leaderboardService: LeaderboardService,
-    private val actionRepository: ActionRepository,
     private val objectMapper: ObjectMapper,
     private val ruleRepository: RuleRepository,
     private val appUserRepository: AppUserRepository
@@ -316,16 +311,4 @@ class AppController(
         return UserProfileResponse.fromEntity(appUser)
     }
 
-    @Operation(
-        summary = "List all actions (prebuilt)",
-        responses = [
-            ApiResponse(
-                responseCode = "200",
-            ),
-        ]
-    )
-    @GetMapping("/actions")
-    fun getActions(): List<ActionResponse> {
-        return actionRepository.findAll().map { ActionResponse.fromEntity(it) }
-    }
 }

@@ -24,15 +24,6 @@ class Rule(
     @JoinColumn(name = "trigger_id", nullable = false)
     var trigger: Trigger? = null,
 
-    @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "action_id", nullable = false)
-    var action: Action? = null,
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "action_params")
-    var actionParams: MutableMap<String, Any>? = null,
-
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "trigger_params")
     var triggerParams: MutableMap<String, Any>? = null,
@@ -48,7 +39,18 @@ class Rule(
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "rule_activation_type_id", nullable = false)
-    var ruleActivationType: RuleActivationType? = null
+    var ruleActivationType: RuleActivationType? = null,
+
+    @NotNull
+    @Column(name = "action", nullable = false, length = Integer.MAX_VALUE)
+    var action: String? = null,
+
+    @Column(name = "action_points")
+    var actionPoints: Int? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "action_achievement_id")
+    var actionAchievement: Achievement? = null,
 ) : AuditedEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
