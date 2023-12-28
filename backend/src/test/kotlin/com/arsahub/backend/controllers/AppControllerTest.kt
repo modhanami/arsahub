@@ -5,6 +5,7 @@ import com.arsahub.backend.controllers.utils.AuthSetup
 import com.arsahub.backend.controllers.utils.AuthTestUtils.performWithAppAuth
 import com.arsahub.backend.controllers.utils.AuthTestUtils.setupAuth
 import com.arsahub.backend.dtos.request.Action
+import com.arsahub.backend.dtos.request.FieldDefinition
 import com.arsahub.backend.dtos.request.TriggerCreateRequest
 import com.arsahub.backend.models.AppUser
 import com.arsahub.backend.models.Rule
@@ -15,7 +16,6 @@ import com.arsahub.backend.repositories.RuleRepository
 import com.arsahub.backend.repositories.UserRepository
 import com.arsahub.backend.services.APIKeyService
 import com.arsahub.backend.services.AppService
-import com.arsahub.backend.utils.JsonUtils
 import com.corundumstudio.socketio.SocketIOServer
 import com.ninjasquad.springmockk.MockkBean
 import com.ninjasquad.springmockk.SpykBean
@@ -51,9 +51,6 @@ import java.util.*
 class AppControllerTest {
     @Autowired
     private lateinit var ruleRepository: RuleRepository
-
-    @Autowired
-    private lateinit var jsonUtils: JsonUtils
 
     @Autowired
     private lateinit var appService: AppService
@@ -138,20 +135,19 @@ class AppControllerTest {
         // Arrange
         val jsonBody = """
             {
-              "title": "My Title",
-              "key": "my_key",
-              "jsonSchema": {
-                "type": "object",
-                "${'$'}schema": "http://json-schema.org/draft-07/schema#",
-                "required": [
-                  "workshopId"
-                ],
-                "properties": {
-                  "workshopId": {
-                    "type": "integer"
-                  }
+              "title": "Workshop Completed",
+              "key": "workshop_completed",
+              "fields": [
+                {
+                  "type": "integer",
+                  "key": "workshopId",
+                  "label": "Workshop ID"
+                },
+                {
+                  "type": "text",
+                  "key": "source"
                 }
-              }
+              ]
             }
         """.trimIndent()
 
@@ -162,17 +158,63 @@ class AppControllerTest {
                 .content(jsonBody)
         )
             .andExpect(status().isCreated)
-            .andExpect(jsonPath("$.title").value("My Title"))
-            .andExpect(jsonPath("$.key").value("my_key"))
-            .andExpect(jsonPath("$.jsonSchema.type").value("object"))
-            .andExpect(jsonPath("$.jsonSchema.required.length()").value(1))
-            .andExpect(jsonPath("$.jsonSchema.properties.workshopId.type").value("integer"))
+            .andExpect(jsonPath("$.title").value("Workshop Completed"))
+            .andExpect(jsonPath("$.key").value("workshop_completed"))
+            .andExpect(jsonPath("$.fields.length()").value(2))
+            .andExpect(jsonPath("$.fields[0].type").value("integer"))
+            .andExpect(jsonPath("$.fields[0].key").value("workshopId"))
+            .andExpect(jsonPath("$.fields[0].label").value("Workshop ID"))
+            .andExpect(jsonPath("$.fields[1].type").value("text"))
+            .andExpect(jsonPath("$.fields[1].key").value("source"))
+
 
         // Assert DB
         val triggers = appService.getTriggers(authSetup.app)
         assertEquals(1, triggers.size)
-        assertEquals("My Title", triggers[0].title)
-        assertEquals("my_key", triggers[0].key)
+        val trigger = triggers[0]
+        assertEquals("Workshop Completed", trigger.title)
+        assertEquals("workshop_completed", trigger.key)
+        assertEquals(2, trigger.fields.size)
+        val workshopIdField = trigger.fields.find { it.key == "workshopId" }
+        require(workshopIdField != null)
+        assertEquals("integer", workshopIdField.type)
+        assertEquals("Workshop ID", workshopIdField.label)
+
+        val sourceField = trigger.fields.find { it.key == "source" }
+        require(sourceField != null)
+        assertEquals("text", sourceField.type)
+        assertEquals("source", sourceField.key)
+    }
+
+    @Test
+    fun `fails with 400 when creating a trigger with invalid field types`() {
+        // Arrange
+        val jsonBody = """
+            {
+              "title": "Workshop Completed",
+              "key": "workshop_completed",
+              "fields": [
+                {
+                  "type": "integer",
+                  "key": "workshopId",
+                  "label": "Workshop ID"
+                },
+                {
+                  "type": "not_a_valid_type",
+                  "key": "source"
+                }
+              ]
+            }
+        """.trimIndent()
+
+        // Act & Assert HTTP
+        mockMvc.performWithAppAuth(
+            post("/api/apps/triggers")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonBody)
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.message").value("Invalid field type: not_a_valid_type"))
     }
 
     @Test
@@ -183,21 +225,16 @@ class AppControllerTest {
             TriggerCreateRequest(
                 title = "Workshop Completed",
                 key = "workshop_completed",
-                jsonSchema = jsonUtils.convertJsonStringToMutableMap(
-                    """
-                       {
-                            "type": "object",
-                            "${'$'}schema": "http://json-schema.org/draft-07/schema#",
-                            "required": [
-                                "workshopId"
-                            ],
-                            "properties": {
-                                "workshopId": {
-                                    "type": "integer"
-                                }
-                            }
-                       }
-                    """.trimIndent()
+                fields = listOf(
+                    FieldDefinition(
+                        key = "workshopId",
+                        type = "integer",
+                        label = "Workshop ID"
+                    ),
+                    FieldDefinition(
+                        key = "source",
+                        type = "text"
+                    )
                 )
             )
         )
@@ -210,7 +247,8 @@ class AppControllerTest {
                 actionPoints = 100,
                 app = authSetup.app,
                 conditions = mutableMapOf(
-                    "workshopId" to 1
+                    "workshopId" to 1,
+                    "source" to "trust me"
                 ),
                 repeatability = RuleRepeatability.UNLIMITED,
             )
@@ -235,7 +273,8 @@ class AppControllerTest {
                         {
                             "key": "workshop_completed",
                             "params": {
-                                "workshopId": 1
+                                "workshopId": 1,
+                                "source": "trust me"
                             },
                             "userId": "${appUser.userId}"
                         }
@@ -244,24 +283,42 @@ class AppControllerTest {
             )
                 .andExpect(status().isOk)
         }
-        repeat(2) { // 2 times not matching trigger
-            mockMvc.performWithAppAuth(
-                post("/api/apps/trigger")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(
-                        """
+
+        // 2 times not matching trigger
+        mockMvc.performWithAppAuth(
+            post("/api/apps/trigger")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
                         {
                             "key": "workshop_completed",
                             "params": {
-                                "workshopId": 2
+                                "workshopId": 2,
+                                "source": "trust me"
                             },
                             "userId": "${appUser.userId}"
                         }
                     """.trimIndent()
-                    )
-            )
-                .andExpect(status().isOk)
-        }
+                )
+        )
+            .andExpect(status().isOk)
+        mockMvc.performWithAppAuth(
+            post("/api/apps/trigger")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                        {
+                            "key": "workshop_completed",
+                            "params": {
+                                "workshopId": 1,
+                                "source": "dont trust me"
+                            },
+                            "userId": "${appUser.userId}"
+                        }
+                    """.trimIndent()
+                )
+        )
+            .andExpect(status().isOk)
 
         // Assert DB
         val appUserAfter = appUserRepository.findById(appUser.id!!).get()
@@ -276,21 +333,16 @@ class AppControllerTest {
             TriggerCreateRequest(
                 title = "Workshop Completed",
                 key = "workshop_completed",
-                jsonSchema = jsonUtils.convertJsonStringToMutableMap(
-                    """
-                       {
-                            "type": "object",
-                            "${'$'}schema": "http://json-schema.org/draft-07/schema#",
-                            "required": [
-                                "workshopId"
-                            ],
-                            "properties": {
-                                "workshopId": {
-                                    "type": "integer"
-                                }
-                            }
-                       }
-                    """.trimIndent()
+                fields = listOf(
+                    FieldDefinition(
+                        key = "workshopId",
+                        type = "integer",
+                        label = "Workshop ID"
+                    ),
+                    FieldDefinition(
+                        key = "source",
+                        type = "text"
+                    )
                 )
             )
         )
@@ -303,7 +355,8 @@ class AppControllerTest {
                 actionPoints = 100,
                 app = authSetup.app,
                 conditions = mutableMapOf(
-                    "workshopId" to 1
+                    "workshopId" to 1,
+                    "source" to "trust me"
                 ),
                 repeatability = RuleRepeatability.ONCE_PER_USER,
             )
@@ -328,7 +381,8 @@ class AppControllerTest {
                         {
                             "key": "workshop_completed",
                             "params": {
-                                "workshopId": 1
+                                "workshopId": 1,
+                                "source": "trust me"
                             },
                             "userId": "${appUser.userId}"
                         }
@@ -337,29 +391,45 @@ class AppControllerTest {
             )
                 .andExpect(status().isOk)
         }
-        repeat(2) { // 2 times not matching trigger
-            mockMvc.performWithAppAuth(
-                post("/api/apps/trigger")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(
-                        """
+        // 2 times not matching trigger
+        mockMvc.performWithAppAuth(
+            post("/api/apps/trigger")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
                         {
                             "key": "workshop_completed",
                             "params": {
-                                "workshopId": 2
+                                "workshopId": 2,
+                                "source": "trust me"
                             },
                             "userId": "${appUser.userId}"
                         }
                     """.trimIndent()
-                    )
-            )
-                .andExpect(status().isOk)
-        }
+                )
+        )
+            .andExpect(status().isOk)
+        mockMvc.performWithAppAuth(
+            post("/api/apps/trigger")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                        {
+                            "key": "workshop_completed",
+                            "params": {
+                                "workshopId": 1,
+                                "source": "dont trust me"
+                            },
+                            "userId": "${appUser.userId}"
+                        }
+                    """.trimIndent()
+                )
+        )
+            .andExpect(status().isOk)
 
         // Assert DB
         val appUserAfter = appUserRepository.findById(appUser.id!!).get()
         assertEquals(1100, appUserAfter.points)
-
     }
 
     @Test
@@ -370,21 +440,16 @@ class AppControllerTest {
             TriggerCreateRequest(
                 title = "Workshop Completed",
                 key = "workshop_completed",
-                jsonSchema = jsonUtils.convertJsonStringToMutableMap(
-                    """
-                       {
-                            "type": "object",
-                            "${'$'}schema": "http://json-schema.org/draft-07/schema#",
-                            "required": [
-                                "workshopId"
-                            ],
-                            "properties": {
-                                "workshopId": {
-                                    "type": "integer"
-                                }
-                            }
-                       }
-                    """.trimIndent()
+                fields = listOf(
+                    FieldDefinition(
+                        key = "workshopId",
+                        type = "integer",
+                        label = "Workshop ID"
+                    ),
+                    FieldDefinition(
+                        key = "source",
+                        type = "text"
+                    )
                 )
             )
         )
@@ -393,10 +458,7 @@ class AppControllerTest {
             {
               "title": "When workshop ID 1 completed, add 100 points, unlimited",
               "trigger": {
-                "key": "${trigger.key}",
-                "params": {
-                  "workshopId": 1
-                }
+                "key": "${trigger.key}"
               },
               "action": {
                 "key": "add_points",
@@ -436,4 +498,5 @@ class AppControllerTest {
         assertEquals(1, rule.conditions?.get("workshopId"))
         assertEquals("unlimited", rule.repeatability)
     }
+
 }

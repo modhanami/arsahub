@@ -63,6 +63,7 @@ dependencies {
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
     implementation("jakarta.validation:jakarta.validation-api:3.0.2")
     implementation("org.liquibase:liquibase-core")
+    implementation("com.jayway.jsonpath:json-path:2.8.0")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     runtimeOnly("org.postgresql:postgresql")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")

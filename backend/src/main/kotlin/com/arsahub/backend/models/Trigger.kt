@@ -3,8 +3,6 @@ package com.arsahub.backend.models
 import jakarta.persistence.*
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
-import org.hibernate.annotations.JdbcTypeCode
-import org.hibernate.type.SqlTypes
 
 @Entity
 @Table(name = "`trigger`")
@@ -26,19 +24,17 @@ class Trigger(
     @Column(name = "key", nullable = false, length = Integer.MAX_VALUE)
     var key: String? = null,
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "json_schema")
-    var jsonSchema: MutableMap<String, Any>? = null,
-
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "app_id", nullable = false)
     var app: App? = null,
 
-    ) : AuditedEntity() {
+    // TODO: evaluate if this is a good idea, among other queries
+    @OneToMany(mappedBy = "trigger", fetch = FetchType.EAGER, cascade = [CascadeType.ALL])
+    var fields: MutableSet<TriggerField> = mutableSetOf()
+) : AuditedEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "trigger_id", nullable = false)
     var id: Long? = null
-
 }

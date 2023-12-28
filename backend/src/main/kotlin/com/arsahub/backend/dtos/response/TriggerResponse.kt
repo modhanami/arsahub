@@ -1,5 +1,6 @@
 package com.arsahub.backend.dtos.response
 
+import com.arsahub.backend.dtos.request.FieldDefinition
 import java.time.Instant
 
 /**
@@ -12,7 +13,7 @@ data class TriggerResponse(
     val description: String? = null,
     val key: String? = null,
     val id: Long? = null,
-    val jsonSchema: Map<String, Any>? = null
+    val fields: List<FieldDefinition>? = null,
 ) {
     companion object {
         fun fromEntity(trigger: com.arsahub.backend.models.Trigger): TriggerResponse {
@@ -23,7 +24,7 @@ data class TriggerResponse(
                 description = trigger.description,
                 key = trigger.key,
                 id = trigger.id,
-                jsonSchema = trigger.jsonSchema
+                fields = trigger.fields.map { FieldDefinition.fromEntity(it) }
             )
         }
     }
