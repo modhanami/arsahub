@@ -120,119 +120,158 @@ class AppService(
         return appUserRepository.findByAppAndUserId(app, userId) ?: throw AppUserNotFoundException(userId)
     }
 
-    fun trigger(app: App, request: TriggerSendRequest, rawRequestJson: Map<String, Any>? = null) {
+    fun trigger(app: App, request: TriggerSendRequest, rawRequestJson: Map<String, Any>) {
         val userId = request.userId
-
-        val trigger = getTriggerOrThrow(request.key)
+        val trigger = getTriggerOrThrow(request.key, app)
         val appUser = getAppUserOrThrow(app, userId)
 
         // save trigger log before any validation
-        val triggerLog = TriggerLog(
-            trigger = trigger,
-            requestBody = rawRequestJson?.toMutableMap(),
-            app = app,
-            appUser = appUser
-        )
-        triggerLogRepository.save(triggerLog)
-
-        logger.debug { "Received trigger ${trigger.title} (${trigger.id}) for user ${appUser.userId} (${appUser.id}) from app ${app.title} (${app.id})" }
+        logTrigger(trigger, app, appUser, rawRequestJson)
 
         validateParamsAgainstTriggerFields(request.params, trigger.fields)
 
-        val matchingRules = ruleRepository.findAllByTrigger_Key(trigger.key!!)
+        val matchingRules = getMatchingRules(trigger)
         for (rule in matchingRules) {
             logger.debug { "Checking rule ${rule.title} (${rule.id})" }
 
             // check repeatability
-            if (rule.repeatability == RuleRepeatability.ONCE_PER_USER) {
-                val ruleProgress = ruleProgressRepository.findByRuleAndAppUser(rule, appUser)
-                if (ruleProgress != null) {
-                    logger.debug { "Rule ${rule.title} (${rule.id}) has already been activated for user ${appUser.userId}" }
-                    continue
-                }
+            if (!validateRepeatability(rule, appUser)) {
+                continue
             }
 
             // check the params against the rule conditions, if any
-            if (rule.conditions != null) {
-                val conditions = rule.conditions!!
-                val conditionsMatch = conditions.all { condition ->
-                    val paramValue = request.params?.get(condition.key)
-                    val conditionValue = condition.value
-                    val matches = paramValue == conditionValue // TODO: support more operators
-
-                    if (matches) {
-                        logger.debug { "Condition ${condition.key} matches" }
-                    } else {
-                        logger.debug { "Condition ${condition.key} does not match: $paramValue != $conditionValue" }
-                    }
-
-                    matches
-                }
-                if (!conditionsMatch) {
-                    logger.debug { "Rule ${rule.title} (${rule.id}) conditions do not match" }
-                    continue
-                }
+            if (!validateConditions(rule, request.params)) {
+                continue
             }
 
-            when (val actionResult = actionHandlerRegistry.handleAction(rule, appUser)) {
-                is ActionResult.AchievementUpdate -> {
-                    val (achievement) = actionResult
-                    socketIOService.broadcastToAppRoom(
-                        app,
-                        AchievementUnlock(
-                            userId = userId,
-                            achievement = AchievementResponse.fromEntity(
-                                achievement
-                            )
-                        )
-                    )
-                    socketIOService.broadcastToUserRoom(
-                        userId,
-                        AchievementUnlock(
-                            userId = userId,
-                            achievement = AchievementResponse.fromEntity(
-                                achievement
-                            )
-                        )
-                    )
+            // handle action
+            val actionResult = activateRule(rule, appUser)
+
+            broadcastActionResult(actionResult, app, userId)
+        }
+
+    }
+
+    fun logTrigger(trigger: Trigger, app: App, appUser: AppUser, rawRequestJson: Map<String, Any>) {
+        val triggerLog = TriggerLog(
+            trigger = trigger,
+            requestBody = rawRequestJson.toMutableMap(),
+            app = app,
+            appUser = appUser
+        )
+        triggerLogRepository.save(triggerLog)
+        logger.debug { "Received trigger ${trigger.title} (${trigger.id}) for user ${appUser.userId} (${appUser.id}) from app ${app.title} (${app.id})" }
+    }
+
+    private fun getMatchingRules(trigger: Trigger): List<Rule> {
+        return ruleRepository.findAllByTrigger_Key(trigger.key!!)
+    }
+
+    private fun validateRepeatability(rule: Rule, appUser: AppUser): Boolean {
+        if (rule.repeatability == RuleRepeatability.ONCE_PER_USER) {
+            val ruleProgress = ruleProgressRepository.findByRuleAndAppUser(rule, appUser)
+            if (ruleProgress != null && ruleProgress.activationCount!! > 0) {
+                logger.debug { "Rule ${rule.title} (${rule.id}) has already been activated for user ${appUser.userId}" }
+                return false
+            }
+        }
+        return true
+    }
+
+    private fun validateConditions(rule: Rule, params: Map<String, Any>?): Boolean {
+        if (rule.conditions != null) {
+            val conditions = rule.conditions!!
+            val conditionsMatch = conditions.all { condition ->
+                val paramValue = params?.get(condition.key)
+                val conditionValue = condition.value
+                val matches = paramValue == conditionValue // TODO: support more operators
+
+                if (matches) {
+                    logger.debug { "Condition ${condition.key} matches" }
+                } else {
+                    logger.debug { "Condition ${condition.key} does not match: $paramValue != $conditionValue" }
                 }
 
-                is ActionResult.PointsUpdate -> {
-                    val (_, newPoints, _) = actionResult
-                    socketIOService.broadcastToAppRoom(
-                        app,
-                        PointsUpdate(
-                            userId = userId,
-                            points = newPoints
-                        )
-                    )
-                    socketIOService.broadcastToAppRoom(
-                        app,
-                        LeaderboardUpdate(
-                            leaderboard = leaderboardService.getTotalPointsLeaderboard(app)
-                        )
-                    )
-
-                    socketIOService.broadcastToUserRoom(
-                        userId,
-                        PointsUpdate(
-                            userId = userId,
-                            points = newPoints
-                        )
-                    )
-                }
-
-                is ActionResult.Nothing -> {}
+                matches
             }
 
-            // update rule progress
-            val ruleProgress = ruleProgressRepository.findByRuleAndAppUser(rule, appUser) ?: RuleProgress(
-                rule = rule,
-                appUser = appUser,
-            )
+            if (!conditionsMatch) {
+                logger.debug { "Rule ${rule.title} (${rule.id}) conditions do not match" }
+                return false
+            }
+        }
 
-            ruleProgress.activationCount = (ruleProgress.activationCount ?: 0) + 1
-            ruleProgressRepository.save(ruleProgress)
+        return true
+    }
+
+    private fun activateRule(rule: Rule, appUser: AppUser): ActionResult {
+        val actionResult = actionHandlerRegistry.handleAction(rule, appUser)
+
+        // update rule progress
+        progressRule(rule, appUser)
+
+        return actionResult
+    }
+
+    private fun progressRule(rule: Rule, appUser: AppUser): RuleProgress {
+        val ruleProgress = ruleProgressRepository.findByRuleAndAppUser(rule, appUser) ?: RuleProgress(
+            rule = rule,
+            appUser = appUser,
+        )
+        ruleProgress.activationCount = (ruleProgress.activationCount ?: 0) + 1
+        return ruleProgressRepository.save(ruleProgress)
+    }
+
+    private fun broadcastActionResult(actionResult: ActionResult, app: App, userId: String) {
+        when (actionResult) {
+            is ActionResult.AchievementUpdate -> {
+                val (achievement) = actionResult
+                socketIOService.broadcastToAppRoom(
+                    app,
+                    AchievementUnlock(
+                        userId = userId,
+                        achievement = AchievementResponse.fromEntity(
+                            achievement
+                        )
+                    )
+                )
+                socketIOService.broadcastToUserRoom(
+                    userId,
+                    AchievementUnlock(
+                        userId = userId,
+                        achievement = AchievementResponse.fromEntity(
+                            achievement
+                        )
+                    )
+                )
+            }
+
+            is ActionResult.PointsUpdate -> {
+                val (_, newPoints, _) = actionResult
+                socketIOService.broadcastToAppRoom(
+                    app,
+                    PointsUpdate(
+                        userId = userId,
+                        points = newPoints
+                    )
+                )
+                socketIOService.broadcastToAppRoom(
+                    app,
+                    LeaderboardUpdate(
+                        leaderboard = leaderboardService.getTotalPointsLeaderboard(app)
+                    )
+                )
+
+                socketIOService.broadcastToUserRoom(
+                    userId,
+                    PointsUpdate(
+                        userId = userId,
+                        points = newPoints
+                    )
+                )
+            }
+
+            is ActionResult.Nothing -> {}
         }
 
     }
@@ -257,14 +296,14 @@ class AppService(
         }
     }
 
-    fun getTriggerOrThrow(key: String): Trigger {
-        return triggerRepository.findByKey(key) ?: throw TriggerNotFoundException(key)
+    fun getTriggerOrThrow(key: String, app: App): Trigger {
+        return triggerRepository.findByKeyAndApp(key, app) ?: throw TriggerNotFoundException(key)
     }
 
     fun createRule(
         app: App, request: RuleCreateRequest
     ): Rule {
-        val trigger = getTriggerOrThrow(request.trigger.key)
+        val trigger = getTriggerOrThrow(request.trigger.key, app)
 
         // validate action definition
         val parsedAction = parseActionDefinition(request.action)
