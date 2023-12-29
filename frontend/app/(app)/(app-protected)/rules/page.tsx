@@ -1,10 +1,10 @@
 "use client";
-import { EmptyPlaceholder } from "../../../components/empty-placeholder";
-import { DashboardHeader } from "../../../components/header";
-import { RuleCreateButton } from "../../../components/rule-create-button";
-import { RuleItem } from "../../../components/rule-item";
-import { DashboardShell } from "../../../components/shell";
-import { useRules } from "../../../api";
+import { EmptyPlaceholder } from "../../../../components/empty-placeholder";
+import { DashboardHeader } from "../../../../components/header";
+import { RuleCreateButton } from "../../../../components/rule-create-button";
+import { RuleItem } from "../../../../components/rule-item";
+import { DashboardShell } from "../../../../components/shell";
+import { useRules } from "../../../../api";
 
 export interface Rule {
   id: number;
