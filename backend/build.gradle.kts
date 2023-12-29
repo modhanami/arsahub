@@ -48,7 +48,6 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlin:kotlin-stdlib")
-    implementation("com.h2database:h2")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0")
     implementation("com.corundumstudio.socketio:netty-socketio:2.0.3")
     implementation("net.pwall.json:json-kotlin-schema:0.42")
@@ -135,6 +134,7 @@ tasks.test {
     useJUnitPlatform()
 
     jvmArgs(
-        "--add-opens", "java.base/java.lang.reflect=ALL-UNNAMED"
+        "--add-opens", "java.base/java.lang.reflect=ALL-UNNAMED",
+        "--add-opens", "java.base/java.time=ALL-UNNAMED",
     )
 }

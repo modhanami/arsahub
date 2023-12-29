@@ -7,6 +7,7 @@ import com.arsahub.backend.dtos.socketio.AchievementUnlock
 import com.arsahub.backend.dtos.socketio.LeaderboardUpdate
 import com.arsahub.backend.dtos.socketio.PointsUpdate
 import com.arsahub.backend.exceptions.ConflictException
+import com.arsahub.backend.exceptions.NotFoundException
 import com.arsahub.backend.models.*
 import com.arsahub.backend.repositories.*
 import com.arsahub.backend.services.actionhandlers.ActionHandlerRegistry
@@ -32,9 +33,19 @@ class AppService(
 ) {
     private val logger = KotlinLogging.logger {}
 
+    class TriggerNotFoundException(triggerKey: String) : NotFoundException("Trigger with key $triggerKey not found")
+
+    class AppUserNotFoundException(userId: String) : NotFoundException("App user with ID $userId not found")
+    class AppUserAlreadyExistsException(userId: String) : ConflictException("App user with ID $userId already exists")
+
+
+    class AppNotFoundException(appId: Long) : NotFoundException("App with ID $appId not found")
+    class AppNotFoundForUserException(uuid: UUID) : Exception("App not found for user with UUID $uuid")
+
+    class UserNotFoundException(uuid: UUID) : NotFoundException("User with UUID $uuid not found")
+
     fun createTrigger(app: App, request: TriggerCreateRequest): Trigger {
-        val existingApp = app.id?.let { appRepository.findById(it).orElseThrow { Exception("App not found") } }
-            ?: throw Exception("App not found")
+        val existingApp = getAppOrThrow(app.id!!)
 
         logger.debug { "Received trigger create request for app ${existingApp.title} (${existingApp.id}): Name = ${request.title}, Key = ${request.key}" }
 
@@ -71,22 +82,26 @@ class AppService(
         return savedTrigger
     }
 
+    fun getAppOrThrow(id: Long): App {
+        return appRepository.findById(id).orElseThrow { AppNotFoundException(id) }
+    }
+
     fun getTriggers(app: App): List<Trigger> {
         return triggerRepository.findAllByAppId(app.id!!)
     }
 
     fun getAppByUserUUID(uuid: UUID): App {
-        return appRepository.findFirstByOwnerUuid(uuid) ?: throw Exception("App not found")
+        return appRepository.findFirstByOwnerUuid(uuid) ?: throw AppNotFoundForUserException(uuid)
     }
 
     fun getUserByUUID(userUUID: UUID): User {
-        return userRepository.findByUuid(userUUID) ?: throw Exception("User not found")
+        return userRepository.findByUuid(userUUID) ?: throw UserNotFoundException(userUUID)
     }
 
     fun addUser(app: App, request: AppUserCreateRequest): AppUser {
         val appUser = appUserRepository.findByAppAndUserId(app, request.uniqueId)
         if (appUser != null) {
-            throw ConflictException("App user already exists")
+            throw AppUserAlreadyExistsException(request.uniqueId)
         }
         val newAppUser = AppUser(
             userId = request.uniqueId,
@@ -101,11 +116,15 @@ class AppService(
         return appUserRepository.findAllByApp(app)
     }
 
+    fun getAppUserOrThrow(app: App, userId: String): AppUser {
+        return appUserRepository.findByAppAndUserId(app, userId) ?: throw AppUserNotFoundException(userId)
+    }
+
     fun trigger(app: App, request: TriggerSendRequest, rawRequestJson: Map<String, Any>? = null) {
         val userId = request.userId
 
-        val trigger = triggerRepository.findByKey(request.key) ?: throw Exception("Trigger not found")
-        val appUser = appUserRepository.findByAppAndUserId(app, userId) ?: throw Exception("User not found")
+        val trigger = getTriggerOrThrow(request.key)
+        val appUser = getAppUserOrThrow(app, userId)
 
         // save trigger log before any validation
         val triggerLog = TriggerLog(
@@ -238,10 +257,14 @@ class AppService(
         }
     }
 
+    fun getTriggerOrThrow(key: String): Trigger {
+        return triggerRepository.findByKey(key) ?: throw TriggerNotFoundException(key)
+    }
+
     fun createRule(
         app: App, request: RuleCreateRequest
     ): Rule {
-        val trigger = triggerRepository.findByKey(request.trigger.key) ?: throw Exception("Trigger not found")
+        val trigger = getTriggerOrThrow(request.trigger.key)
 
         // validate action definition
         val parsedAction = parseActionDefinition(request.action)

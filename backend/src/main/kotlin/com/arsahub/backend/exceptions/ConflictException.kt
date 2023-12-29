@@ -1,3 +1,3 @@
 package com.arsahub.backend.exceptions
 
-class ConflictException(message: String) : Exception(message)
+open class ConflictException(message: String) : Exception(message)
