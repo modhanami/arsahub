@@ -76,7 +76,7 @@ function createSideNavItems(): SidebarNavItem[] {
       appProtected: true,
     },
     {
-      title: "Users",
+      title: "App Users",
       href: `/users`,
       icon: "users",
       appProtected: true,

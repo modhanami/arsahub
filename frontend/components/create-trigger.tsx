@@ -26,10 +26,10 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "./ui/use-toast";
 import { useRouter } from "next/navigation";
-import { API_URL, makeAppAuthHeader } from "@/api";
+import { isApiValidationError } from "@/api";
 import { Label } from "@/components/ui/label";
 import { Icons } from "@/components/icons";
-import { useCurrentApp } from "@/lib/current-app";
+import { useCreateTrigger } from "@/hooks";
 
 export const triggerCreateSchema = z.object({
   title: z
@@ -44,59 +44,64 @@ export const triggerCreateSchema = z.object({
     .optional(),
 });
 
-function convertTitleToKey(title: string) {
-  return title.toLowerCase().split(" ").join("_");
+function generateKeyFromTitle(title: string): string | undefined {
+  const regex = /[a-zA-Z0-9_-]/g;
+  const matches = title.match(regex);
+
+  if (matches) {
+    console.log("Matches", matches);
+    return matches.join("_");
+  } else {
+    console.log("No matches found");
+    return;
+  }
 }
 
 type FormData = z.infer<typeof triggerCreateSchema>;
-
-const TRIGGER_API_URL = `${API_URL}/apps/triggers`;
 
 export function TriggerCreateForm() {
   const router = useRouter();
   const form = useForm<FormData>({
     resolver: zodResolver(triggerCreateSchema),
   });
-  const [isCreating, setIsCreating] = React.useState(false);
   const [isOpen, setIsOpen] = React.useState(false);
-  const { currentApp } = useCurrentApp();
+  const mutation = useCreateTrigger();
 
   async function onSubmit(values: FormData) {
-    setIsCreating(true);
-
-    const response = await fetch(TRIGGER_API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...makeAppAuthHeader(currentApp),
-      },
-      body: JSON.stringify({
-        title: values.title,
-        description: values.description,
-      }),
-    });
-    setIsCreating(false);
-    setIsOpen(false);
-
-    if (!response?.ok) {
-      return toast({
-        title: "Something went wrong.",
-        description: "Your trigger was not created. Please try again.",
-        variant: "destructive",
-      });
+    const generatedKey = generateKeyFromTitle(values.title);
+    if (!generatedKey) {
+      return; // TODO: handle error
     }
 
-    toast({
-      title: "Trigger created",
-      description: "Your trigger was created successfully.",
-    });
-
-    router.refresh();
+    mutation.mutate(
+      {
+        title: values.title,
+        description: values.description || "",
+        key: generatedKey,
+        fields: [],
+      },
+      {
+        onSuccess: (data) => {
+          console.log("data", data);
+          toast({
+            title: "Trigger created",
+            description: "Your trigger was created successfully.",
+          });
+          setIsOpen(false);
+        },
+        onError: (error, b, c) => {
+          console.log("error", error);
+          if (isApiValidationError(error)) {
+            // TODO: handle validation errors
+          }
+        },
+      },
+    );
   }
 
   return (
     <>
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <Dialog open={isOpen || mutation.isPending} onOpenChange={setIsOpen}>
         <DialogTrigger asChild>
           <Button>
             <Icons.add className="mr-2 h-4 w-4" />
@@ -156,7 +161,8 @@ export function TriggerCreateForm() {
               </p>
               <Input
                 value={
-                  form.watch("title") && convertTitleToKey(form.watch("title"))
+                  form.watch("title") &&
+                  generateKeyFromTitle(form.watch("title"))
                 }
                 readOnly
                 disabled
@@ -168,7 +174,9 @@ export function TriggerCreateForm() {
                     Cancel
                   </Button>
                 </DialogClose>
-                <Button type="submit">Create</Button>
+                <Button type="submit" disabled={mutation.isPending}>
+                  Create
+                </Button>
               </div>
             </form>
           </Form>

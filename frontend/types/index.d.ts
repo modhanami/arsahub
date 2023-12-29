@@ -1,4 +1,5 @@
 import { Icons } from "../components/icons";
+import { UserResponse } from "@/types/generated-types";
 
 export type NavItem = {
   title: string;
@@ -47,8 +48,6 @@ export type ContextProps = {
   };
 };
 
-export type ApiError = { message: string };
-
 export type SiteConfig = {
   name: string;
   description: string;
@@ -58,4 +57,8 @@ export type SiteConfig = {
     twitter: string;
     github: string;
   };
+};
+
+export type UserResponseWithUUID = UserResponse & {
+  uuid: string;
 };

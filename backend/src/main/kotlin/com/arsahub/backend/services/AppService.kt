@@ -106,7 +106,8 @@ class AppService(
         val newAppUser = AppUser(
             userId = request.uniqueId,
             displayName = request.displayName,
-            app = app
+            app = app,
+            points = 0
         )
         appUserRepository.save(newAppUser)
         return newAppUser

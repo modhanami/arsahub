@@ -1,21 +1,9 @@
 "use client";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "../components/ui/use-toast";
-import { API_URL } from "../api";
 import { AppResponse } from "../types/generated-types";
 import React, { createContext, useContext, useEffect, useState } from "react";
-
-async function fetchAppByApiKey(apiKey: string): Promise<AppResponse> {
-  const response = await fetch(`${API_URL}/apps/current`, {
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-    },
-  });
-  if (!response.ok) {
-    throw new Error("Invalid API key");
-  }
-  return response.json();
-}
+import { useAppByAPIKey } from "@/hooks";
 
 export function useCurrentApp(): {
   currentApp: AppResponse | undefined;
@@ -24,16 +12,7 @@ export function useCurrentApp(): {
 } {
   const { apiKey, clearApiKey, isLoading: isAppApiKeyLoading } = useAppApiKey();
   const queryClient = useQueryClient();
-
-  const {
-    data: currentApp,
-    isLoading,
-    error,
-  } = useQuery({
-    queryKey: ["currentApp", apiKey],
-    queryFn: () => fetchAppByApiKey(apiKey!!),
-    enabled: !!apiKey,
-  });
+  const { data: currentApp, isLoading, error } = useAppByAPIKey(apiKey);
 
   useEffect(() => {
     if (error) {
@@ -47,8 +26,9 @@ export function useCurrentApp(): {
   }, [clearApiKey, error]);
 
   const clearCurrentApp = () => {
+    // TODO: clear from queryClient?
+    queryClient.removeQueries({ queryKey: ["app"] });
     clearApiKey();
-    queryClient.removeQueries({ queryKey: ["currentApp"] });
   };
 
   return {

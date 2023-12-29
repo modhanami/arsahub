@@ -24,15 +24,8 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "./ui/use-toast";
 import { useRouter } from "next/navigation";
-import { API_URL, makeAppAuthHeader } from "@/api";
 import { Icons } from "@/components/icons";
-import { useCurrentApp } from "@/lib/current-app";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  AchievementCreateRequest,
-  AchievementResponse,
-} from "@/types/generated-types";
-import { ApiError } from "@/types";
+import { useCreateAchievement } from "@/hooks";
 
 export const achievementCreateSchema = z.object({
   title: z
@@ -49,73 +42,30 @@ export const achievementCreateSchema = z.object({
 
 type FormData = z.infer<typeof achievementCreateSchema>;
 
-type Props = {
-  activityId: number;
-};
-
-export function AchievementCreateForm({ activityId }: Props) {
+export function AchievementCreateForm() {
   const router = useRouter();
   const form = useForm<FormData>({
     resolver: zodResolver(achievementCreateSchema),
   });
   const [isOpen, setIsOpen] = React.useState(false);
-  const { currentApp } = useCurrentApp();
-  const queryClient = useQueryClient();
-
-  type MutationData = {
-    activityId: number;
-    newAchievement: AchievementCreateRequest;
-  };
-
-  async function createAchievement(
-    activityId: number,
-    newAchievement: AchievementCreateRequest,
-  ): Promise<AchievementResponse> {
-    const response = await fetch(`${API_URL}/apps/achievements`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...makeAppAuthHeader(currentApp),
-      },
-      body: JSON.stringify(newAchievement),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message);
-    }
-
-    return response.json();
-  }
-
-  const mutation = useMutation<AchievementResponse, ApiError, MutationData>({
-    mutationFn: ({ activityId, newAchievement }: MutationData) =>
-      createAchievement(activityId, newAchievement),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["achievements", activityId] });
-
-      toast({
-        title: "Achievement created",
-        description: "Your achievement was created successfully.",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Something went wrong.",
-        description: "Your achievement was not created. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
+  const mutation = useCreateAchievement();
 
   async function onSubmit(values: FormData) {
-    await mutation.mutateAsync({
-      activityId,
-      newAchievement: {
+    mutation.mutate(
+      {
         title: values.title,
         description: values.description || null,
       },
-    });
+      {
+        onSuccess: () => {
+          toast({
+            title: "Achievement created",
+            description: "Achievement created successfully",
+          });
+        },
+        // TODO: handle error
+      },
+    );
 
     setIsOpen(false);
     router.refresh();
@@ -132,7 +82,7 @@ export function AchievementCreateForm({ activityId }: Props) {
         </DialogTrigger>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <CardTitle>Create activity</CardTitle>
+            <CardTitle>Create achievement</CardTitle>
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)}>

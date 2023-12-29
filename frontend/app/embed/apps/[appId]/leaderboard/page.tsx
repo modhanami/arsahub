@@ -1,7 +1,6 @@
 "use client";
 
 import { ContextProps } from "../../../../../types";
-import { LeaderboardResponse } from "../../../../../types/generated-types";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 
 import {
@@ -12,12 +11,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import io from "socket.io-client";
-import { API_URL } from "@/api";
 import React, { useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SOCKET_IO_URL } from "@/lib/socket";
+import { useLeaderboard } from "@/hooks";
 
 export default function LeaderboardEmbedPage({ params }: ContextProps) {
   const [animationLeaderboard] = useAutoAnimate();
@@ -25,20 +24,7 @@ export default function LeaderboardEmbedPage({ params }: ContextProps) {
   const type = "total-points";
 
   const queryClient = useQueryClient();
-  const {
-    data: leaderboard,
-    error,
-    isLoading,
-  } = useQuery({
-    queryKey: [
-      "leaderboard",
-      {
-        activityId: appId,
-        type,
-      },
-    ],
-    queryFn: () => fetchLeaderboard(appId, type),
-  });
+  const { data: leaderboard, error, isLoading } = useLeaderboard(appId, type);
 
   useEffect(() => {
     const socket = io(`${SOCKET_IO_URL}/default`, {
@@ -119,12 +105,4 @@ export default function LeaderboardEmbedPage({ params }: ContextProps) {
       </div>
     </div>
   );
-}
-
-async function fetchLeaderboard(
-  appId: number,
-  type: string,
-): Promise<LeaderboardResponse> {
-  const res = await fetch(`${API_URL}/apps/${appId}/leaderboard?type=${type}`);
-  return res.json();
 }

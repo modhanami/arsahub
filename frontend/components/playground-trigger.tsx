@@ -20,17 +20,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as React from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { toast } from "./ui/use-toast";
 import { playgroundTriggerSchema } from "../lib/validations/playground";
-import {
-  API_URL,
-  fetchUsers,
-  makeAppAuthHeader,
-  useRules,
-  useTriggers,
-} from "../api";
-import { useCurrentApp } from "../lib/current-app";
-import { useQuery } from "@tanstack/react-query";
+import { useAppUsers, useRules, useSendTrigger, useTriggers } from "@/hooks";
+import { useCurrentApp } from "@/lib/current-app";
+import { toast } from "@/components/ui/use-toast";
 
 type FormData = z.infer<typeof playgroundTriggerSchema>;
 
@@ -43,14 +36,11 @@ export function PlaygroundTriggerForm() {
 
   const { currentApp } = useCurrentApp();
   const appId = currentApp?.id || 0;
-  const triggers = useTriggers();
-  const rules = useRules(appId);
+  const { data: triggers } = useTriggers();
+  const { data: rules } = useRules();
+  const sendTriggerMutation = useSendTrigger();
 
-  const { data: users, isLoading } = useQuery({
-    queryKey: ["users"],
-    queryFn: () => currentApp && fetchUsers(currentApp),
-    enabled: !!currentApp,
-  });
+  const { data: users } = useAppUsers();
 
   if (!triggers || !rules || !users) {
     return <div>Loading...</div>;
@@ -58,38 +48,23 @@ export function PlaygroundTriggerForm() {
 
   async function onSubmit(values: FormData) {
     console.log("submit", values);
-    // setIsSending(true);
 
-    const body = {
-      key: values.trigger.key,
-      userId: values.userId,
-      params: {},
-    };
-
-    const response = await fetch(`${API_URL}/apps/trigger`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...makeAppAuthHeader(currentApp),
+    sendTriggerMutation.mutate(
+      {
+        key: values.trigger.key,
+        userId: values.userId,
+        params: {},
       },
-      body: JSON.stringify(body),
-    });
-
-    setIsSending(false);
-
-    if (!response?.ok) {
-      return toast({
-        title: "Something went wrong.",
-        // description: "Your rule was not created. Please try again.",
-        description: "The trigger failed. Please try again.",
-        variant: "destructive",
-      });
-    }
-
-    toast({
-      title: "Trigger sent.",
-      description: "The trigger was sent successfully.",
-    });
+      {
+        onSuccess: () => {
+          toast({
+            title: "Trigger sent",
+            description: "Trigger sent successfully",
+          });
+        },
+        // TODO: handle error
+      },
+    );
   }
 
   // filter the rules based on the selected trigger

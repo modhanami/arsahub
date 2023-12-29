@@ -1,32 +1,11 @@
 "use client";
 import { DashboardShell } from "@/components/shell";
 import { DashboardHeader } from "@/components/header";
-import { useQuery } from "@tanstack/react-query";
-import { useCurrentApp } from "@/lib/current-app";
-import { API_URL, makeAppAuthHeader } from "@/api";
-import { AchievementResponse } from "@/types/generated-types";
+import { useAchievements } from "@/hooks";
+import { AchievementCreateForm } from "@/components/create-achievement";
 
 export default function Page() {
-  const { currentApp } = useCurrentApp();
-
-  async function fetchAchievements(): Promise<AchievementResponse[]> {
-    const response = await fetch(`${API_URL}/apps/achievements`, {
-      headers: {
-        "Content-Type": "application/json",
-        ...makeAppAuthHeader(currentApp),
-      },
-    });
-    return response.json();
-  }
-
-  const {
-    data: achievements,
-    isLoading,
-    isError,
-  } = useQuery({
-    queryKey: ["achievements"],
-    queryFn: () => fetchAchievements(),
-  });
+  const { data: achievements, isLoading, isError } = useAchievements();
 
   if (isLoading) return "Loading...";
   if (isError) return "An error occurred";
@@ -37,7 +16,7 @@ export default function Page() {
         heading="Achievements"
         text="Create and manage achievements."
       >
-        {/*<AchievementCreateForm activityId={activityId} />*/}
+        <AchievementCreateForm />
       </DashboardHeader>
       <div>
         {achievements?.length && (

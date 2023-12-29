@@ -1,11 +1,13 @@
 "use client";
-import { useTriggers } from "@/api";
 import { DashboardShell } from "@/components/shell";
 import { DashboardHeader } from "@/components/header";
 import { TriggerCreateForm } from "@/components/create-trigger";
+import { useTriggers } from "@/hooks";
 
 export default function Page() {
-  const triggers = useTriggers();
+  const { data: triggers, isLoading } = useTriggers();
+
+  if (isLoading) return "Loading...";
 
   return (
     <DashboardShell>

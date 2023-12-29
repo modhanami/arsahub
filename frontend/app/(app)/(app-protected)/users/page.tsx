@@ -2,23 +2,18 @@
 import React from "react";
 import { DashboardShell } from "@/components/shell";
 import { DashboardHeader } from "@/components/header";
-import { fetchUsers } from "@/api";
-import { useCurrentApp } from "@/lib/current-app";
-import { useQuery } from "@tanstack/react-query";
 import { UserCreateForm } from "@/components/create-user-form";
+import { useAppUsers } from "@/hooks";
 
 export default function Page() {
-  const { currentApp } = useCurrentApp();
-
-  const { data: users, isLoading } = useQuery({
-    queryKey: ["users"],
-    queryFn: () => currentApp && fetchUsers(currentApp),
-    enabled: !!currentApp,
-  });
+  const { data: users, isLoading } = useAppUsers();
 
   return (
     <DashboardShell>
-      <DashboardHeader heading="Users" text="Create and manage your app users.">
+      <DashboardHeader
+        heading="App Users"
+        text="Create and manage your app users."
+      >
         <UserCreateForm />
       </DashboardHeader>
       {isLoading ? (

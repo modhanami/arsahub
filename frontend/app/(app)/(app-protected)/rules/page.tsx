@@ -4,16 +4,12 @@ import { DashboardHeader } from "../../../../components/header";
 import { RuleCreateButton } from "../../../../components/rule-create-button";
 import { RuleItem } from "../../../../components/rule-item";
 import { DashboardShell } from "../../../../components/shell";
-import { useRules } from "../../../../api";
+import { useRules } from "@/hooks";
 
-export interface Rule {
-  id: number;
-  title: string;
-  description: string;
-}
+export default function RulesPage() {
+  const { data: rules, isLoading } = useRules();
 
-export default function RulesPage({ params }: { params: { id: string } }) {
-  const rules = useRules(Number(params.id));
+  if (isLoading) return "Loading...";
 
   return (
     <DashboardShell>
