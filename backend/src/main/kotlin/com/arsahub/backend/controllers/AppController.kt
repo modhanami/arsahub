@@ -209,10 +209,10 @@ class AppController(
             ),
         ]
     )
-    @GetMapping("/leaderboard")
-    fun leaderboard(@CurrentApp app: App, @RequestParam type: String): LeaderboardResponse {
+    @GetMapping("/{appId}/leaderboard")
+    fun leaderboard(@RequestParam type: String, @PathVariable appId: Long): LeaderboardResponse {
         if (type == "total-points") {
-            return leaderboardService.getTotalPointsLeaderboard(app)
+            return leaderboardService.getTotalPointsLeaderboard(appId)
         }
         return LeaderboardResponse(leaderboard = "total-points", entries = emptyList())
     }
@@ -301,15 +301,14 @@ class AppController(
             )
         ]
     )
-    @GetMapping("/users/{userId}")
-    fun getUserProfile(
-        @CurrentApp app: App,
-        @PathVariable userId: String
-    ): UserProfileResponse {
-        val appUser = appUserRepository.findByAppAndUserId(app, userId)
+    @GetMapping("/{appId}/users/{userId}")
+    fun getUser(
+        @PathVariable appId: Long,
+        @PathVariable userId: String,
+    ): AppUserResponse {
+        val appUser = appUserRepository.findByAppIdAndUserId(appId, userId)
             ?: throw EntityNotFoundException("User not found")
 
-        return UserProfileResponse.fromEntity(appUser)
+        return AppUserResponse.fromEntity(appUser)
     }
-
 }

@@ -1,15 +1,18 @@
 package com.arsahub.backend.services
 
 import com.arsahub.backend.dtos.response.LeaderboardResponse
-import com.arsahub.backend.models.App
+import com.arsahub.backend.repositories.AppRepository
 import com.arsahub.backend.repositories.AppUserRepository
 import org.springframework.stereotype.Service
 
 @Service
 class LeaderboardService(
-    private val appUserRepository: AppUserRepository
+    private val appUserRepository: AppUserRepository,
+    private val appRepository: AppRepository
+
 ) {
-    fun getTotalPointsLeaderboard(app: App): LeaderboardResponse {
+    fun getTotalPointsLeaderboard(appId: Long): LeaderboardResponse {
+        val app = appRepository.findById(appId).orElseThrow { AppService.AppNotFoundException(appId) }
         val entries = appUserRepository.findAllByApp(app)
             .sortedByDescending { it.points }
             .mapIndexed { index, appUser ->

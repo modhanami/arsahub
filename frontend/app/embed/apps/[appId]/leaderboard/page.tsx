@@ -21,7 +21,7 @@ import { SOCKET_IO_URL } from "@/lib/socket";
 
 export default function LeaderboardEmbedPage({ params }: ContextProps) {
   const [animationLeaderboard] = useAutoAnimate();
-  const activityId = Number(params.id);
+  const appId = Number(params.appId);
   const type = "total-points";
 
   const queryClient = useQueryClient();
@@ -33,11 +33,11 @@ export default function LeaderboardEmbedPage({ params }: ContextProps) {
     queryKey: [
       "leaderboard",
       {
-        activityId,
+        activityId: appId,
         type,
       },
     ],
-    queryFn: () => fetchLeaderboard(activityId, type),
+    queryFn: () => fetchLeaderboard(appId, type),
   });
 
   useEffect(() => {
@@ -47,10 +47,7 @@ export default function LeaderboardEmbedPage({ params }: ContextProps) {
     });
 
     socket.on("connect", async () => {
-      const response = await socket.emitWithAck(
-        "subscribe-activity",
-        activityId,
-      );
+      const response = await socket.emitWithAck("subscribe-activity", appId);
       console.log("subscribe-activity result", response);
     });
 
@@ -61,7 +58,7 @@ export default function LeaderboardEmbedPage({ params }: ContextProps) {
         [
           "leaderboard",
           {
-            activityId,
+            activityId: appId,
             type,
           },
         ],
@@ -74,7 +71,7 @@ export default function LeaderboardEmbedPage({ params }: ContextProps) {
         socket.disconnect();
       }
     }; // Disconnect when component is unmounted or leaderboard is updated
-  }, [activityId, queryClient, type]);
+  }, [appId, queryClient, type]);
 
   return (
     <div className="py-8">
@@ -125,11 +122,9 @@ export default function LeaderboardEmbedPage({ params }: ContextProps) {
 }
 
 async function fetchLeaderboard(
-  activityId: number,
+  appId: number,
   type: string,
 ): Promise<LeaderboardResponse> {
-  const res = await fetch(
-    `${API_URL}/activities/${activityId}/leaderboard?type=${type}`,
-  );
+  const res = await fetch(`${API_URL}/apps/${appId}/leaderboard?type=${type}`);
   return res.json();
 }

@@ -30,6 +30,33 @@ function createSideNavItems(): SidebarNavItem[] {
     {
       type: "divider",
     },
+
+    {
+      type: "title",
+      title: "Gamification Elements",
+    },
+    {
+      type: "item",
+      title: "Achievements",
+      href: `/achievements`,
+      icon: "achievement",
+    },
+    {
+      type: "item",
+      title: "Rules",
+      href: `/rules`,
+      icon: "rule",
+    },
+    {
+      type: "item",
+      title: "Leaderboard",
+      href: `/leaderboard`,
+      icon: "leaderboard",
+    },
+    {
+      type: "divider",
+    },
+
     {
       type: "title",
       title: "Playground",
@@ -42,11 +69,11 @@ function createSideNavItems(): SidebarNavItem[] {
       type: "item",
     },
     {
-      title: "Activities",
-      href: `/activities`,
-      icon: "activity",
-      appProtected: true,
       type: "item",
+      title: "Test Rules",
+      href: `/playground`,
+      icon: "experiment",
+      appProtected: true,
     },
     {
       title: "Users",

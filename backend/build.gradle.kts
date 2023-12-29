@@ -113,7 +113,7 @@ jib {
 tasks {
     generateTypeScript {
         jsonLibrary = JsonLibrary.jackson2
-        classPatterns = listOf("com.arsahub.backend.dtos.*")
+        classPatterns = listOf("com.arsahub.backend.dtos.*.*")
         outputKind = TypeScriptOutputKind.module
         outputFileType = TypeScriptFileType.implementationFile
         outputFile = "generated-types.ts"

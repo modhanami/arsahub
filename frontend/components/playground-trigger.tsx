@@ -1,51 +1,60 @@
 "use client";
-import {Button} from "@/components/ui/button";
-import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
-import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage,} from "@/components/ui/form";
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue,} from "@/components/ui/select";
-import {zodResolver} from "@hookform/resolvers/zod";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { zodResolver } from "@hookform/resolvers/zod";
 import * as React from "react";
-import {useForm} from "react-hook-form";
+import { useForm } from "react-hook-form";
 import * as z from "zod";
-import {toast} from "./ui/use-toast";
-import {playgroundTriggerSchema} from "../lib/validations/playground";
-import {API_URL, makeAppAuthHeader, useMembers, useRules, useTriggers,} from "../hooks/api";
-import {useCurrentApp} from "../lib/current-app";
-
-interface Trigger {
-  title: string;
-  description: string;
-  key: string;
-  id: number;
-}
-
-interface Action {
-  title: string;
-  description: string;
-  key: string;
-  id: number;
-  jsonSchema: Record<string, unknown>;
-}
-
-type PlaygroundTriggerFormProps = {
-  activityId: number;
-};
+import { toast } from "./ui/use-toast";
+import { playgroundTriggerSchema } from "../lib/validations/playground";
+import {
+  API_URL,
+  fetchUsers,
+  makeAppAuthHeader,
+  useRules,
+  useTriggers,
+} from "../hooks/api";
+import { useCurrentApp } from "../lib/current-app";
+import { useQuery } from "@tanstack/react-query";
 
 type FormData = z.infer<typeof playgroundTriggerSchema>;
 
-export function PlaygroundTriggerForm({
-                                        activityId,
-                                      }: PlaygroundTriggerFormProps) {
-  console.log("activityId", activityId);
+export function PlaygroundTriggerForm() {
   const form = useForm<FormData>({
     resolver: zodResolver(playgroundTriggerSchema),
   });
   const selectedUserId = form.watch("userId") || null;
   const [isCreating, setIsSending] = React.useState(false);
-  const members = useMembers(activityId);
+
+  const { currentApp } = useCurrentApp();
+  const appId = currentApp?.id || 0;
   const triggers = useTriggers();
-  const rules = useRules(activityId);
-  const {currentApp} = useCurrentApp();
+  const rules = useRules(appId);
+
+  const { data: users, isLoading } = useQuery({
+    queryKey: ["users"],
+    queryFn: () => currentApp && fetchUsers(currentApp),
+    enabled: !!currentApp,
+  });
+
+  if (!triggers || !rules || !users) {
+    return <div>Loading...</div>;
+  }
 
   async function onSubmit(values: FormData) {
     console.log("submit", values);
@@ -57,17 +66,14 @@ export function PlaygroundTriggerForm({
       params: {},
     };
 
-    const response = await fetch(
-      `${API_URL}/activities/${activityId}/trigger`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...makeAppAuthHeader(currentApp),
-        },
-        body: JSON.stringify(body),
-      }
-    );
+    const response = await fetch(`${API_URL}/apps/trigger`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...makeAppAuthHeader(currentApp),
+      },
+      body: JSON.stringify(body),
+    });
 
     setIsSending(false);
 
@@ -111,7 +117,7 @@ export function PlaygroundTriggerForm({
                     <FormField
                       control={form.control}
                       name="userId"
-                      render={({field}) => (
+                      render={({ field }) => (
                         <FormItem>
                           <FormLabel>User</FormLabel>
                           <FormControl>
@@ -126,7 +132,7 @@ export function PlaygroundTriggerForm({
                                 />
                               </SelectTrigger>
                               <SelectContent className="w-full">
-                                {members.map((member) => (
+                                {users.map((member) => (
                                   <SelectItem
                                     key={member.userId}
                                     value={String(member.userId) || ""}
@@ -138,7 +144,7 @@ export function PlaygroundTriggerForm({
                               </SelectContent>
                             </Select>
                           </FormControl>
-                          <FormMessage/>
+                          <FormMessage />
                         </FormItem>
                       )}
                     />
@@ -146,7 +152,7 @@ export function PlaygroundTriggerForm({
                     <FormField
                       control={form.control}
                       name="trigger.key"
-                      render={({field}) => (
+                      render={({ field }) => (
                         <FormItem>
                           <FormLabel>Trigger</FormLabel>
                           <FormControl>
@@ -173,7 +179,7 @@ export function PlaygroundTriggerForm({
                               </SelectContent>
                             </Select>
                           </FormControl>
-                          <FormMessage/>
+                          <FormMessage />
                         </FormItem>
                       )}
                     />
@@ -192,10 +198,10 @@ export function PlaygroundTriggerForm({
                     <ul className="space-y-1 list-disc list-inside text-muted-foreground">
                       {filteredRules?.length > 0
                         ? filteredRules.map((rule) => (
-                          <li className="text-sm font-medium " key={rule.id}>
-                            {rule.title}
-                          </li>
-                        ))
+                            <li className="text-sm font-medium " key={rule.id}>
+                              {rule.title}
+                            </li>
+                          ))
                         : "No matching rules :("}
                     </ul>
                   </div>
@@ -207,16 +213,8 @@ export function PlaygroundTriggerForm({
 
         <div className="w-1/2 h-[500px]">
           {selectedUserId && (
-            // <UserProfileRealTime
-            //   userId={selectedUserId}
-            //   name={userProfile.user.name || "No user selected"}
-            //   username="a@b.com"
-            //   avatar="X"
-            //   points={userProfile.points}
-            //   achievements={userProfile.achievements}
-            // />
             <iframe
-              src={`/embed/activities/${activityId}/profile?userId=${selectedUserId}`}
+              src={`/embed/apps/${appId}/users/${selectedUserId}`}
               width="100%"
               height="100%"
               allowFullScreen={true}

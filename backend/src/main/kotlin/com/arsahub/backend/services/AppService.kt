@@ -258,7 +258,7 @@ class AppService(
                 socketIOService.broadcastToAppRoom(
                     app,
                     LeaderboardUpdate(
-                        leaderboard = leaderboardService.getTotalPointsLeaderboard(app)
+                        leaderboard = leaderboardService.getTotalPointsLeaderboard(app.id!!),
                     )
                 )
 

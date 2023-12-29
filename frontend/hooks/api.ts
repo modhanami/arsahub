@@ -13,12 +13,11 @@
 import React from "react";
 import { toast } from "../components/ui/use-toast";
 import {
-  ActivityResponse,
   AppResponse,
-  MemberResponse,
+  AppUserResponse,
   RuleResponse,
   TriggerResponse,
-  UserActivityProfileResponse,
+  UserProfileResponse,
 } from "../types/generated-types";
 import { useCurrentApp } from "../lib/current-app";
 import { useQuery } from "@tanstack/react-query";
@@ -60,48 +59,6 @@ export function makeAppAuthHeader(
   return {
     Authorization: `Bearer ${app.apiKey}`,
   };
-}
-
-export function useMembers(activityId: number) {
-  const [members, setMembers] = React.useState<MemberResponse[]>([]);
-  const { currentApp } = useCurrentApp();
-  React.useEffect(() => {
-    async function fetchMembers() {
-      const response = await fetch(
-        `${API_URL}/activities/${activityId}/members`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            ...makeAppAuthHeader(currentApp),
-          },
-          next: {
-            tags: [`members`],
-          },
-        },
-      );
-
-      if (!response?.ok) {
-        toast({
-          title: "Something went wrong.",
-          description: "Activity members could not be fetched.",
-          variant: "destructive",
-        });
-        return null;
-      }
-
-      return response.json();
-    }
-
-    fetchMembers().then((members) => {
-      if (!members) {
-        return;
-      }
-      setMembers(members);
-    });
-  }, [activityId, currentApp]);
-
-  return members;
 }
 
 export interface Trigger {
@@ -235,31 +192,26 @@ export function useActions() {
 //     },
 //     "id": 25
 //   }
-export interface Rule {
-  id: number;
-  title: string;
-  trigger: Trigger;
-  action: Action;
-}
 
-export function useRules(activityId: number) {
+export function useRules(appId: number) {
   const [rules, setRules] = React.useState<RuleResponse[]>([]);
   const { currentApp } = useCurrentApp();
   React.useEffect(() => {
     async function fetchRules() {
-      const response = await fetch(
-        `${API_URL}/activities/${activityId}/rules`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            ...makeAppAuthHeader(currentApp),
-          },
-          next: {
-            tags: [`rules`],
-          },
+      if (!appId) {
+        return [];
+      }
+
+      const response = await fetch(`${API_URL}/apps/rules`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          ...makeAppAuthHeader(currentApp),
         },
-      );
+        next: {
+          tags: [`rules`],
+        },
+      });
 
       if (!response?.ok) {
         toast({
@@ -279,7 +231,7 @@ export function useRules(activityId: number) {
       }
       setRules(rules);
     });
-  }, [activityId, currentApp]);
+  }, [appId, currentApp]);
 
   return rules;
 }
@@ -293,26 +245,25 @@ export interface Action {
 }
 
 export function useUserProfile(activityId: number, userId: string) {
-  const [profile, setProfile] =
-    React.useState<UserActivityProfileResponse | null>(null);
+  const [profile, setProfile] = React.useState<UserProfileResponse | null>(
+    null,
+  );
   const { currentApp } = useCurrentApp();
   React.useEffect(() => {
     async function fetchProfile() {
       if (!userId) {
         return null;
       }
-      const response = await fetch(
-        `${API_URL}/activities/${activityId}/profile?userId=${userId}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          next: {
-            tags: [`profile`],
-          },
+      const response = await fetch(`${API_URL}/apps/users/${userId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          ...makeAppAuthHeader(currentApp),
         },
-      );
+        next: {
+          tags: [`profile`],
+        },
+      });
 
       if (!response?.ok) {
         // return toast({
@@ -470,48 +421,18 @@ export function useAppTemplates() {
   return templates;
 }
 
-export function useActivities() {
-  const [activities, setActivities] = React.useState<ActivityResponse[]>([]);
-  const { currentApp, isLoading } = useCurrentApp();
-
-  React.useEffect(() => {
-    if (isLoading) {
-      return;
-    }
-
-    async function fetchActivities() {
-      const response = await fetch(`${API_URL}/activities`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          ...makeAppAuthHeader(currentApp),
-        },
-        next: {
-          tags: ["activities"],
-        },
-        cache: "no-store",
-      });
-
-      if (!response?.ok) {
-        return toast({
-          title: "Something went wrong.",
-          description: "Activities could not be fetched.",
-          variant: "destructive",
-        });
-      }
-
-      return response.json();
-    }
-
-    fetchActivities().then((activities) => {
-      if (!activities) {
-        return;
-      }
-      setActivities(activities);
+export async function fetchUsers(
+  currentApp: AppResponse,
+): Promise<AppUserResponse[]> {
+  try {
+    const res = await fetch(`${API_URL}/apps/users`, {
+      headers: makeAppAuthHeader(currentApp),
     });
-  }, [currentApp, isLoading]);
-
-  return activities;
+    return await res.json();
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    throw error;
+  }
 }
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL;
