@@ -5,7 +5,7 @@ import { ContextProps } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import { AchievementCreateForm } from "@/components/create-achievement";
 import { useCurrentApp } from "@/lib/current-app";
-import { API_URL, makeAppAuthHeader } from "@/hooks/api";
+import { API_URL, makeAppAuthHeader } from "@/api";
 import { AchievementResponse } from "@/types/generated-types";
 
 export default function Page({ params: { id } }: ContextProps) {

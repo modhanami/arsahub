@@ -28,7 +28,7 @@ import {
   makeAppAuthHeader,
   useRules,
   useTriggers,
-} from "../hooks/api";
+} from "../api";
 import { useCurrentApp } from "../lib/current-app";
 import { useQuery } from "@tanstack/react-query";
 

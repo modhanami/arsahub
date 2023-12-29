@@ -1,7 +1,7 @@
 "use client";
 
 import { UserProfileRealTime } from "../../../../../../components/ui/team-members";
-import { API_URL } from "../../../../../../hooks/api";
+import { API_URL } from "../../../../../../api";
 import { ContextProps } from "../../../../../../types";
 import { useQuery } from "@tanstack/react-query";
 import { AppUserResponse } from "@/types/generated-types";

@@ -1,7 +1,7 @@
 "use client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "../components/ui/use-toast";
-import { API_URL } from "../hooks/api";
+import { API_URL } from "../api";
 import { UserResponse } from "../types/generated-types";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useCurrentApp } from "@/lib/current-app";

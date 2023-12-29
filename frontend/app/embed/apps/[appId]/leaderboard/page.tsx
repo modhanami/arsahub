@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/table";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import io from "socket.io-client";
-import { API_URL } from "@/hooks/api";
+import { API_URL } from "@/api";
 import React, { useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SOCKET_IO_URL } from "@/lib/socket";

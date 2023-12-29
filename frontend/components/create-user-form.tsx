@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "./ui/use-toast";
 import { useRouter } from "next/navigation";
-import { API_URL, makeAppAuthHeader } from "@/hooks/api";
+import { API_URL, makeAppAuthHeader } from "@/api";
 import { Icons } from "@/components/icons";
 import { useCurrentApp } from "@/lib/current-app";
 import { useMutation, useQueryClient } from "@tanstack/react-query";

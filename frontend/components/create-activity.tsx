@@ -28,7 +28,7 @@ import {
 import { toast } from "./ui/use-toast";
 import { useRouter } from "next/navigation";
 import { ActivityCreateButton } from "./activity-create-button";
-import { API_URL, makeAppAuthHeader } from "../hooks/api";
+import { API_URL, makeAppAuthHeader } from "../api";
 import { useCurrentApp } from "@/lib/current-app";
 
 type FormData = z.infer<typeof activityCreateSchema>;

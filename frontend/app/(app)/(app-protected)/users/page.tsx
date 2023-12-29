@@ -2,7 +2,7 @@
 import React from "react";
 import { DashboardShell } from "@/components/shell";
 import { DashboardHeader } from "@/components/header";
-import { fetchUsers } from "@/hooks/api";
+import { fetchUsers } from "@/api";
 import { useCurrentApp } from "@/lib/current-app";
 import { useQuery } from "@tanstack/react-query";
 import { UserCreateForm } from "@/components/create-user-form";

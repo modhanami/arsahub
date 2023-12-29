@@ -6,9 +6,8 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 
 import { useRouter } from "next/navigation";
-import { API_URL } from "../hooks/api";
+import { API_URL } from "../api";
 import { appCreateSchema } from "../lib/validations/app";
-import { AppCreateResponse } from "../types/generated-types";
 import { toast } from "./ui/use-toast";
 
 type FormData = z.infer<typeof appCreateSchema>;
