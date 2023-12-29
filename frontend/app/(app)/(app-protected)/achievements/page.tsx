@@ -1,20 +1,15 @@
 "use client";
 import { DashboardShell } from "@/components/shell";
 import { DashboardHeader } from "@/components/header";
-import { ContextProps } from "@/types";
 import { useQuery } from "@tanstack/react-query";
-import { AchievementCreateForm } from "@/components/create-achievement";
 import { useCurrentApp } from "@/lib/current-app";
 import { API_URL, makeAppAuthHeader } from "@/api";
 import { AchievementResponse } from "@/types/generated-types";
 
-export default function Page({ params: { id } }: ContextProps) {
-  const activityId = Number(id);
+export default function Page() {
   const { currentApp } = useCurrentApp();
 
-  async function fetchAchievements(
-    activityId: number,
-  ): Promise<AchievementResponse[]> {
+  async function fetchAchievements(): Promise<AchievementResponse[]> {
     const response = await fetch(`${API_URL}/apps/achievements`, {
       headers: {
         "Content-Type": "application/json",
@@ -29,8 +24,8 @@ export default function Page({ params: { id } }: ContextProps) {
     isLoading,
     isError,
   } = useQuery({
-    queryKey: ["achievements", activityId],
-    queryFn: () => fetchAchievements(Number(activityId)),
+    queryKey: ["achievements"],
+    queryFn: () => fetchAchievements(),
   });
 
   if (isLoading) return "Loading...";
@@ -42,7 +37,7 @@ export default function Page({ params: { id } }: ContextProps) {
         heading="Achievements"
         text="Create and manage achievements."
       >
-        <AchievementCreateForm activityId={activityId} />
+        {/*<AchievementCreateForm activityId={activityId} />*/}
       </DashboardHeader>
       <div>
         {achievements?.length && (

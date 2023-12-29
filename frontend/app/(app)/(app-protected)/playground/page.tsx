@@ -1,15 +1,8 @@
 import { DashboardHeader } from "../../../../components/header";
 import { PlaygroundTriggerForm } from "../../../../components/playground-trigger";
 import { DashboardShell } from "../../../../components/shell";
-import { ContextProps } from "../../../../types";
 
-export type Playground = {
-  id: number;
-  title: string;
-  description: string;
-} & ContextProps;
-
-export default async function PlaygroundPage({ params }: ContextProps) {
+export default async function PlaygroundPage() {
   return (
     <DashboardShell>
       <DashboardHeader
@@ -17,7 +10,7 @@ export default async function PlaygroundPage({ params }: ContextProps) {
         text="Test your rules."
       ></DashboardHeader>
       <div>
-        <PlaygroundTriggerForm appId={Number(params.appId)} />
+        <PlaygroundTriggerForm />
       </div>
     </DashboardShell>
   );
