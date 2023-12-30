@@ -1,5 +1,6 @@
 import { Icons } from "../components/icons";
 import { UserResponse } from "@/types/generated-types";
+import { AxiosError } from "axios";
 
 export type NavItem = {
   title: string;
@@ -62,3 +63,5 @@ export type SiteConfig = {
 export type UserResponseWithUUID = UserResponse & {
   uuid: string;
 };
+
+export type ApiErrorHolder<T = unknown, D = any> = AxiosError<T, D>;

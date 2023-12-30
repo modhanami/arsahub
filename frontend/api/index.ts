@@ -14,7 +14,7 @@ import {
 } from "../types/generated-types";
 
 import axios from "axios";
-import { UserResponseWithUUID } from "@/types";
+import { ApiErrorHolder, UserResponseWithUUID } from "@/types";
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -25,44 +25,42 @@ const instance = axios.create({
 instance.interceptors.response.use(
   (response) => response,
   async (error) => {
-    if (axios.isAxiosError(error)) {
-      if (!error.response) {
-        console.error("No response received:", error.request || error.message);
-        return Promise.reject({
-          message: "No response received",
-        });
-      }
-      if (
-        error.response.status === 400 &&
-        isApiValidationError(error.response.data)
-      ) {
-        const apiValidationError: ApiValidationError = error.response.data;
-        console.error("API Validation Error:", apiValidationError);
-        return Promise.reject(apiValidationError);
-      }
-
-      if (isApiError(error.response.data)) {
-        const apiError: ApiError = error.response.data;
-        console.error("API Error:", apiError);
-        return Promise.reject(apiError);
-      }
-    } else {
+    if (!axios.isAxiosError(error)) {
       console.error("Unknown Error:", error);
+    }
+
+    if (error.response) {
+      return Promise.reject(error);
+    }
+
+    if (error.request) {
+      console.error("Request Error:", error);
       return Promise.reject({
-        message: "Unknown Error",
+        message: "Request Error",
       });
     }
+
+    console.error("Unknown Error:", error);
+    return Promise.reject({
+      message: "Unknown Error",
+    });
   },
 );
 
 export function isApiValidationError(
   error: unknown,
-): error is ApiValidationError {
-  return (error as ApiValidationError).errors !== undefined;
+): error is ApiErrorHolder<ApiValidationError> {
+  return (
+    axios.isAxiosError(error) &&
+    (error.response?.data as ApiValidationError).errors !== undefined
+  );
 }
 
-export function isApiError(error: unknown): error is ApiError {
-  return (error as ApiError).message !== undefined;
+export function isApiError(error: unknown): error is ApiErrorHolder<ApiError> {
+  return (
+    axios.isAxiosError(error) &&
+    (error.response?.data as ApiError).message !== undefined
+  );
 }
 
 export async function fetchAchievements(app: AppResponse) {

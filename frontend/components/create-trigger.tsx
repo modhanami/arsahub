@@ -33,13 +33,19 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { toast } from "./ui/use-toast";
-import { isApiValidationError } from "@/api";
+import { isApiError, isApiValidationError } from "@/api";
 import { Label } from "@/components/ui/label";
 import { Icons } from "@/components/icons";
 import { useCreateTrigger } from "@/hooks";
 import { DevTool } from "@hookform/devtools";
+import { HttpStatusCode } from "axios";
+import {
+  ALPHA_NUMERIC_EXTENDED_MESSAGE,
+  isAlphaNumericExtended,
+} from "@/lib/validations";
 
 const FieldTypeEnum = z.enum(["Text", "Integer"] as const);
+
 const triggerCreateSchema = z.object({
   title: z
     .string({
@@ -47,7 +53,10 @@ const triggerCreateSchema = z.object({
     })
     .trim()
     .min(4, { message: "Must be between 4 and 200 characters" })
-    .max(200, { message: "Must be between 4 and 200 characters" }),
+    .max(200, { message: "Must be between 4 and 200 characters" })
+    .refine((value) => isAlphaNumericExtended(value, true), {
+      message: ALPHA_NUMERIC_EXTENDED_MESSAGE,
+    }),
   description: z
     .string()
     .max(500, { message: "Must not be more than 500 characters" })
@@ -58,9 +67,8 @@ const triggerCreateSchema = z.object({
         .string()
         .min(4, { message: "Must be between 4 and 200 characters" })
         .max(200, { message: "Must be between 4 and 200 characters" })
-        .refine((value) => /[a-zA-Z0-9_-]/.test(value), {
-          message:
-            "Must contain only alphanumeric characters, underscores, and dashes",
+        .refine((value) => isAlphaNumericExtended(value), {
+          message: ALPHA_NUMERIC_EXTENDED_MESSAGE,
         }),
       type: FieldTypeEnum,
       label: z.string().optional(),
@@ -146,6 +154,14 @@ export function TriggerCreateForm() {
           if (isApiValidationError(error)) {
             // TODO: handle validation errors
           }
+          if (isApiError(error)) {
+            // root error
+            if (error.response?.status === HttpStatusCode.Conflict) {
+              form.setError("title", {
+                message: "Trigger with this key already exists",
+              });
+            }
+          }
         },
       },
     );
@@ -168,8 +184,12 @@ export function TriggerCreateForm() {
           {/* <CardDescription>Deploy your new activity in one-click.</CardDescription> */}
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              {/* <Card className="w-[350px]"> */}
-              {/* <CardContent> */}
+              {form.formState.errors.root?.serverError && (
+                <div className="bg-red-100 text-red-600 text-sm px-4 py-2 rounded-md">
+                  {form.formState.errors.root.serverError.message}
+                </div>
+              )}
+
               <FormField
                 control={form.control}
                 name="title"

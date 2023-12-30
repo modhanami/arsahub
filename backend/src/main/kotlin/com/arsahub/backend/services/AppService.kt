@@ -44,10 +44,19 @@ class AppService(
 
     class UserNotFoundException(uuid: UUID) : NotFoundException("User with UUID $uuid not found")
 
+    class TriggerConflictException(triggerKey: String) :
+        ConflictException("Trigger with key $triggerKey already exists. Try another title that gives a unique key.")
+
     fun createTrigger(app: App, request: TriggerCreateRequest): Trigger {
         val existingApp = getAppOrThrow(app.id!!)
 
         logger.debug { "Received trigger create request for app ${existingApp.title} (${existingApp.id}): Name = ${request.title}, Key = ${request.key}" }
+
+        // validate uniqueness of key in app
+        val existingTrigger = triggerRepository.findByKeyAndApp(request.key!!, existingApp)
+        if (existingTrigger != null) {
+            throw TriggerConflictException(request.key)
+        }
 
         // validate field definitions
         if (request.fields != null) {
