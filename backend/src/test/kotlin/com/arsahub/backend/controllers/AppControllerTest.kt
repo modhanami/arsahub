@@ -17,6 +17,8 @@ import com.arsahub.backend.repositories.UserRepository
 import com.arsahub.backend.services.APIKeyService
 import com.arsahub.backend.services.AppService
 import com.corundumstudio.socketio.SocketIOServer
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.node.ObjectNode
 import com.ninjasquad.springmockk.MockkBean
 import com.ninjasquad.springmockk.SpykBean
 import org.junit.jupiter.api.AfterEach
@@ -49,6 +51,9 @@ import java.util.*
 @AutoConfigureMockMvc
 @Transactional
 class AppControllerTest {
+    @Autowired
+    private lateinit var mapper: ObjectMapper
+
     @Autowired
     private lateinit var ruleRepository: RuleRepository
 
@@ -99,6 +104,27 @@ class AppControllerTest {
 
     }
 
+    data class TrigggerTestModel(
+        val title: String?,
+        val key: String?,
+        val fields: List<FieldTestModel>? = null,
+    )
+
+    data class FieldTestModel(
+        val type: String?,
+        val key: String?,
+        val label: String? = null,
+    )
+
+    @Suppress("unused")
+    fun TrigggerTestModel.toNode(): ObjectNode {
+        return mapper.valueToTree(this)
+    }
+
+    fun TrigggerTestModel.toJson(): String {
+        return mapper.writeValueAsString(this)
+    }
+
     @Test
     fun `returns list of app users with 200`() {
         // Arrange
@@ -133,23 +159,21 @@ class AppControllerTest {
     @Test
     fun `creates a trigger with 201`() {
         // Arrange
-        val jsonBody = """
-            {
-              "title": "Workshop Completed",
-              "key": "workshop_completed",
-              "fields": [
-                {
-                  "type": "integer",
-                  "key": "workshopId",
-                  "label": "Workshop ID"
-                },
-                {
-                  "type": "text",
-                  "key": "source"
-                }
-              ]
-            }
-        """.trimIndent()
+        val jsonBody = TrigggerTestModel(
+            title = "Workshop Completed",
+            key = "workshop_completed",
+            fields = listOf(
+                FieldTestModel(
+                    type = "integer",
+                    key = "workshopId",
+                    label = "Workshop ID"
+                ),
+                FieldTestModel(
+                    type = "text",
+                    key = "source"
+                )
+            )
+        ).toJson()
 
         // Act & Assert HTTP
         mockMvc.performWithAppAuth(
@@ -187,25 +211,81 @@ class AppControllerTest {
     }
 
     @Test
+    fun `fails with 400 when creating a trigger with title less than 4 characters`() {
+        // Arrange
+        val jsonBody = TrigggerTestModel(
+            title = "Wor",
+            key = "workshop_completed",
+            fields = listOf(
+                FieldTestModel(
+                    type = "integer",
+                    key = "workshopId",
+                    label = "Workshop ID"
+                ),
+                FieldTestModel(
+                    type = "text",
+                    key = "source"
+                )
+            )
+        ).toJson()
+
+        // Act & Assert HTTP
+        mockMvc.performWithAppAuth(
+            post("/api/apps/triggers")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonBody)
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.errors.title").value("Title must be between 4 and 200 characters"))
+    }
+
+    @Test
+    fun `fails with 400 when creating a trigger without title`() {
+        // Arrange
+        val jsonBody = TrigggerTestModel(
+            title = null, // TODO: evaluate if absent fields should be interpreted the same as null (right now it is)
+            key = "workshop_completed",
+            fields = listOf(
+                FieldTestModel(
+                    type = "integer",
+                    key = "workshopId",
+                    label = "Workshop ID"
+                ),
+                FieldTestModel(
+                    type = "text",
+                    key = "source"
+                )
+            )
+        ).toJson()
+
+        // Act & Assert HTTP
+        mockMvc.performWithAppAuth(
+            post("/api/apps/triggers")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonBody)
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.errors.title").value("Title is required"))
+    }
+
+    @Test
     fun `fails with 400 when creating a trigger with invalid field types`() {
         // Arrange
-        val jsonBody = """
-            {
-              "title": "Workshop Completed",
-              "key": "workshop_completed",
-              "fields": [
-                {
-                  "type": "integer",
-                  "key": "workshopId",
-                  "label": "Workshop ID"
-                },
-                {
-                  "type": "not_a_valid_type",
-                  "key": "source"
-                }
-              ]
-            }
-        """.trimIndent()
+        val jsonBody = TrigggerTestModel(
+            title = "Workshop Completed",
+            key = "workshop_completed",
+            fields = listOf(
+                FieldTestModel(
+                    type = "integer",
+                    key = "workshopId",
+                    label = "Workshop ID"
+                ),
+                FieldTestModel(
+                    type = "not_a_valid_type",
+                    key = "source"
+                )
+            )
+        ).toJson()
 
         // Act & Assert HTTP
         mockMvc.performWithAppAuth(
