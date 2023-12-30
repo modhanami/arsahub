@@ -4,6 +4,7 @@ import { toast } from "../components/ui/use-toast";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useCurrentApp } from "@/lib/current-app";
 import { useUser } from "@/hooks";
+import { isApiError } from "@/api";
 
 export function useCurrentUser() {
   const { uuid, clearUuid, isLoading: isUserUuidLoading } = useUserUuid();
@@ -13,7 +14,7 @@ export function useCurrentUser() {
   const { data: currentUser, isLoading, error } = useUser(uuid);
 
   useEffect(() => {
-    if (error) {
+    if (isApiError(error)) {
       toast({
         title: "Invalid user UUID",
         description: error.message,
