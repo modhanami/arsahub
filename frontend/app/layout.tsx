@@ -1,7 +1,7 @@
 import { ThemeProvider } from "@/components/theme-provider";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import { WrappedQueryClientProvider } from "../components/query-client-provider";
+import { Providers } from "../components/providers";
 import { Toaster } from "../components/ui/toaster";
 import "./globals.css";
 import { AppApiKeyProvider } from "@/lib/current-app";
@@ -30,11 +30,11 @@ export default function RootLayout({
         >
           <AppApiKeyProvider>
             <UserUuidProvider>
-              <WrappedQueryClientProvider>
+              <Providers>
                 {/* <ModeToggle /> */}
                 {children}
                 <Toaster />
-              </WrappedQueryClientProvider>
+              </Providers>
             </UserUuidProvider>
           </AppApiKeyProvider>
         </ThemeProvider>
