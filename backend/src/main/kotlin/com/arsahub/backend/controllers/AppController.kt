@@ -17,10 +17,17 @@ import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.persistence.EntityNotFoundException
+import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
+import sh.ory.ApiException
+import sh.ory.Configuration
+import sh.ory.api.FrontendApi
+import sh.ory.auth.HttpBearerAuth
+import sh.ory.model.Session
 import java.util.*
+
 
 @RestController
 @RequestMapping("/api/apps")
@@ -32,6 +39,39 @@ class AppController(
     private val ruleRepository: RuleRepository,
     private val appUserRepository: AppUserRepository
 ) {
+
+    // me
+    @GetMapping("/me")
+    fun me(
+        request: HttpServletRequest
+    ): Session? {
+        val cookieString = request.getHeader("Cookie")
+        val cookies = request.cookies
+        println("cookieString: $cookieString")
+        println("cookies: $cookies")
+        val defaultClient = Configuration.getDefaultApiClient()
+        defaultClient.setBasePath("https://intelligent-booth-46c8rve1aj.projects.oryapis.com")
+
+        // Configure HTTP bearer authorization: oryAccessToken
+//        ory_pat_CcMAtqrr2xPObt97oXtbjTCoyAlW3IUl
+        val oryAccessToken = defaultClient.getAuthentication("oryAccessToken") as HttpBearerAuth
+        oryAccessToken.bearerToken = "ory_pat_CcMAtqrr2xPObt97oXtbjTCoyAlW3IUl"
+
+        val apiInstance = FrontendApi(defaultClient)
+        try {
+            val result: Session? = apiInstance.toSession(null, cookieString, null)
+            println(result)
+            return result
+        } catch (e: ApiException) {
+            System.err.println("Exception when calling CourierApi#getCourierMessage")
+            System.err.println("Status code: " + e.code)
+            System.err.println("Reason: " + e.responseBody)
+            System.err.println("Response headers: " + e.responseHeaders)
+            e.printStackTrace()
+        }
+
+        return null
+    }
 
     @Operation(
         summary = "Create a trigger for an app",

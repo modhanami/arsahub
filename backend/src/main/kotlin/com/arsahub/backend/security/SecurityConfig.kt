@@ -31,6 +31,16 @@ class SecurityConfig(
             .csrf { it.disable() }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .addFilterBefore(appAuthenticationFilter, AuthorizationFilter::class.java)
+            .cors {
+                it.configurationSource {
+                    val cors = org.springframework.web.cors.CorsConfiguration()
+                    cors.cors.allowedOriginPatterns = listOf("/api/**")
+                    cors.allowedMethods = listOf("*")
+                    cors.allowedHeaders = listOf("*")
+                    cors.allowCredentials = true
+                    cors
+                }
+            }
         return http.build()
     }
 

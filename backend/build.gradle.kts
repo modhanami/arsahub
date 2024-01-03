@@ -63,6 +63,7 @@ dependencies {
     implementation("jakarta.validation:jakarta.validation-api:3.0.2")
     implementation("org.liquibase:liquibase-core")
     implementation("com.jayway.jsonpath:json-path:2.8.0")
+    implementation("sh.ory:ory-client:1.4.7")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     runtimeOnly("org.postgresql:postgresql")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
