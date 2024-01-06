@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createAchievement,
   createAppUser,
+  createRule,
   createTrigger,
   fetchAchievements,
   fetchApp,
@@ -19,6 +20,7 @@ import {
 import {
   AchievementCreateRequest,
   AppUserCreateRequest,
+  RuleCreateRequest,
   TriggerCreateRequest,
   TriggerSendRequest,
 } from "@/types/generated-types";
@@ -34,13 +36,17 @@ export function useAppUsers() {
   });
 }
 
-export function useAchievements() {
+const defaultOptions = {
+  enabled: true,
+};
+
+export function useAchievements(options = defaultOptions) {
   const { currentApp } = useCurrentApp();
 
   return useQuery({
     queryKey: ["achievements"],
     queryFn: () => currentApp && fetchAchievements(currentApp),
-    enabled: !!currentApp,
+    enabled: !!currentApp && options.enabled,
   });
 }
 
@@ -108,6 +114,21 @@ export function useRules() {
     queryKey: ["rules"],
     queryFn: () => currentApp && fetchRules(currentApp),
     enabled: !!currentApp,
+  });
+}
+
+export function useCreateRule() {
+  const { currentApp } = useCurrentApp();
+  const queryClient = useQueryClient();
+  if (!currentApp) {
+    throw new Error("No current app");
+  }
+
+  return useMutation({
+    mutationFn: (newRule: RuleCreateRequest) => createRule(currentApp, newRule),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["rules"] });
+    },
   });
 }
 

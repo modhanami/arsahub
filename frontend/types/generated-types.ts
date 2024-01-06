@@ -1,7 +1,7 @@
 /* tslint:disable */
 /* eslint-disable */
 
-// Generated using typescript-generator version 3.2.1263 on 2023-12-29 16:45:21.
+// Generated using typescript-generator version 3.2.1263 on 2024-01-06 13:17:31.
 
 export interface AchievementCreateRequest {
   title: string | null;
@@ -34,7 +34,7 @@ export interface FieldDefinition {
 
 export interface KeyAndParams {
   key: string;
-  params: { [index: string]: string } | null;
+  params: { [index: string]: any } | null;
 }
 
 export interface RuleCreateRequest {
@@ -49,10 +49,10 @@ export interface RuleCreateRequest {
 export interface RuleCreateRequestKt {}
 
 export interface TriggerCreateRequest {
+  fields: FieldDefinition[] | null;
   title: string | null;
   key: string | null;
   description: string | null;
-  fields: FieldDefinition[] | null;
 }
 
 export interface TriggerSendRequest {
@@ -126,12 +126,6 @@ export interface TriggerResponse {
   key: string | null;
   id: number | null;
   fields: FieldDefinition[] | null;
-}
-
-export interface UserProfileResponse {
-  user: AppUserResponse | null;
-  points: number;
-  achievements: AchievementResponse[];
 }
 
 export interface UserResponse {

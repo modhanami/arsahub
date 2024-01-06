@@ -7,6 +7,7 @@ import {
   AppUserCreateRequest,
   AppUserResponse,
   LeaderboardResponse,
+  RuleCreateRequest,
   RuleResponse,
   TriggerCreateRequest,
   TriggerResponse,
@@ -154,6 +155,19 @@ export async function fetchRules(app: AppResponse) {
       ...makeAppAuthHeader(app),
     },
   });
+  return data;
+}
+
+export async function createRule(app: AppResponse, newRule: RuleCreateRequest) {
+  const { data } = await instance.post<RuleResponse>(
+    `${API_URL}/apps/rules`,
+    newRule,
+    {
+      headers: {
+        ...makeAppAuthHeader(app),
+      },
+    },
+  );
   return data;
 }
 

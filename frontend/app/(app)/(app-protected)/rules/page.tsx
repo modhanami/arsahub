@@ -5,6 +5,7 @@ import { RuleCreateButton } from "../../../../components/rule-create-button";
 import { RuleItem } from "../../../../components/rule-item";
 import { DashboardShell } from "../../../../components/shell";
 import { useRules } from "@/hooks";
+import Link from "next/link";
 
 export default function RulesPage() {
   const { data: rules, isLoading } = useRules();
@@ -14,7 +15,9 @@ export default function RulesPage() {
   return (
     <DashboardShell>
       <DashboardHeader heading="Rules" text="Create and manage rules.">
-        {/*<CreateRuleForm activityId={Number(params.id)} />*/}
+        <Link href={"/rules/new"}>
+          <RuleCreateButton />
+        </Link>
       </DashboardHeader>
       <div>
         {rules?.length ? (

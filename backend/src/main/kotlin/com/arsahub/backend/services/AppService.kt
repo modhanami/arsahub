@@ -359,21 +359,24 @@ class AppService(
         val params = actionDefinition.params
         return when (actionKey) {
             "add_points" -> {
-                val rawPoints = params?.get("points")
-                val points = rawPoints?.toIntOrNull()
-                if (points == null || points <= 0) {
-                    throw IllegalArgumentException("Points is invalid")
-                }
+                val points = params?.get("points") as? Int ?: throw IllegalArgumentException("Points is invalid")
                 AddPointsAction(points)
             }
 
             "unlock_achievement" -> {
-                val rawAchievementId = params?.get("achievementId")
-                val achievementId = rawAchievementId?.toLongOrNull()
-                if (achievementId == null || achievementId <= 0) {
-                    throw IllegalArgumentException("Achievement ID is invalid")
+                when (val rawAchievementId = params?.get("achievementId")) {
+                    is Int -> {
+                        UnlockAchievementAction(rawAchievementId.toLong())
+                    }
+
+                    is Long -> {
+                        UnlockAchievementAction(rawAchievementId)
+                    }
+
+                    else -> {
+                        throw IllegalArgumentException("Achievement ID is invalid")
+                    }
                 }
-                UnlockAchievementAction(achievementId)
             }
 
             else -> throw IllegalArgumentException("Unknown action key: $actionKey")
