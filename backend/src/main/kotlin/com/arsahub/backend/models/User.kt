@@ -16,7 +16,15 @@ class User(
 
     @NotNull
     @Column(name = "uuid", nullable = false)
-    var uuid: UUID? = null
+    var uuid: UUID? = null,
+
+    @NotNull
+    @Column(name = "password", nullable = false, length = Integer.MAX_VALUE)
+    var password: String? = null,
+
+    @NotNull
+    @Column(name = "email", nullable = false, length = Integer.MAX_VALUE)
+    var email: String? = null,
 ) : AuditedEntity() {
 
     @Id

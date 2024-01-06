@@ -27,6 +27,7 @@ class AppAuthenticationFilter(
             AntPathRequestMatcher("/api/apps/*/leaderboard", HttpMethod.GET.toString()), // TODO: reevaluate this
             AntPathRequestMatcher("/swagger-ui/**"),
             AntPathRequestMatcher("/v3/api-docs/**"),
+            AntPathRequestMatcher("/api/auth/**"),
         )
 
         setRequestMatcher(NegatedRequestMatcher(OrRequestMatcher(matchers)))
