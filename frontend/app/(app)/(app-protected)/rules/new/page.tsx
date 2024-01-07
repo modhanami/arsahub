@@ -311,8 +311,8 @@ export default function Page() {
         key: data.trigger.key,
         params: null, // TODO: support trigger params or remove
       },
-      title: "FIXME",
-      description: "FIXME",
+      title: data.title.trim(),
+      description: data.description?.trim() || null,
       conditions: finalConditions,
     };
 
