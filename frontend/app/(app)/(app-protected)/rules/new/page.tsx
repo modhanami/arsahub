@@ -38,6 +38,7 @@ import { v4 as uuidv4 } from "uuid";
 import { Input } from "@/components/ui/input";
 import { FieldDefinition, RuleCreateRequest } from "@/types/generated-types";
 import { Textarea } from "@/components/ui/textarea";
+import { Icons } from "@/components/icons";
 
 const operations = [{ label: "is", value: "is" }];
 const actions = [
@@ -214,6 +215,12 @@ export default function Page() {
         value: "",
       },
     ]);
+  }
+
+  function removeCondition(uuid: string) {
+    setConditions((prev) =>
+      prev.filter((condition) => condition.uuid !== uuid),
+    );
   }
 
   function setConditionField(uuid: string, field: string) {
@@ -485,6 +492,14 @@ export default function Page() {
                     type={condition.inputType}
                     {...condition.inputProps}
                   />
+
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeCondition(condition.uuid)}
+                  >
+                    <Icons.trash className="h-4 w-4" />
+                  </Button>
 
                   <FormMessage>{conditionErrors[condition.uuid]}</FormMessage>
                 </div>
