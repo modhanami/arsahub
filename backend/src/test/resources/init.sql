@@ -13,7 +13,9 @@ create table "user"
     name       text                                               not null,
     created_at timestamp with time zone default now()             not null,
     updated_at timestamp with time zone default now()             not null,
-    uuid       uuid                     default gen_random_uuid() not null
+    uuid uuid default gen_random_uuid() not null,
+    password text not null,
+    email    text not null
 );
 
 create table app

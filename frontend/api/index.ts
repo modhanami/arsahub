@@ -7,15 +7,17 @@ import {
   AppUserCreateRequest,
   AppUserResponse,
   LeaderboardResponse,
+  LoginResponse,
   RuleCreateRequest,
   RuleResponse,
   TriggerCreateRequest,
   TriggerResponse,
   TriggerSendRequest,
+  UserResponse,
 } from "../types/generated-types";
 
 import axios from "axios";
-import { ApiErrorHolder, UserResponseWithUUID } from "@/types";
+import { ApiErrorHolder, UserResponseWithAccessToken } from "@/types";
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -104,9 +106,17 @@ export async function fetchAppUsers(app: AppResponse) {
   return data;
 }
 
-export function makeAppAuthHeader(app: AppResponse): { Authorization: string } {
+export function makeAppAuthHeader(app: AppResponse): { "X-API-Key": string } {
   return {
-    Authorization: `Bearer ${app.apiKey}`,
+    "X-API-Key": `${app.apiKey}`,
+  };
+}
+
+export function makeAppAuthHeaderWithToken(apiToken: string): {
+  "X-API-Key": string;
+} {
+  return {
+    "X-API-Key": `${apiToken}`,
   };
 }
 
@@ -173,10 +183,12 @@ export async function createRule(app: AppResponse, newRule: RuleCreateRequest) {
 
 export type UserUUID = string;
 
-export async function fetchApp(userUUID: UserUUID) {
-  const { data } = await instance.get<AppResponse>(
-    `${API_URL}/apps?userUUID=${userUUID}`,
-  );
+export async function fetchMyApp(accessToken: string) {
+  const { data } = await instance.get<AppResponse>(`${API_URL}/apps/me`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
   return data;
 }
 
@@ -187,15 +199,28 @@ export async function fetchLeaderboard(appId: number, type: string) {
   return data;
 }
 
-export async function fetchUserByUUID(uuid: string) {
-  const { data } = await instance.get<UserResponseWithUUID>(
+export async function fetchUserByAccessToken(
+  accessToken: string,
+): Promise<UserResponseWithAccessToken> {
+  const { data } = await instance.get<UserResponse>(
     `${API_URL}/apps/users/current`,
     {
       headers: {
-        Authorization: `Bearer ${uuid}`,
+        Authorization: `Bearer ${accessToken}`,
       },
     },
   );
+  return {
+    ...data,
+    accessToken,
+  };
+}
+
+export async function loginUser(email: string, password: string) {
+  const { data } = await instance.post<LoginResponse>(`${API_URL}/auth/login`, {
+    email,
+    password,
+  });
   return data;
 }
 
@@ -230,7 +255,7 @@ export async function fetchAppUser(app: AppResponse, userId: string) {
 export async function fetchAppByAPIKey(apiKey: string) {
   const { data } = await instance.get<AppResponse>(`${API_URL}/apps/current`, {
     headers: {
-      Authorization: `Bearer ${apiKey}`,
+      ...makeAppAuthHeaderWithToken(apiKey),
     },
   });
   return data;

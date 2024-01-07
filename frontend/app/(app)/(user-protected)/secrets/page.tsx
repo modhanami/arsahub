@@ -5,12 +5,10 @@ import { Button } from "../../../../components/ui/button";
 import { DashboardHeader } from "../../../../components/header";
 import { DashboardShell } from "../../../../components/shell";
 import { toast } from "../../../../components/ui/use-toast";
-import { useUserUuid } from "@/lib/current-user";
-import { useAppByUserUUID } from "@/hooks";
+import { useOwnedApp } from "@/hooks";
 
 export default function Page() {
-  const { uuid } = useUserUuid();
-  const { data, isLoading } = useAppByUserUUID(uuid);
+  const { data, isLoading } = useOwnedApp();
   const [showSecret, setShowSecret] = useState(false);
 
   const copyToClipboard = async () => {

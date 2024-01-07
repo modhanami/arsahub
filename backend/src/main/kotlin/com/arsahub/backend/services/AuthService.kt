@@ -2,6 +2,7 @@ package com.arsahub.backend.services
 
 import com.arsahub.backend.dtos.request.UserLoginRequest
 import com.arsahub.backend.dtos.request.UserSignupRequest
+import com.arsahub.backend.exceptions.UnauthorizedException
 import com.arsahub.backend.models.App
 import com.arsahub.backend.models.User
 import com.arsahub.backend.repositories.AppRepository
@@ -22,6 +23,7 @@ class AuthService(
     private val passwordEncoder: Argon2PasswordEncoder,
     private val authProperties: AuthProperties
 ) {
+    class UnauthorizedUserException : UnauthorizedException("Email or password is incorrect")
 
     fun generateAccessToken(user: User): String {
         val tomorrow = Date.from(
@@ -40,7 +42,9 @@ class AuthService(
         return token
     }
 
-    fun createUser(request: UserSignupRequest): User {
+    data class UserCreateResult(val user: User, val app: App)
+
+    fun createUser(request: UserSignupRequest): UserCreateResult {
         if (userRepository.existsByEmail(request.email)) {
             throw IllegalArgumentException("User with this email already exists")
         }
@@ -57,17 +61,18 @@ class AuthService(
         val savedUser = userRepository.save(newUser)
 
         // bootstrap app
-        createAppForUser(savedUser)
+        val app = createAppForUser(savedUser)
 
-        return savedUser
+        return UserCreateResult(savedUser, app)
     }
+
 
     fun authenticate(request: UserLoginRequest): User {
         val user = userRepository.findByEmail(request.email)
-            ?: throw IllegalArgumentException("User with this email does not exist")
+            ?: throw UnauthorizedUserException()
 
         if (!passwordEncoder.matches(request.password, user.password)) {
-            throw IllegalArgumentException("Email or password is incorrect")
+            throw UnauthorizedUserException()
         }
 
         return user

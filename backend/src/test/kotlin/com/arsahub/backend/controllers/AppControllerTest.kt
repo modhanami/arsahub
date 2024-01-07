@@ -10,17 +10,13 @@ import com.arsahub.backend.dtos.request.TriggerCreateRequest
 import com.arsahub.backend.models.AppUser
 import com.arsahub.backend.models.Rule
 import com.arsahub.backend.models.RuleRepeatability
-import com.arsahub.backend.repositories.AppRepository
 import com.arsahub.backend.repositories.AppUserRepository
 import com.arsahub.backend.repositories.RuleRepository
-import com.arsahub.backend.repositories.UserRepository
-import com.arsahub.backend.services.APIKeyService
 import com.arsahub.backend.services.AppService
+import com.arsahub.backend.services.AuthService
 import com.corundumstudio.socketio.SocketIOServer
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
-import com.ninjasquad.springmockk.MockkBean
-import com.ninjasquad.springmockk.SpykBean
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -47,10 +43,15 @@ import java.util.*
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
 )
 @Testcontainers
-@ActiveProfiles("test")
+@ActiveProfiles("dev", "test")
 @AutoConfigureMockMvc
 @Transactional
 class AppControllerTest {
+    private lateinit var authSetup: AuthSetup
+
+    @Autowired
+    private lateinit var authService: AuthService
+
     @Autowired
     private lateinit var mapper: ObjectMapper
 
@@ -66,18 +67,6 @@ class AppControllerTest {
     @Autowired
     private lateinit var mockMvc: MockMvc
 
-    @SpykBean
-    lateinit var appRepository: AppRepository
-
-    @SpykBean
-    lateinit var userRepository: UserRepository
-
-    @MockkBean
-    lateinit var apiKeyService: APIKeyService
-
-
-    private lateinit var authSetup: AuthSetup
-
     @MockBean
     @Suppress("unused")
     private lateinit var socketIoServer: SocketIOServer // no-op
@@ -85,7 +74,6 @@ class AppControllerTest {
     @MockBean
     @Suppress("unused")
     private lateinit var socketIOService: SocketIOService // no-op
-
 
     companion object {
         @Container
@@ -96,7 +84,9 @@ class AppControllerTest {
 
     @BeforeEach
     fun setUp() {
-        authSetup = setupAuth(userRepository, appRepository, apiKeyService)
+        authSetup = setupAuth(
+            authService
+        )
     }
 
     @AfterEach

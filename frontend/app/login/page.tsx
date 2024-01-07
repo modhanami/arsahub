@@ -3,63 +3,78 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Button } from "../../components/ui/button";
 import {
   Form,
   FormControl,
   FormField,
   FormItem,
   FormMessage,
-} from "../../components/ui/form";
-import { Input } from "../../components/ui/input";
-import { useCurrentUser, useUserUuid } from "../../lib/current-user";
-import { useEffect } from "react";
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { useAuth } from "../../lib/current-user";
+import { Button } from "@/components/ui/button";
+import { isApiError, isApiValidationError } from "@/api";
+import { HttpStatusCode } from "axios";
+
+const loginSchema = z.object({
+  email: z
+    .string({
+      required_error: "Please enter your email address.",
+    })
+    .email({
+      message: "Please enter a valid email address.",
+    }),
+  password: z
+    .string({
+      required_error: "Please enter your password.",
+    })
+    .min(8, { message: "Password must be between 8 and 50 characters." })
+    .max(50, { message: "Password must be between 8 and 50 characters." }),
+});
+
+type FormData = z.infer<typeof loginSchema>;
 
 export default function Page() {
-  const defaultRedirect = "/";
   const router = useRouter();
-  const loginSchema = z.object({
-    uuid: z
-      .string({
-        required_error: "Please enter a valid UUID",
-      })
-      .uuid(),
-  });
-  type FormData = z.infer<typeof loginSchema>;
-
-  const { currentUser } = useCurrentUser();
-  const { updateUuid } = useUserUuid();
-
+  const searchParams = useSearchParams();
   const form = useForm<FormData>({
     resolver: zodResolver(loginSchema),
   });
+  const { control, setError, handleSubmit } = form;
 
-  const { control, handleSubmit, setError } = form;
+  const { login } = useAuth();
 
-  const searchParams = useSearchParams();
-
-  useEffect(() => {
-    if (currentUser) {
-      router.push(defaultRedirect);
-    }
-  }, [currentUser, router]);
-
-  if (currentUser) {
-    return null;
-  }
-
-  async function handleLogin(data: { uuid: string }) {
+  async function handleLogin(data: FormData) {
     try {
-      updateUuid(data.uuid);
-      router.push(searchParams.get("redirect") || defaultRedirect);
+      await login(data.email, data.password);
+      router.push(searchParams.get("redirect") || "/");
     } catch (error: any) {
       console.log("Error", error);
 
-      if (error instanceof Error) {
-        setError("uuid", {
-          type: "manual",
-          message: error.message,
-        });
+      if (isApiValidationError(error) && error.response) {
+        if (error.response.data.errors) {
+          if (error.response.data.errors.email) {
+            setError("email", {
+              message: error.response.data.errors.email,
+            });
+          }
+          if (error.response.data.errors.password) {
+            setError("password", {
+              message: error.response.data.errors.password,
+            });
+          }
+        }
+      }
+
+      if (isApiError(error) && error.response) {
+        if (error.response.status === HttpStatusCode.Unauthorized) {
+          setError("email", {
+            message: error.response.data.message,
+          });
+          setError("password", {
+            message: error.response.data.message,
+          });
+        }
       }
     }
   }
@@ -80,7 +95,7 @@ export default function Page() {
           >
             <FormField
               control={control}
-              name="uuid"
+              name="email"
               render={({ field }) => (
                 <FormItem>
                   <FormControl>
@@ -88,7 +103,24 @@ export default function Page() {
                       type="text"
                       value={field.value || ""}
                       onChange={field.onChange}
-                      placeholder="00000000-0000-0000-0000-000000000000"
+                      placeholder="Email"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <Input
+                      type="password"
+                      value={field.value || ""}
+                      onChange={field.onChange}
+                      placeholder="Password"
                     />
                   </FormControl>
                   <FormMessage />

@@ -18,7 +18,7 @@ class AuthController(
     @PostMapping("/signup")
     @ResponseStatus(HttpStatus.CREATED)
     fun signup(@Valid @RequestBody request: UserSignupRequest): SignupResponse {
-        val newUser = authService.createUser(request)
+        val (newUser, _) = authService.createUser(request)
         val accessToken = authService.generateAccessToken(newUser)
 
         return SignupResponse(accessToken)

@@ -6,16 +6,15 @@ import {
   createRule,
   createTrigger,
   fetchAchievements,
-  fetchApp,
   fetchAppByAPIKey,
   fetchAppUser,
   fetchAppUsers,
   fetchLeaderboard,
+  fetchMyApp,
   fetchRules,
   fetchTriggers,
-  fetchUserByUUID,
+  fetchUserByAccessToken,
   sendTrigger,
-  UserUUID,
 } from "@/api";
 import {
   AchievementCreateRequest,
@@ -24,7 +23,8 @@ import {
   TriggerCreateRequest,
   TriggerSendRequest,
 } from "@/types/generated-types";
-import { UserResponseWithUUID } from "@/types";
+import { UserResponseWithAccessToken } from "@/types";
+import { useCurrentUser } from "@/lib/current-user";
 
 export function useAppUsers() {
   const { currentApp } = useCurrentApp();
@@ -139,11 +139,13 @@ export function useLeaderboard(appId: number, type: string) {
   });
 }
 
-export function useAppByUserUUID(userUUID: UserUUID | null) {
+export function useOwnedApp() {
+  const { currentUser } = useCurrentUser();
+  const accessToken = currentUser?.accessToken;
   return useQuery({
-    queryKey: ["app", "byUserUUID", userUUID],
-    queryFn: () => fetchApp(userUUID!!),
-    enabled: !!userUUID,
+    queryKey: ["app", "byAccessToken", accessToken],
+    queryFn: () => fetchMyApp(accessToken!!),
+    enabled: !!accessToken,
   });
 }
 
@@ -155,11 +157,11 @@ export function useAppByAPIKey(apiKey: string | null) {
   });
 }
 
-export function useUser(userUUID: UserUUID | null) {
-  return useQuery<UserResponseWithUUID, Error>({
-    queryKey: ["user", userUUID],
-    queryFn: () => fetchUserByUUID(userUUID!),
-    enabled: !!userUUID,
+export function useUser(accessToken: string | null) {
+  return useQuery<UserResponseWithAccessToken, Error>({
+    queryKey: ["user", accessToken],
+    queryFn: () => fetchUserByAccessToken(accessToken!!),
+    enabled: !!accessToken,
   });
 }
 

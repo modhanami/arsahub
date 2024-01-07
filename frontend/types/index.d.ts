@@ -60,8 +60,8 @@ export type SiteConfig = {
   };
 };
 
-export type UserResponseWithUUID = UserResponse & {
-  uuid: string;
+export type UserResponseWithAccessToken = UserResponse & {
+  accessToken: string;
 };
 
 export type ApiErrorHolder<T = unknown, D = any> = AxiosError<T, D>;

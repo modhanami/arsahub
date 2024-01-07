@@ -7,12 +7,8 @@ import org.springframework.security.web.authentication.AuthenticationConverter
 
 class AppAuthenticationConverter : AuthenticationConverter {
     override fun convert(request: HttpServletRequest): Authentication {
-        val authHeader = request.getHeader("Authorization")
+        val apiKey = request.getHeader("X-API-Key")
             ?: throw BadCredentialsException("No API key found in request.")
-        if (!authHeader.startsWith("Bearer ")) {
-            throw BadCredentialsException("The token type should be Bearer.")
-        }
-        val apiKey = authHeader.removePrefix("Bearer ")
         return AppAuthenticationToken.unauthenticated(apiKey)
     }
 }

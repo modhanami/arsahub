@@ -14,7 +14,6 @@ import com.arsahub.backend.services.actionhandlers.ActionHandlerRegistry
 import com.arsahub.backend.services.actionhandlers.ActionResult
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
-import java.util.*
 
 
 @Service
@@ -40,9 +39,9 @@ class AppService(
 
 
     class AppNotFoundException(appId: Long) : NotFoundException("App with ID $appId not found")
-    class AppNotFoundForUserException(uuid: UUID) : Exception("App not found for user with UUID $uuid")
+    class AppNotFoundForUserException : Exception("App not found for this user")
 
-    class UserNotFoundException(uuid: UUID) : NotFoundException("User with UUID $uuid not found")
+    class UserNotFoundException : NotFoundException("User with this ID not found")
 
     class TriggerConflictException(triggerKey: String) :
         ConflictException("Trigger with key $triggerKey already exists. Try another title that gives a unique key.")
@@ -99,12 +98,8 @@ class AppService(
         return triggerRepository.findAllByAppId(app.id!!)
     }
 
-    fun getAppByUserUUID(uuid: UUID): App {
-        return appRepository.findFirstByOwnerUuid(uuid) ?: throw AppNotFoundForUserException(uuid)
-    }
-
-    fun getUserByUUID(userUUID: UUID): User {
-        return userRepository.findByUuid(userUUID) ?: throw UserNotFoundException(userUUID)
+    fun getAppByUserId(userId: Long): App {
+        return appRepository.findFirstByOwner_UserId(userId) ?: throw AppNotFoundForUserException()
     }
 
     fun addUser(app: App, request: AppUserCreateRequest): AppUser {
@@ -404,6 +399,10 @@ class AppService(
 
     fun listRules(app: App): List<Rule> {
         return ruleRepository.findAllByApp(app)
+    }
+
+    fun getUserById(userId: Long): User {
+        return userRepository.findById(userId).orElseThrow { UserNotFoundException() }
     }
 }
 

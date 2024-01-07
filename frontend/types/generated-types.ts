@@ -1,7 +1,7 @@
 /* tslint:disable */
 /* eslint-disable */
 
-// Generated using typescript-generator version 3.2.1263 on 2024-01-06 13:17:31.
+// Generated using typescript-generator version 3.2.1263 on 2024-01-07 13:10:55.
 
 export interface AchievementCreateRequest {
   title: string | null;
@@ -65,6 +65,16 @@ export interface UnlockAchievementAction extends Action {
   achievementId: number;
 }
 
+export interface UserLoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface UserSignupRequest {
+  email: string;
+  password: string;
+}
+
 export interface AchievementResponse {
   achievementId: number;
   title: string;
@@ -104,6 +114,10 @@ export interface LeaderboardResponse {
   entries: Entry[];
 }
 
+export interface LoginResponse {
+  accessToken: string;
+}
+
 export interface RuleResponse {
   createdAt: Date | null;
   updatedAt: Date | null;
@@ -116,6 +130,10 @@ export interface RuleResponse {
   id: number | null;
   repeatability: string | null;
   conditions: { [index: string]: any } | null;
+}
+
+export interface SignupResponse {
+  accessToken: string;
 }
 
 export interface TriggerResponse {
@@ -177,6 +195,8 @@ export interface User
   username: string;
   name: string;
   uuid: string | null;
+  password: string | null;
+  email: string | null;
   userId: number | null;
 }
 

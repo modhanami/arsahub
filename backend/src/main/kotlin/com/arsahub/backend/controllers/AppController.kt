@@ -19,8 +19,8 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.persistence.EntityNotFoundException
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
+import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*
-import java.util.*
 
 @RestController
 @RequestMapping("/api/apps")
@@ -123,11 +123,12 @@ class AppController(
             )
         ]
     )
-    @GetMapping
-    fun getAppByUserUUID(
-        @RequestParam(required = false) userUUID: UUID
+    @GetMapping("/me")
+    fun getAppForCurrentUser(
+        @AuthenticationPrincipal jwt: org.springframework.security.oauth2.jwt.Jwt
     ): AppResponse {
-        return appService.getAppByUserUUID(userUUID).let { AppResponse.fromEntity(it) }
+        val userId = jwt.claims["id"] as? Long ?: throw IllegalArgumentException("User ID not found in JWT")
+        return appService.getAppByUserId(userId).let { AppResponse.fromEntity(it) }
     }
 
     //    get current authenticated app
@@ -158,10 +159,10 @@ class AppController(
     )
     @GetMapping("/users/current")
     fun getUserByUUID(
-        @RequestHeader("Authorization") authHeader: String
+        @AuthenticationPrincipal jwt: org.springframework.security.oauth2.jwt.Jwt
     ): UserResponse {
-        val userUUID = UUID.fromString(authHeader.split(" ")[1])
-        return appService.getUserByUUID(userUUID).let { UserResponse.fromEntity(it) }
+        val userId = jwt.claims["id"] as? Long ?: throw IllegalArgumentException("User ID not found in JWT")
+        return appService.getUserById(userId).let { UserResponse.fromEntity(it) }
     }
 
     @Operation(

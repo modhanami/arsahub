@@ -5,7 +5,7 @@ import { Providers } from "../components/providers";
 import { Toaster } from "../components/ui/toaster";
 import "./globals.css";
 import { AppApiKeyProvider } from "@/lib/current-app";
-import { UserUuidProvider } from "@/lib/current-user";
+import { AuthProvider } from "@/lib/current-user";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -28,15 +28,15 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <AppApiKeyProvider>
-            <UserUuidProvider>
-              <Providers>
+          <Providers>
+            <AppApiKeyProvider>
+              <AuthProvider>
                 {/* <ModeToggle /> */}
                 {children}
                 <Toaster />
-              </Providers>
-            </UserUuidProvider>
-          </AppApiKeyProvider>
+              </AuthProvider>
+            </AppApiKeyProvider>
+          </Providers>
         </ThemeProvider>
       </body>
     </html>
