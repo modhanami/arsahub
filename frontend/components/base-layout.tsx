@@ -4,8 +4,8 @@ import { SidebarNavItem } from "@/types";
 import { UserAccountNav } from "@/components/user-account-nav";
 import { DashboardNav } from "@/components/nav";
 import { CurrentAppForm } from "@/components/current-app";
-import { SiteFooter } from "@/components/site-footer";
 import { MainNav } from "@/components/main-nav";
+import { ModeToggle } from "@/components/mode-toggle";
 
 interface CommonLayoutProps {
   children: ReactNode;
@@ -21,7 +21,10 @@ export default function BaseLayout({
       <header className="sticky top-0 z-40 border-b bg-background">
         <div className="container flex h-16 items-center justify-between py-4">
           <MainNav />
-          <UserAccountNav />
+          <div className="flex items-center gap-4">
+            <UserAccountNav />
+            <ModeToggle />
+          </div>
         </div>
       </header>
       <div className="container grid flex-1 gap-12 md:grid-cols-[200px_1fr]">
@@ -34,7 +37,7 @@ export default function BaseLayout({
           {children}
         </main>
       </div>
-      <SiteFooter className="border-t" />
+      {/*<SiteFooter className="border-t" />*/}
     </div>
   );
 }
