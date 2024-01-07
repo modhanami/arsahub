@@ -181,11 +181,10 @@ export default function Page() {
   const { data: achievements } = useAchievements({
     enabled: form.watch("action.key") === "unlock_achievement",
   });
-  const selectedTrigger = React.useMemo(
-    () =>
-      triggers?.find((trigger) => trigger.key === form.watch("trigger.key")),
-    [form, triggers],
-  );
+  const selectedTriggerKey = form.watch("trigger.key");
+  const selectedTrigger = React.useMemo(() => {
+    return triggers?.find((trigger) => trigger.key === selectedTriggerKey);
+  }, [triggers, selectedTriggerKey]);
   const createRule = useCreateRule();
 
   const [conditions, setConditions] = React.useState<Condition<any>[]>([]);
