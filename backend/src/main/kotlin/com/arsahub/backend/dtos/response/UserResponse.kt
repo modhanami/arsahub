@@ -12,7 +12,7 @@ data class UserResponse(
             return UserResponse(
                 userId = user.userId,
                 name = user.name,
-                username = user.username
+                username = user.username,
             )
         }
     }

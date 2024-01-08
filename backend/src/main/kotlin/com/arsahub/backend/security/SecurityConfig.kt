@@ -14,19 +14,16 @@ import org.springframework.security.oauth2.jwt.JwtDecoder
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.access.intercept.AuthorizationFilter
-import org.springframework.web.servlet.handler.HandlerMappingIntrospector
-
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 class SecurityConfig(
     private val authenticationConfiguration: AuthenticationConfiguration,
-    private val authProperties: AuthProperties
+    private val authProperties: AuthProperties,
 ) {
-
     @Bean
-    fun filterChain(http: HttpSecurity, introspector: HandlerMappingIntrospector): SecurityFilterChain {
+    fun filterChain(http: HttpSecurity): SecurityFilterChain {
         val appAuthenticationFilter = AppAuthenticationFilter(authenticationConfiguration)
 
         http
@@ -44,7 +41,6 @@ class SecurityConfig(
         return http.build()
     }
 
-
     @Bean
     fun jwtDecoder(): JwtDecoder {
         return NimbusJwtDecoder.withSecretKey(authProperties.secretKey).build()
@@ -54,5 +50,4 @@ class SecurityConfig(
     fun passwordEncoder(): Argon2PasswordEncoder {
         return Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8()
     }
-
 }

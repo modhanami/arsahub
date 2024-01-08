@@ -7,11 +7,15 @@ import org.springframework.stereotype.Component
 
 @Component
 class ActionUnlockAchievementHandler(
-    private val appUserAchievementRepository: AppUserAchievementRepository
+    private val appUserAchievementRepository: AppUserAchievementRepository,
 ) : ActionHandler {
-    override fun handleAction(rule: Rule, appUser: AppUser): ActionResult {
-        val achievement = rule.actionAchievement
-            ?: throw Exception("Achievement not found")
+    override fun handleAction(
+        rule: Rule,
+        appUser: AppUser,
+    ): ActionResult {
+        val achievement =
+            rule.actionAchievement
+                ?: throw IllegalArgumentException("Achievement not found")
 
         // precondition: user must not have unlocked the achievement
         if (appUser.achievements.any { it.achievement?.achievementId == achievement.achievementId }) {
@@ -25,7 +29,10 @@ class ActionUnlockAchievementHandler(
         // save from the owning side
         appUserAchievementRepository.saveAll(appUser.achievements)
 
-        println("User ${appUser.displayName}` (${appUser.userId}) unlocked achievement `${achievement.title}` (${achievement.achievementId}) from rule `${rule.title}` (${rule.id})")
+        println(
+            "User ${appUser.displayName}` (${appUser.userId}) unlocked achievement " +
+                "`${achievement.title}` (${achievement.achievementId}) from rule `${rule.title}` (${rule.id})",
+        )
 
         return ActionResult.AchievementUpdate(achievement)
     }

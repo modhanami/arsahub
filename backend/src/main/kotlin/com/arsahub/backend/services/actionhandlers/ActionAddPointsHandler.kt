@@ -7,13 +7,19 @@ import org.springframework.stereotype.Component
 
 @Component
 class ActionAddPointsHandler(private val appUserRepository: AppUserRepository) : ActionHandler {
-    override fun handleAction(rule: Rule, appUser: AppUser): ActionResult {
-        val points = rule.actionPoints ?: throw Exception("Action points not found")
+    override fun handleAction(
+        rule: Rule,
+        appUser: AppUser,
+    ): ActionResult {
+        val points = rule.actionPoints ?: throw IllegalArgumentException("Points not found")
         val previousPoints = appUser.points ?: 0
         val newPoints = previousPoints + points
         appUser.addPoints(points)
         appUserRepository.save(appUser)
-        println("User ${appUser.displayName}` (${appUser.userId}) received `$points` points from rule `${rule.title}` (${rule.id}), previous points: $previousPoints, new points: $newPoints")
+        println(
+            "User ${appUser.displayName}` (${appUser.userId}) received `$points` points from " +
+                "rule `${rule.title}` (${rule.id}), previous points: $previousPoints, new points: $newPoints",
+        )
         return ActionResult.PointsUpdate(previousPoints, newPoints, points)
     }
 }

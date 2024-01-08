@@ -18,7 +18,6 @@ data class RuleResponse(
     val repeatability: String? = null,
     val conditions: MutableMap<String, Any>? = null,
 ) {
-
     companion object {
         fun fromEntity(rule: com.arsahub.backend.models.Rule): RuleResponse {
             return RuleResponse(
@@ -37,4 +36,3 @@ data class RuleResponse(
         }
     }
 }
-

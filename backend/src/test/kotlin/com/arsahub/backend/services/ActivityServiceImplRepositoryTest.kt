@@ -1,26 +1,26 @@
-//package com.arsahub.backend.services
+// package com.arsahub.backend.services
 //
-//import com.arsahub.backend.dtos.EventCreateRequest
-//import com.arsahub.backend.dtos.EventUpdateRequest
-//import com.arsahub.backend.models.Activity
-//import com.arsahub.backend.models.Organizer
-//import com.arsahub.backend.models.User
-//import com.arsahub.backend.repositories.ActivityRepository
-//import com.arsahub.backend.repositories.OrganizerRepository
-//import com.arsahub.backend.repositories.UserRepository
-//import jakarta.persistence.EntityNotFoundException
-//import jakarta.transaction.Transactional
-//import org.junit.jupiter.api.Assertions.*
-//import org.junit.jupiter.api.BeforeEach
-//import org.junit.jupiter.api.Test
-//import org.springframework.beans.factory.annotation.Autowired
-//import org.springframework.boot.test.context.SpringBootTest
-//import org.springframework.test.context.ActiveProfiles
-//import java.time.Instant
+// import com.arsahub.backend.dtos.EventCreateRequest
+// import com.arsahub.backend.dtos.EventUpdateRequest
+// import com.arsahub.backend.models.Activity
+// import com.arsahub.backend.models.Organizer
+// import com.arsahub.backend.models.User
+// import com.arsahub.backend.repositories.ActivityRepository
+// import com.arsahub.backend.repositories.OrganizerRepository
+// import com.arsahub.backend.repositories.UserRepository
+// import jakarta.persistence.EntityNotFoundException
+// import jakarta.transaction.Transactional
+// import org.junit.jupiter.api.Assertions.*
+// import org.junit.jupiter.api.BeforeEach
+// import org.junit.jupiter.api.Test
+// import org.springframework.beans.factory.annotation.Autowired
+// import org.springframework.boot.test.context.SpringBootTest
+// import org.springframework.test.context.ActiveProfiles
+// import java.time.Instant
 //
-//@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
-//@ActiveProfiles("test-containers")
-//class ActivityServiceImplRepositoryTest {
+// @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
+// @ActiveProfiles("test-containers")
+// class ActivityServiceImplRepositoryTest {
 //    @Autowired
 //    lateinit var activityService: ActivityService
 //
@@ -289,4 +289,4 @@
 //        }
 //    }
 //
-//}
+// }

@@ -1,7 +1,7 @@
 package com.arsahub.backend.dtos.request
 
 sealed class Action(
-    val key: String
+    val key: String,
 ) {
     companion object {
         const val ADD_POINTS = "add_points"
@@ -16,5 +16,5 @@ data class AddPointsAction(
 data class UnlockAchievementAction(
     val achievementId: Long,
 ) : Action(
-    UNLOCK_ACHIEVEMENT
-)
+        UNLOCK_ACHIEVEMENT,
+    )

@@ -1,18 +1,18 @@
-//package com.arsahub.backend.services
+// package com.arsahub.backend.services
 //
-//import com.arsahub.backend.models.Event
-//import com.arsahub.backend.repositories.EventRepository
-//import io.mockk.every
-//import io.mockk.mockk
-//import io.mockk.verify
-//import org.junit.jupiter.api.Assertions.assertEquals
-//import org.junit.jupiter.api.BeforeEach
-//import org.junit.jupiter.api.Test
-//import org.mockito.Mockito.*
-//import org.springframework.data.repository.findByIdOrNull
-//import java.time.LocalDateTime
+// import com.arsahub.backend.models.Event
+// import com.arsahub.backend.repositories.EventRepository
+// import io.mockk.every
+// import io.mockk.mockk
+// import io.mockk.verify
+// import org.junit.jupiter.api.Assertions.assertEquals
+// import org.junit.jupiter.api.BeforeEach
+// import org.junit.jupiter.api.Test
+// import org.mockito.Mockito.*
+// import org.springframework.data.repository.findByIdOrNull
+// import java.time.LocalDateTime
 //
-//object TestData {
+// object TestData {
 //    fun createEvent(): Event {
 //        return createEvent(null)
 //    }
@@ -30,9 +30,9 @@
 //    }
 //
 //    // You can create more event objects for different test cases if needed.
-//}
+// }
 //
-//class EventServiceImplTest {
+// class EventServiceImplTest {
 //
 //    val eventRepository: EventRepository  = mockk()
 //    val eventService: EventService = EventServiceImpl(eventRepository)
@@ -101,4 +101,4 @@
 //        verify(exactly = 1) { eventRepository.findAll() }
 //        assertEquals(eventList, result)
 //    }
-//}
+// }

@@ -9,11 +9,8 @@ import jakarta.validation.constraints.Size
 
 class TriggerCreateRequest(
     title: String?,
-
     key: String?,
-
     description: String? = null,
-
     val fields: List<FieldDefinition>? = null,
 ) {
     @ValidTitle
@@ -29,14 +26,11 @@ class TriggerCreateRequest(
 data class FieldDefinition(
     @ValidKey
     val key: String?,
-
     @field:NotBlank(message = "Type is required")
     val type: String?,
-
     @field:Size(min = 4, max = 200, message = "Label must be between 4 and 200 characters")
     val label: String? = null,
-
-    ) {
+) {
     companion object {
         fun fromEntity(field: com.arsahub.backend.models.TriggerField): FieldDefinition {
             return FieldDefinition(

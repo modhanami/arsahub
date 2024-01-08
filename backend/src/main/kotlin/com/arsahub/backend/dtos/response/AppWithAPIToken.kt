@@ -4,5 +4,5 @@ import com.arsahub.backend.models.App
 
 data class AppWithAPIToken(
     val app: App,
-    val apiKey: String
+    val apiKey: String,
 )

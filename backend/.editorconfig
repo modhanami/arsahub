@@ -1,0 +1,6 @@
+[*.{kt,kts}]
+
+[**/repositories/*Repository.kt]
+ktlint_standard_function-naming = disabled
+
+

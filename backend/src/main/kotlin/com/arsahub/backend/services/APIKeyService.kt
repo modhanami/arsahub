@@ -5,10 +5,9 @@ import org.springframework.stereotype.Service
 
 @Service
 class APIKeyService {
-
     fun validateKeyForApp(
         app: App,
-        key: String
+        key: String,
     ): Boolean {
         return app.apiKey == key
     }

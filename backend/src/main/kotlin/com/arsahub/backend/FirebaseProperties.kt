@@ -5,5 +5,5 @@ import java.io.File
 
 @ConfigurationProperties(prefix = "firebase")
 data class FirebaseProperties(
-    val serviceAccount: File? = null
+    val serviceAccount: File? = null,
 )
