@@ -3,13 +3,17 @@ package com.arsahub.backend.controllers
 import com.arsahub.backend.SocketIOService
 import com.arsahub.backend.controllers.utils.AuthSetup
 import com.arsahub.backend.controllers.utils.AuthTestUtils.performWithAppAuth
+import com.arsahub.backend.controllers.utils.AuthTestUtils.setGlobalAuthSetup
 import com.arsahub.backend.controllers.utils.AuthTestUtils.setupAuth
 import com.arsahub.backend.dtos.request.Action
+import com.arsahub.backend.dtos.request.AppUserCreateRequest
 import com.arsahub.backend.dtos.request.FieldDefinition
 import com.arsahub.backend.dtos.request.TriggerCreateRequest
+import com.arsahub.backend.models.App
 import com.arsahub.backend.models.AppUser
 import com.arsahub.backend.models.Rule
 import com.arsahub.backend.models.RuleRepeatability
+import com.arsahub.backend.models.Trigger
 import com.arsahub.backend.repositories.AppUserRepository
 import com.arsahub.backend.repositories.RuleRepository
 import com.arsahub.backend.services.AppService
@@ -80,6 +84,7 @@ class AppControllerTest {
             setupAuth(
                 authService,
             )
+        setGlobalAuthSetup(authSetup)
     }
 
     data class TrigggerTestModel(
@@ -578,6 +583,337 @@ class AppControllerTest {
         assertEquals(100, rule.actionPoints)
         assertEquals(1, rule.conditions?.get("workshopId"))
         assertEquals("unlimited", rule.repeatability)
+    }
+
+    /*
+     Testing Rule Engine
+     - Relevant pieces: trigger, rule, action, repeatable, subject (user), conditions, app (tenant)
+     - Possible actions are: add_points (specify points), unlock_achievement (specify achievement ID)
+     - It must fire ALL matching rules for a trigger when that rule's trigger conditions are met,
+     for subject (user) in that given trigger, for that app (tenant)
+       - It must not fire matching rules for other subjects (users) or other apps (tenants)
+       - It must not fire rules that have already been fired for a trigger if the rule is not repeatable
+       (currently named "once per user")
+       - It must fire rules that have already been fired for a trigger if the rule is repeatable
+       - It must not fire rules that do not match the trigger conditions
+     */
+
+    fun createTrigger(app: App): Trigger {
+        return appService.createTrigger(
+            app,
+            TriggerCreateRequest(
+                title = "Workshop Completed",
+                key = "workshop_completed",
+                fields =
+                    listOf(
+                        FieldDefinition(
+                            key = "workshopId",
+                            type = "integer",
+                            label = "Workshop ID",
+                        ),
+                        FieldDefinition(
+                            key = "source",
+                            type = "text",
+                        ),
+                    ),
+            ),
+        )
+    }
+
+    fun createRule(
+        app: App,
+        trigger: Trigger,
+        customizer: Rule.() -> Unit = {},
+    ): Rule {
+        return ruleRepository.save(
+            Rule(
+                title = "When workshop completed, add 100 points",
+                trigger = trigger,
+                action = Action.ADD_POINTS,
+                actionPoints = 100,
+                app = app,
+                conditions =
+                    mutableMapOf(
+                        "workshopId" to 1,
+                        "source" to "trust me",
+                    ),
+                repeatability = RuleRepeatability.UNLIMITED,
+            ).apply(customizer),
+        )
+    }
+
+    fun createAppUser(
+        app: App,
+        userId: String = UUID.fromString("00000000-0000-0000-0000-000000000001").toString(),
+    ): AppUser {
+        val appUser =
+            appService.addUser(
+                app,
+                AppUserCreateRequest(
+                    uniqueId = userId,
+                    displayName = "User $userId",
+                ),
+            )
+
+        return appUser
+    }
+
+    //        data class TestData(
+//            val trigger: Trigger,
+//            val rule: Rule,
+//            val matchingConditions: Map<String, Any>,
+//        )
+
+    // Matching rules
+    @Test
+    fun `fires matching rules - for the given user ID in the app`() {
+        // Arrange
+        val user = createAppUser(authSetup.app)
+        val trigger = createTrigger(authSetup.app)
+        val rule = createRule(authSetup.app, trigger)
+
+        // Act & Assert
+        mockMvc.performWithAppAuth(
+            post("/api/apps/trigger")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "key": "workshop_completed",
+                        "params": {
+                            "workshopId": 1,
+                            "source": "trust me"
+                        },
+                        "userId": "${user.userId}"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+
+        // Assert DB
+        val userAfter = appUserRepository.findById(user.id!!).get()
+        assertEquals(100, userAfter.points)
+    }
+
+    @Test
+    fun `does not fire non-matching rules - for the given user ID in the app`() {
+        // Arrange
+        val user = createAppUser(authSetup.app)
+        val trigger = createTrigger(authSetup.app)
+        val rule = createRule(authSetup.app, trigger)
+
+        // Act & Assert
+        mockMvc.performWithAppAuth(
+            post("/api/apps/trigger")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "key": "workshop_completed",
+                        "params": {
+                            "workshopId": 2,
+                            "source": "trust me"
+                        },
+                        "userId": "${user.userId}"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+
+        // Assert DB
+        val userAfter = appUserRepository.findById(user.id!!).get()
+        assertEquals(0, userAfter.points)
+    }
+
+    @Test
+    fun `does not fire matching rules - for other user IDs in the app`() {
+        // Arrange
+        val user = createAppUser(authSetup.app)
+        val trigger = createTrigger(authSetup.app)
+        val rule = createRule(authSetup.app, trigger)
+
+        val otherUser =
+            createAppUser(authSetup.app, userId = UUID.randomUUID().toString())
+
+        // Act & Assert
+        mockMvc.performWithAppAuth(
+            post("/api/apps/trigger")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "key": "workshop_completed",
+                        "params": {
+                            "workshopId": 1,
+                            "source": "trust me"
+                        },
+                        "userId": "${user.userId}"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+
+        // Assert DB
+        val userAfter = appUserRepository.findById(user.id!!).get()
+        assertEquals(100, userAfter.points)
+
+        val otherUserAfter = appUserRepository.findById(otherUser.id!!).get()
+        assertEquals(0, otherUserAfter.points)
+    }
+
+    @Test
+    fun `does not fire matching rules - for the given user ID in other apps`() {
+        // Arrange
+        val user = createAppUser(authSetup.app)
+        val trigger = createTrigger(authSetup.app)
+        val rule = createRule(authSetup.app, trigger)
+
+        val otherApp = setupAuth(authService).app
+        val otherUser = createAppUser(otherApp)
+
+        // Act & Assert
+        mockMvc.performWithAppAuth(
+            post("/api/apps/trigger")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "key": "workshop_completed",
+                        "params": {
+                            "workshopId": 1,
+                            "source": "trust me"
+                        },
+                        "userId": "${user.userId}"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+
+        // Assert DB
+        val userAfter = appUserRepository.findById(user.id!!).get()
+        assertEquals(100, userAfter.points)
+
+        val otherUserAfter = appUserRepository.findById(otherUser.id!!).get()
+        assertEquals(0, otherUserAfter.points)
+    }
+
+    @Test
+    fun `does not fire matching rules - for other user IDs in other apps`() {
+        // Arrange
+        val user = createAppUser(authSetup.app)
+        val trigger = createTrigger(authSetup.app)
+        val rule = createRule(authSetup.app, trigger)
+
+        val otherApp = setupAuth(authService).app
+        val otherUser1 =
+            createAppUser(otherApp, userId = UUID.randomUUID().toString())
+        val otherUser2 = createAppUser(otherApp, userId = UUID.randomUUID().toString())
+
+        // Act & Assert
+        mockMvc.performWithAppAuth(
+            post("/api/apps/trigger")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "key": "workshop_completed",
+                        "params": {
+                            "workshopId": 1,
+                            "source": "trust me"
+                        },
+                        "userId": "${user.userId}"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+
+        // Assert DB
+        val userAfter = appUserRepository.findById(user.id!!).get()
+        assertEquals(100, userAfter.points)
+
+        val otherUser1After = appUserRepository.findById(otherUser1.id!!).get()
+        assertEquals(0, otherUser1After.points)
+
+        val otherUser2After = appUserRepository.findById(otherUser2.id!!).get()
+        assertEquals(0, otherUser2After.points)
+    }
+
+    // Repeatability
+    @Test
+    fun `unlimited - given rule is fired once - when rule is matched again - then rule is fired again`() {
+        // Arrange
+        val user = createAppUser(authSetup.app)
+        val trigger = createTrigger(authSetup.app)
+        val rule =
+            createRule(authSetup.app, trigger) {
+                repeatability = RuleRepeatability.UNLIMITED
+            }
+
+        // Act & Assert
+        repeat(2) {
+            mockMvc.performWithAppAuth(
+                post("/api/apps/trigger")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        """
+                        {
+                            "key": "workshop_completed",
+                            "params": {
+                                "workshopId": 1,
+                                "source": "trust me"
+                            },
+                            "userId": "${user.userId}"
+                        }
+                        """.trimIndent(),
+                    ),
+            )
+                .andExpect(status().isOk)
+        }
+
+        // Assert DB
+        val userAfter = appUserRepository.findById(user.id!!).get()
+        assertEquals(200, userAfter.points)
+    }
+
+    @Test
+    fun `once per user - given rule is fired once - when rule is matched again - then rule is not fired again`() {
+        // Arrange
+        val user = createAppUser(authSetup.app)
+        val trigger = createTrigger(authSetup.app)
+        val rule =
+            createRule(authSetup.app, trigger) {
+                repeatability = RuleRepeatability.ONCE_PER_USER
+            }
+
+        // Act & Assert
+        repeat(2) {
+            mockMvc.performWithAppAuth(
+                post("/api/apps/trigger")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        """
+                        {
+                            "key": "workshop_completed",
+                            "params": {
+                                "workshopId": 1,
+                                "source": "trust me"
+                            },
+                            "userId": "${user.userId}"
+                        }
+                        """.trimIndent(),
+                    ),
+            )
+                .andExpect(status().isOk)
+        }
+
+        // Assert DB
+        val userAfter = appUserRepository.findById(user.id!!).get()
+        assertEquals(100, userAfter.points)
     }
 
     companion object {

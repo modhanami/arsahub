@@ -89,6 +89,7 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.springframework.boot:spring-boot-devtools")
     testImplementation("com.ninja-squad:springmockk:4.0.2")
+    testImplementation("io.github.serpro69:kotlin-faker:1.15.0")
     implementation("io.jsonwebtoken:jjwt-api:0.12.3")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.3")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.3")
