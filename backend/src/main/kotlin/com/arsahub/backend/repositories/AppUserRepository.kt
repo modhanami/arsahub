@@ -5,7 +5,15 @@ import com.arsahub.backend.models.AppUser
 import org.springframework.data.jpa.repository.JpaRepository
 
 interface AppUserRepository : JpaRepository<AppUser, Long> {
-    fun findByAppAndUserId(app: App, uniqueId: String): AppUser?
-    fun findByAppIdAndUserId(appId: Long, userId: String): AppUser?
+    fun findByAppAndUserId(
+        app: App,
+        uniqueId: String,
+    ): AppUser?
+
+    fun findByAppIdAndUserId(
+        appId: Long,
+        userId: String,
+    ): AppUser?
+
     fun findAllByApp(app: App): List<AppUser>
 }

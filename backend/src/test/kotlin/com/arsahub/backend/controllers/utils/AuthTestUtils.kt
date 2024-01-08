@@ -42,5 +42,4 @@ object AuthTestUtils {
             app = currentApp
         )
     }
-
 }

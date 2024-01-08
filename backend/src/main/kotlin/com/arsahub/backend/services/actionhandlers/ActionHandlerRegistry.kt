@@ -7,15 +7,19 @@ import org.springframework.stereotype.Component
 @Component
 class ActionHandlerRegistry(
     actionAddPointsHandler: ActionAddPointsHandler,
-    actionUnlockAchievementHandler: ActionUnlockAchievementHandler
+    actionUnlockAchievementHandler: ActionUnlockAchievementHandler,
 ) : ActionHandler {
-    val handlers = mapOf(
-        "add_points" to actionAddPointsHandler,
-        "unlock_achievement" to actionUnlockAchievementHandler
-    )
+    val handlers =
+        mapOf(
+            "add_points" to actionAddPointsHandler,
+            "unlock_achievement" to actionUnlockAchievementHandler,
+        )
 
-    override fun handleAction(rule: Rule, appUser: AppUser): ActionResult {
-        val handler = handlers[rule.action] ?: throw Exception("Action handler not found")
+    override fun handleAction(
+        rule: Rule,
+        appUser: AppUser,
+    ): ActionResult {
+        val handler = handlers[rule.action] ?: throw IllegalArgumentException("Handler not found")
         return handler.handleAction(rule, appUser)
     }
 }

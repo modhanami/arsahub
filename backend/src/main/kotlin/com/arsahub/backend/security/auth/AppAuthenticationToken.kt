@@ -40,14 +40,12 @@ data class AppAuthenticationToken(
     companion object {
         fun authenticated(
             apiKey: String,
-            app: App
+            app: App,
         ): AppAuthenticationToken {
             return AppAuthenticationToken(apiKey, app, true)
         }
 
-        fun unauthenticated(
-            appKey: String
-        ): AppAuthenticationToken {
+        fun unauthenticated(appKey: String): AppAuthenticationToken {
             return AppAuthenticationToken(appKey)
         }
     }

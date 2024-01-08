@@ -9,9 +9,10 @@ import com.networknt.schema.SpecVersionDetector
 import org.springframework.stereotype.Component
 import java.net.URI
 
-val defaultSchemaValidatorsConfig: SchemaValidatorsConfig = SchemaValidatorsConfig().apply {
-    isTypeLoose = true
-}
+val defaultSchemaValidatorsConfig: SchemaValidatorsConfig =
+    SchemaValidatorsConfig().apply {
+        isTypeLoose = true
+    }
 
 @Component
 class JsonUtils(
@@ -19,7 +20,10 @@ class JsonUtils(
 ) {
     private val schemaValidatorsConfig: SchemaValidatorsConfig = defaultSchemaValidatorsConfig
 
-    fun validate(jsonSchema: JsonNode, jsonNode: JsonNode): JsonSchemaValidationResult {
+    fun validate(
+        jsonSchema: JsonNode,
+        jsonNode: JsonNode,
+    ): JsonSchemaValidationResult {
         val factory = JsonSchemaFactory.getInstance(SpecVersionDetector.detect(jsonSchema))
 
         val schema = factory.getSchema(jsonSchema, schemaValidatorsConfig)
@@ -27,11 +31,14 @@ class JsonUtils(
 
         return JsonSchemaValidationResult(
             isValid = errors.isEmpty(),
-            errors = errors
+            errors = errors,
         )
     }
 
-    fun validate(jsonSchema: MutableMap<String, Any>, json: Map<String, Any>): JsonSchemaValidationResult {
+    fun validate(
+        jsonSchema: MutableMap<String, Any>,
+        json: Map<String, Any>,
+    ): JsonSchemaValidationResult {
         val jsonSchemaJsonNode = objectMapper.valueToTree<JsonNode>(jsonSchema)
         val jsonNode = objectMapper.valueToTree<JsonNode>(json)
         return validate(jsonSchemaJsonNode, jsonNode)
@@ -40,7 +47,7 @@ class JsonUtils(
     fun convertJsonStringToMutableMap(json: String): MutableMap<String, Any> {
         return objectMapper.convertValue(
             objectMapper.readTree(json),
-            object : TypeReference<MutableMap<String, Any>>() {}
+            object : TypeReference<MutableMap<String, Any>>() {},
         )
     }
 
@@ -53,4 +60,3 @@ class JsonUtils(
         return errors.isEmpty()
     }
 }
-

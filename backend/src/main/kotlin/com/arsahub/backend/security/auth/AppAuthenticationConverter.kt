@@ -7,8 +7,9 @@ import org.springframework.security.web.authentication.AuthenticationConverter
 
 class AppAuthenticationConverter : AuthenticationConverter {
     override fun convert(request: HttpServletRequest): Authentication {
-        val apiKey = request.getHeader("X-API-Key")
-            ?: throw BadCredentialsException("No API key found in request.")
+        val apiKey =
+            request.getHeader("X-API-Key")
+                ?: throw BadCredentialsException("No API key found in request.")
         return AppAuthenticationToken.unauthenticated(apiKey)
     }
 }

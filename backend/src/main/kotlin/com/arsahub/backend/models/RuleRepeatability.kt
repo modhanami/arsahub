@@ -16,9 +16,9 @@ sealed class RuleRepeatability(val key: String) {
 }
 
 data object OncePerUserRuleRepeatability : RuleRepeatability(
-    key = ONCE_PER_USER
+    key = ONCE_PER_USER,
 )
 
 data object UnlimitedRuleRepeatability : RuleRepeatability(
-    key = UNLIMITED
+    key = UNLIMITED,
 )

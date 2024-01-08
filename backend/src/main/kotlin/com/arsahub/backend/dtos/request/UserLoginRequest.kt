@@ -7,7 +7,6 @@ import jakarta.validation.constraints.NotBlank
 data class UserLoginRequest(
     @field:NotBlank @field:Email
     val email: String,
-
     @ValidPassword
     val password: String,
 )

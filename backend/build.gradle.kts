@@ -15,6 +15,15 @@ plugins {
     id("com.google.cloud.tools.jib") version "3.4.0"
     id("cz.habarta.typescript-generator") version "3.2.1263"
 //    kotlin("plugin.serialization") version "1.9.0"
+    id("io.gitlab.arturbosch.detekt") version ("1.23.4")
+}
+
+configurations.all {
+    resolutionStrategy.eachDependency {
+        if (requested.group == "org.jetbrains.kotlin") {
+            useVersion(io.gitlab.arturbosch.detekt.getSupportedKotlinVersion())
+        }
+    }
 }
 
 group = "com.arsahub"
@@ -139,7 +148,19 @@ tasks.test {
     useJUnitPlatform()
 
     jvmArgs(
-        "--add-opens", "java.base/java.lang.reflect=ALL-UNNAMED",
-        "--add-opens", "java.base/java.time=ALL-UNNAMED",
+        "--add-opens",
+        "java.base/java.lang.reflect=ALL-UNNAMED",
+        "--add-opens",
+        "java.base/java.time=ALL-UNNAMED",
     )
+}
+
+detekt {
+    toolVersion = "1.23.4"
+    config.setFrom(file("config/detekt/detekt.yml"))
+    buildUponDefaultConfig = true
+}
+
+tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
+    autoCorrect = true
 }

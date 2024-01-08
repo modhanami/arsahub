@@ -6,7 +6,7 @@ data class AppUserResponse(
     val userId: String,
     val displayName: String,
     val points: Int,
-    val achievements: List<AchievementResponse>
+    val achievements: List<AchievementResponse>,
 ) {
     companion object {
         fun fromEntity(entity: AppUser): AppUserResponse {
@@ -14,11 +14,12 @@ data class AppUserResponse(
                 userId = entity.userId ?: "",
                 displayName = entity.displayName ?: "",
                 points = entity.points ?: 0,
-                achievements = entity.achievements.mapNotNull {
-                    it.achievement?.let { achievement ->
-                        AchievementResponse.fromEntity(achievement)
-                    }
-                }
+                achievements =
+                    entity.achievements.mapNotNull {
+                        it.achievement?.let { achievement ->
+                            AchievementResponse.fromEntity(achievement)
+                        }
+                    },
             )
         }
     }

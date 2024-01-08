@@ -7,17 +7,22 @@ import com.arsahub.backend.dtos.response.SignupResponse
 import com.arsahub.backend.services.AuthService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.ResponseStatus
+import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api/auth")
 class AuthController(
-    private val authService: AuthService
+    private val authService: AuthService,
 ) {
-
     @PostMapping("/signup")
     @ResponseStatus(HttpStatus.CREATED)
-    fun signup(@Valid @RequestBody request: UserSignupRequest): SignupResponse {
+    fun signup(
+        @Valid @RequestBody request: UserSignupRequest,
+    ): SignupResponse {
         val (newUser, _) = authService.createUser(request)
         val accessToken = authService.generateAccessToken(newUser)
 
@@ -25,11 +30,12 @@ class AuthController(
     }
 
     @PostMapping("/login")
-    fun login(@Valid @RequestBody request: UserLoginRequest): LoginResponse {
+    fun login(
+        @Valid @RequestBody request: UserLoginRequest,
+    ): LoginResponse {
         val user = authService.authenticate(request)
         val accessToken = authService.generateAccessToken(user)
 
         return LoginResponse(accessToken)
     }
-
 }

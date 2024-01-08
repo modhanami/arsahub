@@ -24,7 +24,7 @@ data class TriggerResponse(
                 description = trigger.description,
                 key = trigger.key,
                 id = trigger.id,
-                fields = trigger.fields.map { FieldDefinition.fromEntity(it) }
+                fields = trigger.fields.map { FieldDefinition.fromEntity(it) },
             )
         }
     }

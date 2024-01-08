@@ -14,7 +14,6 @@ import com.corundumstudio.socketio.listener.DisconnectListener
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
-
 @Component
 class SocketIOService(val server: SocketIOServer) {
     private final val defaultNamespace: SocketIONamespace by lazy { server.addNamespace("/default") }
@@ -24,7 +23,7 @@ class SocketIOService(val server: SocketIOServer) {
         defaultNamespace.addDisconnectListener(onDisconnected())
         defaultNamespace.addEventListener(
             "subscribe-activity",
-            Long::class.java
+            Long::class.java,
         ) { client: SocketIOClient, data: Long, ackSender: AckRequest ->
             println("subscribe-activity: $data")
             client.joinRoom(getAppRoomName(data))
@@ -32,52 +31,62 @@ class SocketIOService(val server: SocketIOServer) {
         }
         defaultNamespace.addEventListener(
             "subscribe-user",
-            String::class.java
+            String::class.java,
         ) { client: SocketIOClient, rawUserId: String?, ackSender: AckRequest ->
             println("subscribe-user: $rawUserId")
             val userId = rawUserId?.trim()
             if (userId.isNullOrEmpty()) {
                 ackSender.sendAckData("Invalid user ID")
-                return@addEventListener
+            } else {
+                client.joinRoom(getUserRoomName(userId))
+                ackSender.sendAckData("OK")
             }
-            client.joinRoom(getUserRoomName(userId))
-            ackSender.sendAckData("OK")
         }
     }
 
-    fun broadcastToAppRoom(app: App, data: AppUpdate) {
+    fun broadcastToAppRoom(
+        app: App,
+        data: AppUpdate,
+    ) {
         val appId = app.id!!
         val activityRoom = defaultNamespace.getRoomOperations(getAppRoomName(appId))
-        val type = when (data) {
-            is PointsUpdate -> "points-update"
-            is LeaderboardUpdate -> "leaderboard-update"
-            is AchievementUnlock -> "achievement-unlock"
-            else -> throw IllegalArgumentException("Unknown data type: ${data.javaClass}")
-        }
+        val type =
+            when (data) {
+                is PointsUpdate -> "points-update"
+                is LeaderboardUpdate -> "leaderboard-update"
+                is AchievementUnlock -> "achievement-unlock"
+                else -> throw IllegalArgumentException("Unknown data type: ${data.javaClass}")
+            }
         activityRoom.sendEvent(
-            "activity-update", mapOf(
+            "activity-update",
+            mapOf(
                 "type" to type,
                 "appId" to appId,
-                "data" to data
-            )
+                "data" to data,
+            ),
         )
         println("broadcastToActivityRoom: $appId, $data")
     }
 
-    fun broadcastToUserRoom(userId: String, data: AppUpdate) {
+    fun broadcastToUserRoom(
+        userId: String,
+        data: AppUpdate,
+    ) {
         val userRoom = defaultNamespace.getRoomOperations(getUserRoomName(userId))
-        val type = when (data) {
-            is PointsUpdate -> "points-update"
-            is LeaderboardUpdate -> "leaderboard-update"
-            is AchievementUnlock -> "achievement-unlock"
-            else -> throw IllegalArgumentException("Unknown data type: ${data.javaClass}")
-        }
+        val type =
+            when (data) {
+                is PointsUpdate -> "points-update"
+                is LeaderboardUpdate -> "leaderboard-update"
+                is AchievementUnlock -> "achievement-unlock"
+                else -> throw IllegalArgumentException("Unknown data type: ${data.javaClass}")
+            }
         userRoom.sendEvent(
-            "user-update", mapOf(
+            "user-update",
+            mapOf(
                 "type" to type,
                 "userId" to userId,
-                "data" to data
-            )
+                "data" to data,
+            ),
         )
         println("broadcastToUserRoom: $userId, $data")
     }
@@ -96,7 +105,7 @@ class SocketIOService(val server: SocketIOServer) {
             log.debug(
                 "Client[{}] - Connected to socket.io service through '{}'",
                 client.sessionId.toString(),
-                handshakeData.url
+                handshakeData.url,
             )
         }
     }
@@ -105,7 +114,7 @@ class SocketIOService(val server: SocketIOServer) {
         return DisconnectListener { client: SocketIOClient ->
             log.debug(
                 "Client[{}] - Disconnected from socket.io service.",
-                client.sessionId.toString()
+                client.sessionId.toString(),
             )
         }
     }
@@ -114,4 +123,3 @@ class SocketIOService(val server: SocketIOServer) {
         private val log = LoggerFactory.getLogger(SocketIOService::class.java)
     }
 }
-

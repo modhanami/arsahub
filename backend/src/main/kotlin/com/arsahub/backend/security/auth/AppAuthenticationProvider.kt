@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component
 @Component
 class AppAuthenticationProvider(
     private val appRepository: AppRepository,
-    private val apiKeyService: APIKeyService
+    private val apiKeyService: APIKeyService,
 ) : AuthenticationProvider {
     override fun authenticate(authentication: Authentication): Authentication {
         val apiKey = authentication.credentials.toString()

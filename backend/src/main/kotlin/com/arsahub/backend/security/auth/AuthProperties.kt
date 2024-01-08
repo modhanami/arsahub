@@ -12,5 +12,4 @@ class AuthProperties {
 
     val secretKey: SecretKeySpec
         get() = SecretKeySpec(secret.toByteArray(StandardCharsets.UTF_8), "HmacSHA256")
-
 }

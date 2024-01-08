@@ -13,7 +13,6 @@ import org.springframework.context.event.EventListener
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing
 import org.springframework.scheduling.annotation.EnableScheduling
 
-
 @SpringBootApplication
 @ConfigurationPropertiesScan
 @EnableScheduling
@@ -43,7 +42,6 @@ class BackendApplication {
     fun shutdown() {
         socketIOServer().stop()
     }
-
 }
 
 fun main(args: Array<String>) {

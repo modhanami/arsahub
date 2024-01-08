@@ -13,7 +13,7 @@ import kotlin.reflect.KClass
 @Size(min = 4, max = 200, message = "Key must be between 4 and 200 characters")
 @Pattern(
     regexp = "^[a-zA-Z0-9_-]*\$",
-    message = "Key must contain only alphanumeric characters, underscores, and dashes"
+    message = "Key must contain only alphanumeric characters, underscores, and dashes",
 )
 @Constraint(validatedBy = [])
 annotation class ValidKey(
