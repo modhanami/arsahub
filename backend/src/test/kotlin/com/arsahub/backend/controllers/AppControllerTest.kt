@@ -17,7 +17,6 @@ import com.arsahub.backend.services.AuthService
 import com.corundumstudio.socketio.SocketIOServer
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -81,10 +80,6 @@ class AppControllerTest {
             setupAuth(
                 authService,
             )
-    }
-
-    @AfterEach
-    fun tearDown() {
     }
 
     data class TrigggerTestModel(

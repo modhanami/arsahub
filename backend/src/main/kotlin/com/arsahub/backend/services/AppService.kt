@@ -186,13 +186,13 @@ class AppService(
         for (rule in matchingRules) {
             logger.debug { "Checking rule ${rule.title} (${rule.id})" }
 
-            // check repeatability
-            if (!validateRepeatability(rule, appUser)) {
-                continue
-            }
-
-            // check the params against the rule conditions, if any
-            if (!validateConditions(rule, request.params)) {
+            if (
+                // check repeatability
+                !validateRepeatability(rule, appUser) ||
+                // check the params against the rule conditions, if any
+                !validateConditions(rule, request.params)
+            ) {
+                //  not repeatable or conditions don't match
                 continue
             }
 
@@ -359,9 +359,9 @@ class AppService(
         params: Map<String, Any>?,
         fields: Iterable<TriggerField>,
     ) {
-        params?.keys?.forEach { paramKey ->
-            val field = fields.find { it.key == paramKey } ?: return@forEach
-            val fieldValue = params[paramKey]
+        for (paramKey in params?.keys ?: emptyList()) {
+            val field = fields.find { it.key == paramKey } ?: continue
+            val fieldValue = params?.get(paramKey)
 
             val fieldType = TriggerFieldType.fromString(field.type!!)
 
@@ -439,30 +439,33 @@ class AppService(
     private fun parseActionDefinition(actionDefinition: ActionDefinition): Action {
         val actionKey = actionDefinition.key
         val params = actionDefinition.params
+
+        requireNotNull(params) { "Params are required for action $actionKey" }
+
         return when (actionKey) {
-            "add_points" -> {
-                val points = params?.get("points") as? Int ?: throw IllegalArgumentException("Points is invalid")
-                AddPointsAction(points)
+            "add_points" -> parseActionAddPointsParams(params)
+            "unlock_achievement" -> parseActionUnlockAchievementParams(params)
+            else -> throw IllegalArgumentException("Unknown action key: $actionKey")
+        }
+    }
+
+    private fun parseActionAddPointsParams(params: Map<String, Any>): Action {
+        val points = params["points"] as? Int ?: throw IllegalArgumentException("Points is invalid")
+        return AddPointsAction(points)
+    }
+
+    private fun parseActionUnlockAchievementParams(params: Map<String, Any>): Action {
+        return when (val rawAchievementId = params["achievementId"]) {
+            is Int -> {
+                UnlockAchievementAction(rawAchievementId.toLong())
             }
 
-            "unlock_achievement" -> {
-                when (val rawAchievementId = params?.get("achievementId")) {
-                    is Int -> {
-                        UnlockAchievementAction(rawAchievementId.toLong())
-                    }
-
-                    is Long -> {
-                        UnlockAchievementAction(rawAchievementId)
-                    }
-
-                    else -> {
-                        throw IllegalArgumentException("Achievement ID is invalid")
-                    }
-                }
+            is Long -> {
+                UnlockAchievementAction(rawAchievementId)
             }
 
             else -> {
-                throw IllegalArgumentException("Unknown action key: $actionKey")
+                throw IllegalArgumentException("Achievement ID is invalid")
             }
         }
     }
