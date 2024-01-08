@@ -1,4 +1,6 @@
 import { Icons } from "../components/icons";
+import { UserResponse } from "@/types/generated-types";
+import { AxiosError } from "axios";
 
 export type NavItem = {
   title: string;
@@ -42,11 +44,10 @@ export type DashboardConfig = {
 
 export type ContextProps = {
   params: {
-    id: string;
+    appId: string;
+    userId: string;
   };
 };
-
-export type ApiError = { message: string };
 
 export type SiteConfig = {
   name: string;
@@ -58,3 +59,9 @@ export type SiteConfig = {
     github: string;
   };
 };
+
+export type UserResponseWithAccessToken = UserResponse & {
+  accessToken: string;
+};
+
+export type ApiErrorHolder<T = unknown, D = any> = AxiosError<T, D>;

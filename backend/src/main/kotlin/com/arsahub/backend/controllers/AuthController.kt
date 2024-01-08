@@ -1,31 +1,35 @@
-//package com.arsahub.backend.controllers
-//
-//import com.arsahub.backend.utils.JwtUtil
-//import org.springframework.security.authentication.AuthenticationManager
-//import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
-//import org.springframework.web.bind.annotation.PostMapping
-//import org.springframework.web.bind.annotation.RequestBody
-//import org.springframework.web.bind.annotation.RequestMapping
-//import org.springframework.web.bind.annotation.RestController
-//
-//@RestController
-//@RequestMapping("/api/auth")
-//class AuthController(
-//    private val authenticationManager: AuthenticationManager,
-//    private val jwtUtil: JwtUtil
-//) {
-//    data class LoginRequest(val username: String, val password: String)
-//
-//    data class LoginResponse(val token: String)
-//
-//    @PostMapping("/login")
-//    fun login(@RequestBody loginRequest: LoginRequest): LoginResponse {
-//        val authenticationRequest = UsernamePasswordAuthenticationToken.unauthenticated(
-//            loginRequest.username,
-//            loginRequest.password
-//        )
-//        val authentication = authenticationManager.authenticate(authenticationRequest)
-//        val token = jwtUtil.generateToken(loginRequest.username)
-//        return LoginResponse(token)
-//    }
-//}
+package com.arsahub.backend.controllers
+
+import com.arsahub.backend.dtos.request.UserLoginRequest
+import com.arsahub.backend.dtos.request.UserSignupRequest
+import com.arsahub.backend.dtos.response.LoginResponse
+import com.arsahub.backend.dtos.response.SignupResponse
+import com.arsahub.backend.services.AuthService
+import jakarta.validation.Valid
+import org.springframework.http.HttpStatus
+import org.springframework.web.bind.annotation.*
+
+@RestController
+@RequestMapping("/api/auth")
+class AuthController(
+    private val authService: AuthService
+) {
+
+    @PostMapping("/signup")
+    @ResponseStatus(HttpStatus.CREATED)
+    fun signup(@Valid @RequestBody request: UserSignupRequest): SignupResponse {
+        val (newUser, _) = authService.createUser(request)
+        val accessToken = authService.generateAccessToken(newUser)
+
+        return SignupResponse(accessToken)
+    }
+
+    @PostMapping("/login")
+    fun login(@Valid @RequestBody request: UserLoginRequest): LoginResponse {
+        val user = authService.authenticate(request)
+        val accessToken = authService.generateAccessToken(user)
+
+        return LoginResponse(accessToken)
+    }
+
+}

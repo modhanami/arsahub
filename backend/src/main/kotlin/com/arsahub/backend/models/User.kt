@@ -16,12 +16,20 @@ class User(
 
     @NotNull
     @Column(name = "uuid", nullable = false)
-    var uuid: UUID? = null
+    var uuid: UUID? = null,
+
+    @NotNull
+    @Column(name = "password", nullable = false, length = Integer.MAX_VALUE)
+    var password: String? = null,
+
+    @NotNull
+    @Column(name = "email", nullable = false, length = Integer.MAX_VALUE)
+    var email: String? = null,
 ) : AuditedEntity() {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_id")
-    val userId: Long? = 0
+    var userId: Long? = null
 
 }

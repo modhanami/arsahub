@@ -1,110 +1,81 @@
 "use client";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "../components/ui/use-toast";
-import { API_URL } from "../hooks/api";
-import { UserResponse } from "../types/generated-types";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useCurrentApp } from "@/lib/current-app";
-
-type UserResponseWithUUID = UserResponse & {
-  uuid: string;
-};
-
-async function fetchUserByUUID(uuid: string): Promise<UserResponseWithUUID> {
-  const response = await fetch(`${API_URL}/apps/users/current`, {
-    headers: {
-      Authorization: `Bearer ${uuid}`,
-    },
-  });
-  if (!response.ok) {
-    throw new Error("Invalid user UUID");
-  }
-  const json = await response.json();
-  return { ...json, uuid };
-}
+import { useUser } from "@/hooks";
+import { isApiError, loginUser } from "@/api";
 
 export function useCurrentUser() {
-  const { uuid, clearUuid, isLoading: isUserUuidLoading } = useUserUuid();
-  const { clearCurrentApp } = useCurrentApp();
-  const queryClient = useQueryClient();
+  const { isLoading: isAuthLoading, logout, accessToken } = useAuth();
 
-  const {
-    data: currentUser,
-    isLoading,
-    error,
-  } = useQuery<UserResponseWithUUID, Error>({
-    queryKey: ["currentUser", uuid],
-    queryFn: () => fetchUserByUUID(uuid!),
-    enabled: !!uuid,
-  });
+  const { data: currentUser, isLoading, error } = useUser(accessToken);
 
   useEffect(() => {
-    if (error) {
+    if (isApiError(error)) {
       toast({
-        title: "Invalid user UUID",
+        title: "Invalid credentials",
         description: error.message,
         variant: "destructive",
       });
-      clearUuid();
+      logout();
     }
-  }, [clearUuid, error]);
-
-  const logoutCurrentUser = () => {
-    clearUuid();
-    clearCurrentApp();
-    queryClient.removeQueries({ queryKey: ["currentUser"] });
-  };
+  }, [logout, error]);
 
   return {
     currentUser,
-    isLoading: isLoading || isUserUuidLoading,
-    logoutCurrentUser,
+    isLoading: isLoading || isAuthLoading,
   };
 }
 
-export interface UserUuidContextType {
-  uuid: string | null;
-  updateUuid: (newUuid: string) => void;
-  clearUuid: () => void;
+export interface AuthContextType {
+  accessToken: string | null;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => void;
   isLoading: boolean;
 }
 
-const UserUuidContext = createContext<UserUuidContextType | undefined>(
-  undefined,
-);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function UserUuidProvider({ children }: { children: React.ReactNode }) {
-  const [uuid, setUuid] = useState<string | null>(null);
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [accessToken, setAccessToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const { clearCurrentApp } = useCurrentApp();
 
   useEffect(() => {
-    setUuid(localStorage.getItem("user-uuid"));
+    setAccessToken(localStorage.getItem("access-token"));
     setIsLoading(false);
   }, []);
 
-  const updateUuid = (newUuid: string) => {
-    localStorage.setItem("user-uuid", newUuid);
-    setUuid(newUuid);
-  };
+  async function login(email: string, password: string) {
+    const { accessToken } = await loginUser(email, password);
+    setAccessToken(accessToken);
+    localStorage.setItem("access-token", accessToken);
+  }
 
-  const clearUuid = () => {
-    localStorage.removeItem("user-uuid");
-    setUuid(null);
-  };
+  function logout() {
+    setAccessToken(null);
+    localStorage.removeItem("access-token");
+    clearCurrentApp();
+  }
 
   return (
-    <UserUuidContext.Provider
-      value={{ uuid, updateUuid, clearUuid, isLoading }}
+    <AuthContext.Provider
+      value={{
+        accessToken,
+        login,
+        logout,
+        isLoading,
+      }}
     >
       {children}
-    </UserUuidContext.Provider>
+    </AuthContext.Provider>
   );
 }
 
-export const useUserUuid = (): UserUuidContextType => {
-  const context = useContext(UserUuidContext);
+export const useAuth = (): AuthContextType => {
+  const context = useContext(AuthContext);
   if (!context) {
-    throw new Error("useUserUuid must be used within a UserUuidProvider");
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };

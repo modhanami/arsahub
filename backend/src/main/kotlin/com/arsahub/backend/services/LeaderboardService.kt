@@ -1,26 +1,26 @@
 package com.arsahub.backend.services
 
-import com.arsahub.backend.dtos.LeaderboardResponse
-import com.arsahub.backend.repositories.UserActivityRepository
+import com.arsahub.backend.dtos.response.LeaderboardResponse
+import com.arsahub.backend.repositories.AppRepository
+import com.arsahub.backend.repositories.AppUserRepository
 import org.springframework.stereotype.Service
 
-interface LeaderboardService {
-    fun getTotalPointsLeaderboard(activityId: Long): LeaderboardResponse
-}
-
 @Service
-class LeaderboardServiceImpl(
-    private val userActivityRepository: UserActivityRepository
-) : LeaderboardService {
-    override fun getTotalPointsLeaderboard(activityId: Long): LeaderboardResponse {
-        val entries = userActivityRepository.findAllByActivity_ActivityId(activityId)
+class LeaderboardService(
+    private val appUserRepository: AppUserRepository,
+    private val appRepository: AppRepository
+
+) {
+    fun getTotalPointsLeaderboard(appId: Long): LeaderboardResponse {
+        val app = appRepository.findById(appId).orElseThrow { AppService.AppNotFoundException(appId) }
+        val entries = appUserRepository.findAllByApp(app)
             .sortedByDescending { it.points }
-            .mapIndexed { index, member ->
-                if (member.id != null && member.appUser != null && member.points != null) {
+            .mapIndexed { index, appUser ->
+                if (appUser.id != null && appUser.points != null) {
                     LeaderboardResponse.Entry(
-                        userId = member.appUser!!.userId!!,
-                        memberName = member.appUser!!.displayName!!,
-                        score = member.points!!,
+                        userId = appUser.userId!!,
+                        memberName = appUser.displayName!!,
+                        score = appUser.points!!,
                         rank = index + 1
                     )
                 } else {

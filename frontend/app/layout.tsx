@@ -1,11 +1,11 @@
 import { ThemeProvider } from "@/components/theme-provider";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import { WrappedQueryClientProvider } from "../components/query-client-provider";
+import { Providers } from "../components/providers";
 import { Toaster } from "../components/ui/toaster";
 import "./globals.css";
 import { AppApiKeyProvider } from "@/lib/current-app";
-import { UserUuidProvider } from "@/lib/current-user";
+import { AuthProvider } from "@/lib/current-user";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -28,15 +28,15 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <AppApiKeyProvider>
-            <UserUuidProvider>
-              <WrappedQueryClientProvider>
+          <Providers>
+            <AppApiKeyProvider>
+              <AuthProvider>
                 {/* <ModeToggle /> */}
                 {children}
                 <Toaster />
-              </WrappedQueryClientProvider>
-            </UserUuidProvider>
-          </AppApiKeyProvider>
+              </AuthProvider>
+            </AppApiKeyProvider>
+          </Providers>
         </ThemeProvider>
       </body>
     </html>

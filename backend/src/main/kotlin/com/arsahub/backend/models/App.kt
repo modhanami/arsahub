@@ -22,11 +22,12 @@ class App(
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "created_by", nullable = false)
-    var createdBy: User? = null,
+    @JoinColumn(name = "owner_id", nullable = false)
+    var owner: User? = null
 ) : AuditedEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "app_id", nullable = false)
     var id: Long? = null
+
 }

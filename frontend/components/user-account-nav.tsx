@@ -11,11 +11,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { UserAvatar } from "@/components/user-avatar";
 import { useRouter } from "next/navigation";
-import { useCurrentUser } from "../lib/current-user";
+import { useAuth, useCurrentUser } from "../lib/current-user";
 import { Button } from "./ui/button";
 
 export function UserAccountNav() {
-  const { currentUser, logoutCurrentUser } = useCurrentUser();
+  const { currentUser } = useCurrentUser();
+  const { logout } = useAuth();
   const router = useRouter();
 
   if (!currentUser) {
@@ -31,7 +32,7 @@ export function UserAccountNav() {
   }
 
   function handleLogout() {
-    logoutCurrentUser();
+    logout();
     router.push("/login");
   }
 

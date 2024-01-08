@@ -1,9 +1,10 @@
 package com.arsahub.backend
 
-import com.arsahub.backend.dtos.AchievementUnlock
-import com.arsahub.backend.dtos.ActivityUpdate
-import com.arsahub.backend.dtos.LeaderboardUpdate
-import com.arsahub.backend.dtos.PointsUpdate
+import com.arsahub.backend.dtos.socketio.AchievementUnlock
+import com.arsahub.backend.dtos.socketio.AppUpdate
+import com.arsahub.backend.dtos.socketio.LeaderboardUpdate
+import com.arsahub.backend.dtos.socketio.PointsUpdate
+import com.arsahub.backend.models.App
 import com.corundumstudio.socketio.AckRequest
 import com.corundumstudio.socketio.SocketIOClient
 import com.corundumstudio.socketio.SocketIONamespace
@@ -26,7 +27,7 @@ class SocketIOService(val server: SocketIOServer) {
             Long::class.java
         ) { client: SocketIOClient, data: Long, ackSender: AckRequest ->
             println("subscribe-activity: $data")
-            client.joinRoom(getActivityRoomName(data))
+            client.joinRoom(getAppRoomName(data))
             ackSender.sendAckData("OK")
         }
         defaultNamespace.addEventListener(
@@ -44,8 +45,9 @@ class SocketIOService(val server: SocketIOServer) {
         }
     }
 
-    fun broadcastToActivityRoom(activityId: Long, data: ActivityUpdate) {
-        val activityRoom = defaultNamespace.getRoomOperations(getActivityRoomName(activityId))
+    fun broadcastToAppRoom(app: App, data: AppUpdate) {
+        val appId = app.id!!
+        val activityRoom = defaultNamespace.getRoomOperations(getAppRoomName(appId))
         val type = when (data) {
             is PointsUpdate -> "points-update"
             is LeaderboardUpdate -> "leaderboard-update"
@@ -55,14 +57,14 @@ class SocketIOService(val server: SocketIOServer) {
         activityRoom.sendEvent(
             "activity-update", mapOf(
                 "type" to type,
-                "activityId" to activityId,
+                "appId" to appId,
                 "data" to data
             )
         )
-        println("broadcastToActivityRoom: $activityId, $data")
+        println("broadcastToActivityRoom: $appId, $data")
     }
 
-    fun broadcastToUserRoom(userId: String, data: ActivityUpdate) {
+    fun broadcastToUserRoom(userId: String, data: AppUpdate) {
         val userRoom = defaultNamespace.getRoomOperations(getUserRoomName(userId))
         val type = when (data) {
             is PointsUpdate -> "points-update"
@@ -80,7 +82,7 @@ class SocketIOService(val server: SocketIOServer) {
         println("broadcastToUserRoom: $userId, $data")
     }
 
-    fun getActivityRoomName(activityId: Long): String {
+    fun getAppRoomName(activityId: Long): String {
         return "/activities/$activityId"
     }
 
