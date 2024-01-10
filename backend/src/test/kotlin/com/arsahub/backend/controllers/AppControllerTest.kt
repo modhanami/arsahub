@@ -18,6 +18,8 @@ import com.arsahub.backend.repositories.AppUserRepository
 import com.arsahub.backend.repositories.RuleRepository
 import com.arsahub.backend.services.AppService
 import com.arsahub.backend.services.AuthService
+import com.arsahub.backend.services.RuleService
+import com.arsahub.backend.services.TriggerService
 import com.corundumstudio.socketio.SocketIOServer
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
@@ -50,6 +52,12 @@ import java.util.*
 @AutoConfigureMockMvc
 @Transactional
 class AppControllerTest {
+    @Autowired
+    private lateinit var ruleService: RuleService
+
+    @Autowired
+    private lateinit var triggerService: TriggerService
+
     private lateinit var authSetup: AuthSetup
 
     @Autowired
@@ -179,7 +187,7 @@ class AppControllerTest {
             .andExpect(jsonPath("$.fields[1].key").value("source"))
 
         // Assert DB
-        val triggers = appService.getTriggers(authSetup.app)
+        val triggers = triggerService.getTriggers(authSetup.app)
         assertEquals(1, triggers.size)
         val trigger = triggers[0]
         assertEquals("Workshop Completed", trigger.title)
@@ -294,7 +302,7 @@ class AppControllerTest {
     fun `triggers matching rules - one trigger with custom field (workshopId) and unlimited repeatability`() {
         // Arrange
         val trigger =
-            appService.createTrigger(
+            triggerService.createTrigger(
                 authSetup.app,
                 TriggerCreateRequest(
                     title = "Workshop Completed",
@@ -407,7 +415,7 @@ class AppControllerTest {
     fun `triggers matching rules - one trigger with custom field (workshopId) and once per user repeatability`() {
         // Arrange
         val trigger =
-            appService.createTrigger(
+            triggerService.createTrigger(
                 authSetup.app,
                 TriggerCreateRequest(
                     title = "Workshop Completed",
@@ -519,7 +527,7 @@ class AppControllerTest {
     fun `creates a rule with 201`() {
         // Arrange
         val trigger =
-            appService.createTrigger(
+            triggerService.createTrigger(
                 authSetup.app,
                 TriggerCreateRequest(
                     title = "Workshop Completed",
@@ -574,7 +582,7 @@ class AppControllerTest {
             .andExpect(jsonPath("$.repeatability").value("unlimited"))
 
         // Assert DB
-        val rules = appService.listRules(authSetup.app)
+        val rules = ruleService.listRules(authSetup.app)
         assertEquals(1, rules.size)
         val rule = rules[0]
         assertEquals("When workshop ID 1 completed, add 100 points, unlimited", rule.title)
@@ -596,10 +604,21 @@ class AppControllerTest {
        (currently named "once per user")
        - It must fire rules that have already been fired for a trigger if the rule is repeatable
        - It must not fire rules that do not match the trigger conditions
+
+    Rule Engine responsibilities
+    -  Accepts trigger, from an app, containing trigger parameters (conditions), and subject (user)
+    -  Finds all rules that match the trigger, for the subject (user), for the app (tenant)
+    -  Fires all matching rules
+    -  Updates rule progress for the subject (user)
+    -  Updates subject (user) points, achievements, etc.
+    - Handle forward chaining, meaning that if a rule fires and updates the subject (user) points,
+        and that triggers another rule, then that rule should be fired as well (and so on)
+    - Commits all changes to the database and marks the trigger as fired
+
      */
 
     fun createTrigger(app: App): Trigger {
-        return appService.createTrigger(
+        return triggerService.createTrigger(
             app,
             TriggerCreateRequest(
                 title = "Workshop Completed",

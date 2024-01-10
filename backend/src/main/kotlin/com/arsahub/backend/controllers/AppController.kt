@@ -14,11 +14,12 @@ import com.arsahub.backend.dtos.response.RuleResponse
 import com.arsahub.backend.dtos.response.TriggerResponse
 import com.arsahub.backend.dtos.response.UserResponse
 import com.arsahub.backend.models.App
-import com.arsahub.backend.repositories.AppUserRepository
-import com.arsahub.backend.repositories.RuleRepository
 import com.arsahub.backend.security.auth.CurrentApp
+import com.arsahub.backend.services.AchievementService
 import com.arsahub.backend.services.AppService
 import com.arsahub.backend.services.LeaderboardService
+import com.arsahub.backend.services.RuleService
+import com.arsahub.backend.services.TriggerService
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
@@ -27,7 +28,6 @@ import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
-import jakarta.persistence.EntityNotFoundException
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -47,8 +47,9 @@ class AppController(
     private val appService: AppService,
     private val leaderboardService: LeaderboardService,
     private val objectMapper: ObjectMapper,
-    private val ruleRepository: RuleRepository,
-    private val appUserRepository: AppUserRepository,
+    private val triggerService: TriggerService,
+    private val ruleService: RuleService,
+    private val achievementService: AchievementService,
 ) {
     @Operation(
         summary = "Create a trigger for an app",
@@ -68,7 +69,7 @@ class AppController(
         @Valid @RequestBody request: TriggerCreateRequest,
         @CurrentApp app: App,
     ): TriggerResponse {
-        return appService.createTrigger(app, request).let { TriggerResponse.fromEntity(it) }
+        return triggerService.createTrigger(app, request).let { TriggerResponse.fromEntity(it) }
     }
 
     @Operation(
@@ -84,7 +85,7 @@ class AppController(
     fun getTriggers(
         @CurrentApp app: App,
     ): List<TriggerResponse> {
-        return appService.getTriggers(app).map { TriggerResponse.fromEntity(it) }
+        return triggerService.getTriggers(app).map { TriggerResponse.fromEntity(it) }
     }
 
     @Operation(
@@ -147,7 +148,6 @@ class AppController(
         return appService.getAppByUserId(userId).let { AppResponse.fromEntity(it) }
     }
 
-    //    get current authenticated app
     @Operation(
         summary = "Get current authenticated app",
         responses = [
@@ -255,7 +255,7 @@ class AppController(
         @CurrentApp app: App,
         @Valid @RequestBody request: RuleCreateRequest,
     ): RuleResponse {
-        return appService.createRule(app, request).let { RuleResponse.fromEntity(it) }
+        return ruleService.createRule(app, request).let { RuleResponse.fromEntity(it) }
     }
 
     @Operation(
@@ -270,7 +270,7 @@ class AppController(
     fun getRules(
         @CurrentApp app: App,
     ): List<RuleResponse> {
-        return ruleRepository.findAllByApp(app).map { RuleResponse.fromEntity(it) }
+        return ruleService.listRules(app).map { RuleResponse.fromEntity(it) }
     }
 
     @Operation(
@@ -291,7 +291,7 @@ class AppController(
         @Valid @RequestBody request: AchievementCreateRequest,
         @CurrentApp app: App,
     ): AchievementResponse {
-        return appService.createAchievement(app, request).let { AchievementResponse.fromEntity(it) }
+        return achievementService.createAchievement(app, request).let { AchievementResponse.fromEntity(it) }
     }
 
     @Operation(
@@ -306,7 +306,7 @@ class AppController(
     fun getAchievements(
         @CurrentApp app: App,
     ): List<AchievementResponse> {
-        return appService.listAchievements(app).map { AchievementResponse.fromEntity(it) }
+        return achievementService.listAchievements(app).map { AchievementResponse.fromEntity(it) }
     }
 
     @Operation(
@@ -327,10 +327,6 @@ class AppController(
         @PathVariable appId: Long,
         @PathVariable userId: String,
     ): AppUserResponse {
-        val appUser =
-            appUserRepository.findByAppIdAndUserId(appId, userId)
-                ?: throw EntityNotFoundException("User not found")
-
-        return AppUserResponse.fromEntity(appUser)
+        return appService.getAppUserOrThrow(appId, userId).let { AppUserResponse.fromEntity(it) }
     }
 }
