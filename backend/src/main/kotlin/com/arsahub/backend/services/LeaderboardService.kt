@@ -11,7 +11,7 @@ class LeaderboardService(
     private val appRepository: AppRepository,
 ) {
     fun getTotalPointsLeaderboard(appId: Long): LeaderboardResponse {
-        val app = appRepository.findById(appId).orElseThrow { AppService.AppNotFoundException(appId) }
+        val app = appRepository.findById(appId).orElseThrow { AppNotFoundException(appId) }
         val entries =
             appUserRepository.findAllByApp(app)
                 .sortedByDescending { it.points }

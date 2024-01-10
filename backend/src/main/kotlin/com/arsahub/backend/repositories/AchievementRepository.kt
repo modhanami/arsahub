@@ -6,4 +6,9 @@ import org.springframework.data.jpa.repository.JpaRepository
 
 interface AchievementRepository : JpaRepository<Achievement, Long> {
     fun findAllByApp(app: App): List<Achievement>
+
+    fun findByAchievementIdAndApp(
+        id: Long,
+        app: App,
+    ): Achievement?
 }
