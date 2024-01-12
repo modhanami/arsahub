@@ -22,7 +22,7 @@ import org.springframework.stereotype.Service
 
 class AppUserNotFoundException(userId: String) : NotFoundException("App user with ID $userId not found")
 
-class AppUserAlreadyExistsException(userId: String) : ConflictException("App user with ID $userId already exists")
+class AppUserAlreadyExistsException : ConflictException("App user with this UID already exists")
 
 class AppNotFoundException(appId: Long) : NotFoundException("App with ID $appId not found")
 
@@ -70,7 +70,7 @@ class AppService(
     ): AppUser {
         val appUser = appUserRepository.findByAppAndUserId(app, request.uniqueId)
         if (appUser != null) {
-            throw AppUserAlreadyExistsException(request.uniqueId)
+            throw AppUserAlreadyExistsException()
         }
         val newAppUser =
             AppUser(

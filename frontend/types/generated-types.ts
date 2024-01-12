@@ -1,7 +1,7 @@
 /* tslint:disable */
 /* eslint-disable */
 
-// Generated using typescript-generator version 3.2.1263 on 2024-01-12 14:21:01.
+// Generated using typescript-generator version 3.2.1263 on 2024-01-12 16:15:44.
 
 export interface AchievementCreateRequest {
   title: string | null;
@@ -228,6 +228,10 @@ export const enum ValidationLengths {
   PASSWORD_MAX_LENGTH = 50,
   LABEL_MIN_LENGTH = 4,
   LABEL_MAX_LENGTH = 200,
+  APP_USER_UID_MIN_LENGTH = 4,
+  APP_USER_UID_MAX_LENGTH = 200,
+  APP_USER_DISPLAY_NAME_MIN_LENGTH = 4,
+  APP_USER_DISPLAY_NAME_MAX_LENGTH = 200,
 }
 
 export const enum ValidationMessages {
@@ -243,4 +247,10 @@ export const enum ValidationMessages {
   TYPE_REQUIRED = "Type is required",
   LABEL_LENGTH = "Label must be between 4 and 200 characters",
   REPEATABILITY_REQUIRED = "Repeatability is required",
+  APP_USER_UID_REQUIRED = "App user UID is required",
+  APP_USER_UID_LENGTH = "UID must be between 4 and 200 characters",
+  APP_USER_UID_PATTERN = "UID must contain only alphanumeric characters, underscores, and dashes",
+  APP_USER_DISPLAY_NAME_REQUIRED = "Display name is required",
+  APP_USER_DISPLAY_NAME_LENGTH = "Display name must be between 4 and 200 characters",
+  APP_USER_DISPLAY_NAME_PATTERN = "Display name must contain only alphanumeric characters, underscores, and dashes",
 }
