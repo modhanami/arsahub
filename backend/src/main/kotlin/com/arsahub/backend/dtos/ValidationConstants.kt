@@ -3,10 +3,10 @@ package com.arsahub.backend.dtos
 import com.fasterxml.jackson.annotation.JsonValue
 
 // For typescript-generator
-@Suppress("unused")
 enum class ValidationMessages(val message: String) {
     TITLE_REQUIRED(Constants.TITLE_REQUIRED),
     TITLE_LENGTH(Constants.TITLE_LENGTH),
+    TITLE_PATTERN(Constants.TITLE_PATTERN),
     DESCRIPTION_LENGTH(Constants.DESCRIPTION_LENGTH),
     KEY_REQUIRED(Constants.KEY_REQUIRED),
     KEY_LENGTH(Constants.KEY_LENGTH),
@@ -26,6 +26,7 @@ enum class ValidationMessages(val message: String) {
         const val TITLE_REQUIRED = "Title is required"
         const val TITLE_LENGTH =
             "Title must be between ${ValidationLengths.Constants.TITLE_MIN} and ${ValidationLengths.Constants.TITLE_MAX} characters"
+        const val TITLE_PATTERN = "Title must contain only alphanumeric characters, spaces, underscores, and dashes"
         const val DESCRIPTION_LENGTH =
             "Description cannot be longer than ${ValidationLengths.Constants.DESCRIPTION_MAX} characters"
         const val KEY_REQUIRED = "Key is required"
@@ -43,7 +44,6 @@ enum class ValidationMessages(val message: String) {
 }
 
 // For typescript-generator
-@Suppress("unused")
 enum class ValidationLengths(
     @JsonValue
     val value: Int,

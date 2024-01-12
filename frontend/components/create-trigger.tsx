@@ -39,39 +39,44 @@ import { Icons } from "@/components/icons";
 import { useCreateTrigger } from "@/hooks";
 import { DevTool } from "@hookform/devtools";
 import { HttpStatusCode } from "axios";
-import {
-  ALPHA_NUMERIC_EXTENDED_MESSAGE,
-  isAlphaNumericExtended,
-} from "@/lib/validations";
+import { isAlphaNumericExtended } from "@/lib/validations";
+import { ValidationLengths, ValidationMessages } from "@/types/generated-types";
+import { InputWithCounter } from "@/components/ui/input-with-counter";
+import { TextareaWithCounter } from "@/components/ui/textarea-with-counter";
 
 const FieldTypeEnum = z.enum(["Text", "Integer"] as const);
 
 const triggerCreateSchema = z.object({
   title: z
     .string({
-      required_error: "Title is required",
+      required_error: ValidationMessages.TITLE_REQUIRED,
     })
     .trim()
-    .min(4, { message: "Must be between 4 and 200 characters" })
-    .max(200, { message: "Must be between 4 and 200 characters" })
+    .min(4, { message: ValidationMessages.TITLE_LENGTH })
+    .max(200, { message: ValidationMessages.TITLE_LENGTH })
     .refine((value) => isAlphaNumericExtended(value, true), {
-      message: ALPHA_NUMERIC_EXTENDED_MESSAGE,
+      message: ValidationMessages.TITLE_PATTERN,
     }),
   description: z
     .string()
-    .max(500, { message: "Must not be more than 500 characters" })
+    .max(500, { message: ValidationMessages.DESCRIPTION_LENGTH })
     .optional(),
   fields: z.array(
     z.object({
       key: z
         .string()
-        .min(4, { message: "Must be between 4 and 200 characters" })
-        .max(200, { message: "Must be between 4 and 200 characters" })
+        .min(4, { message: ValidationMessages.KEY_LENGTH })
+        .max(200, { message: ValidationMessages.KEY_LENGTH })
         .refine((value) => isAlphaNumericExtended(value), {
-          message: ALPHA_NUMERIC_EXTENDED_MESSAGE,
+          message: ValidationMessages.KEY_PATTERN,
         }),
       type: FieldTypeEnum,
-      label: z.string().optional(),
+      label: z
+        .string()
+        .min(4, { message: ValidationMessages.LABEL_LENGTH })
+        .max(200, { message: ValidationMessages.LABEL_LENGTH })
+        .optional()
+        .or(z.literal("")),
     }),
   ),
 });
@@ -95,6 +100,8 @@ export function TriggerCreateForm() {
   const form = useForm<FormData>({
     resolver: zodResolver(triggerCreateSchema),
     defaultValues: {
+      title: "",
+      description: "",
       fields: [],
     },
   });
@@ -189,7 +196,6 @@ export function TriggerCreateForm() {
                   {form.formState.errors.root.serverError.message}
                 </div>
               )}
-
               <FormField
                 control={form.control}
                 name="title"
@@ -197,7 +203,11 @@ export function TriggerCreateForm() {
                   <FormItem>
                     <FormLabel>Title</FormLabel>
                     <FormControl>
-                      <Input placeholder="Name of your trigger" {...field} />
+                      <InputWithCounter
+                        placeholder="Title of your trigger"
+                        maxLength={ValidationLengths.TITLE_MAX_LENGTH}
+                        {...field}
+                      />
                     </FormControl>
                     <FormDescription>
                       {/* This is your public display name. */}
@@ -213,8 +223,9 @@ export function TriggerCreateForm() {
                   <FormItem>
                     <FormLabel>Description</FormLabel>
                     <FormControl>
-                      <Input
+                      <TextareaWithCounter
                         placeholder="Description of your trigger"
+                        maxLength={ValidationLengths.DESCRIPTION_MAX_LENGTH}
                         {...field}
                       />
                     </FormControl>

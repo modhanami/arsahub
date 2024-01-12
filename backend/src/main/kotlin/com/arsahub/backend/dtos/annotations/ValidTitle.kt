@@ -5,6 +5,7 @@ import com.arsahub.backend.dtos.ValidationMessages
 import jakarta.validation.Constraint
 import jakarta.validation.Payload
 import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.Pattern
 import jakarta.validation.constraints.Size
 import kotlin.reflect.KClass
 
@@ -13,6 +14,10 @@ import kotlin.reflect.KClass
     min = ValidationLengths.Constants.TITLE_MIN,
     max = ValidationLengths.Constants.TITLE_MAX,
     message = ValidationMessages.Constants.TITLE_LENGTH,
+)
+@Pattern(
+    regexp = "^[ a-zA-Z0-9_-]*\$",
+    message = ValidationMessages.Constants.TITLE_PATTERN,
 )
 @Target(AnnotationTarget.FIELD)
 @Retention(AnnotationRetention.RUNTIME)
