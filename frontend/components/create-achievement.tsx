@@ -2,7 +2,6 @@
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -26,17 +25,27 @@ import { toast } from "./ui/use-toast";
 import { useRouter } from "next/navigation";
 import { Icons } from "@/components/icons";
 import { useCreateAchievement } from "@/hooks";
+import { ValidationLengths, ValidationMessages } from "@/types/generated-types";
+import { isAlphaNumericExtended } from "@/lib/validations";
+import { InputWithCounter } from "@/components/ui/input-with-counter";
+import { TextareaWithCounter } from "@/components/ui/textarea-with-counter";
+import { isApiError, isApiValidationError } from "@/api";
+import { HttpStatusCode } from "axios";
 
 export const achievementCreateSchema = z.object({
   title: z
     .string({
-      required_error: "Title is required",
+      required_error: ValidationMessages.TITLE_REQUIRED,
     })
-    .min(4, { message: "Must be between 4 and 200 characters" })
-    .max(200, { message: "Must be between 4 and 200 characters" }),
+    .trim()
+    .min(4, { message: ValidationMessages.TITLE_LENGTH })
+    .max(200, { message: ValidationMessages.TITLE_LENGTH })
+    .refine((value) => isAlphaNumericExtended(value, true), {
+      message: ValidationMessages.TITLE_PATTERN,
+    }),
   description: z
     .string()
-    .max(500, { message: "Must not be more than 500 characters" })
+    .max(500, { message: ValidationMessages.DESCRIPTION_LENGTH })
     .optional(),
 });
 
@@ -62,13 +71,25 @@ export function AchievementCreateForm() {
             title: "Achievement created",
             description: "Achievement created successfully",
           });
+          setIsOpen(false);
+          router.refresh();
         },
-        // TODO: handle error
+        onError: (error, b, c) => {
+          console.log("error", error);
+          if (isApiValidationError(error)) {
+            // TODO: handle validation errors
+          }
+          if (isApiError(error)) {
+            // root error
+            if (error.response?.status === HttpStatusCode.Conflict) {
+              form.setError("title", {
+                message: error.response.data.message,
+              });
+            }
+          }
+        },
       },
     );
-
-    setIsOpen(false);
-    router.refresh();
   }
 
   return (
@@ -93,8 +114,9 @@ export function AchievementCreateForm() {
                   <FormItem>
                     <FormLabel>Title</FormLabel>
                     <FormControl>
-                      <Input
+                      <InputWithCounter
                         placeholder="Name of your achievement"
+                        maxLength={ValidationLengths.TITLE_MAX_LENGTH}
                         {...field}
                       />
                     </FormControl>
@@ -110,8 +132,9 @@ export function AchievementCreateForm() {
                   <FormItem>
                     <FormLabel>Description</FormLabel>
                     <FormControl>
-                      <Input
+                      <TextareaWithCounter
                         placeholder="Description of your achievement"
+                        maxLength={ValidationLengths.DESCRIPTION_MAX_LENGTH}
                         {...field}
                       />
                     </FormControl>
