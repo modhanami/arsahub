@@ -1,5 +1,7 @@
 package com.arsahub.backend.dtos.annotations
 
+import com.arsahub.backend.dtos.ValidationLengths
+import com.arsahub.backend.dtos.ValidationMessages
 import jakarta.validation.Constraint
 import jakarta.validation.Payload
 import jakarta.validation.constraints.NotBlank
@@ -9,11 +11,15 @@ import kotlin.reflect.KClass
 
 @Target(AnnotationTarget.FIELD, AnnotationTarget.VALUE_PARAMETER)
 @Retention(AnnotationRetention.RUNTIME)
-@NotBlank(message = "Key is required")
-@Size(min = 4, max = 200, message = "Key must be between 4 and 200 characters")
+@NotBlank(message = ValidationMessages.Constants.KEY_REQUIRED)
+@Size(
+    min = ValidationLengths.Constants.KEY_MIN,
+    max = ValidationLengths.Constants.KEY_MAX,
+    message = ValidationMessages.Constants.KEY_LENGTH,
+)
 @Pattern(
     regexp = "^[a-zA-Z0-9_-]*\$",
-    message = "Key must contain only alphanumeric characters, underscores, and dashes",
+    message = ValidationMessages.Constants.KEY_PATTERN,
 )
 @Constraint(validatedBy = [])
 annotation class ValidKey(

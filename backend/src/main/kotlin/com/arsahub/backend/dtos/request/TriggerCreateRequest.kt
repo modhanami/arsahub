@@ -1,5 +1,7 @@
 package com.arsahub.backend.dtos.request
 
+import com.arsahub.backend.dtos.ValidationLengths
+import com.arsahub.backend.dtos.ValidationMessages
 import com.arsahub.backend.dtos.annotations.ValidDescription
 import com.arsahub.backend.dtos.annotations.ValidKey
 import com.arsahub.backend.dtos.annotations.ValidTitle
@@ -26,9 +28,13 @@ class TriggerCreateRequest(
 data class FieldDefinition(
     @ValidKey
     val key: String?,
-    @field:NotBlank(message = "Type is required")
+    @field:NotBlank(message = ValidationMessages.Constants.TYPE_REQUIRED)
     val type: String?,
-    @field:Size(min = 4, max = 200, message = "Label must be between 4 and 200 characters")
+    @field:Size(
+        min = ValidationLengths.Constants.LABEL_MIN,
+        max = ValidationLengths.Constants.LABEL_MAX,
+        message = ValidationMessages.Constants.LABEL_LENGTH,
+    )
     val label: String? = null,
 ) {
     companion object {
