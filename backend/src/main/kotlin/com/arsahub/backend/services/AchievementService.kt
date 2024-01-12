@@ -1,6 +1,7 @@
 package com.arsahub.backend.services
 
 import com.arsahub.backend.dtos.request.AchievementCreateRequest
+import com.arsahub.backend.exceptions.ConflictException
 import com.arsahub.backend.exceptions.NotFoundException
 import com.arsahub.backend.models.Achievement
 import com.arsahub.backend.models.App
@@ -10,6 +11,9 @@ import org.springframework.stereotype.Service
 
 class AchievementNotFoundException(id: Long) : NotFoundException("Achievement with ID $id not found")
 
+class AchievementConflictException(title: String) :
+    ConflictException("Achievement with this title already exists.")
+
 @Service
 class AchievementService(private val achievementRepository: AchievementRepository) {
     private val logger = KotlinLogging.logger {}
@@ -18,9 +22,15 @@ class AchievementService(private val achievementRepository: AchievementRepositor
         app: App,
         request: AchievementCreateRequest,
     ): Achievement {
+        // validate uniqueness of title in app
+        val existingTrigger = achievementRepository.findByTitleAndApp(request.title!!, app)
+        if (existingTrigger != null) {
+            throw AchievementConflictException(request.title)
+        }
+
         val achievement =
             Achievement(
-                title = request.title!!,
+                title = request.title,
                 description = request.description,
                 app = app,
             )

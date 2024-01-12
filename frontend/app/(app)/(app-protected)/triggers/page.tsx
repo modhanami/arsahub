@@ -1,8 +1,11 @@
 "use client";
 import { DashboardShell } from "@/components/shell";
 import { DashboardHeader } from "@/components/header";
-import { TriggerCreateForm } from "@/components/create-trigger";
 import { useTriggers } from "@/hooks";
+import { Button } from "@/components/ui/button";
+import { Icons } from "@/components/icons";
+import * as React from "react";
+import Link from "next/link";
 
 export default function Page() {
   const { data: triggers, isLoading } = useTriggers();
@@ -12,7 +15,12 @@ export default function Page() {
   return (
     <DashboardShell>
       <DashboardHeader heading="Triggers" text="Create and manage triggers.">
-        <TriggerCreateForm />
+        <Link href={"/triggers/new"}>
+          <Button>
+            <Icons.add className="mr-2 h-4 w-4" />
+            New Trigger
+          </Button>
+        </Link>
       </DashboardHeader>
       <div>
         {triggers?.length && (

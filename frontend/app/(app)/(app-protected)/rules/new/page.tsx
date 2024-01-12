@@ -36,9 +36,16 @@ import Link from "next/link";
 import React from "react";
 import { v4 as uuidv4 } from "uuid";
 import { Input } from "@/components/ui/input";
-import { FieldDefinition, RuleCreateRequest } from "@/types/generated-types";
-import { Textarea } from "@/components/ui/textarea";
+import {
+  FieldDefinition,
+  RuleCreateRequest,
+  ValidationLengths,
+  ValidationMessages,
+} from "@/types/generated-types";
 import { Icons } from "@/components/icons";
+import { isAlphaNumericExtended } from "@/lib/validations";
+import { InputWithCounter } from "@/components/ui/input-with-counter";
+import { TextareaWithCounter } from "@/components/ui/textarea-with-counter";
 
 const operations = [{ label: "is", value: "is" }];
 const actions = [
@@ -79,23 +86,24 @@ const unlockAchievementSchema = z.object({
 
 const FormSchema = z.object({
   title: z
-    .string()
-    .min(4, { message: "Must be between 4 and 200 characters" })
-    .max(200, { message: "Must be between 4 and 200 characters" }),
+    .string({
+      required_error: ValidationMessages.TITLE_REQUIRED,
+    })
+    .trim()
+    .min(4, { message: ValidationMessages.TITLE_LENGTH })
+    .max(200, { message: ValidationMessages.TITLE_LENGTH })
+    .refine((value) => isAlphaNumericExtended(value, true), {
+      message: ValidationMessages.TITLE_PATTERN,
+    }),
   description: z
     .string()
-    .max(500, { message: "Must not be more than 500 characters" })
+    .max(500, { message: ValidationMessages.DESCRIPTION_LENGTH })
     .optional(),
   trigger: z.object({
     key: z.string({
       required_error: "Please select a trigger",
     }),
   }),
-  // action: z.object({
-  //   key: z.string({
-  //     required_error: "Please select an action",
-  //   }),
-  // }),
   action: z.discriminatedUnion(
     "key",
     [addPointsSchema, unlockAchievementSchema],
@@ -103,23 +111,6 @@ const FormSchema = z.object({
       required_error: "Please select an action",
     },
   ),
-  //   optional conditions array
-  // conditions: z
-  // .map(
-  //   z.string().uuid(),
-  //   z.object({
-  //     field: z.string({
-  //       required_error: "Please select a field",
-  //     }),
-  //     operator: z.string({
-  //       required_error: "Please select an operator",
-  //     }),
-  //     value: z.string({
-  //       required_error: "Please enter a value",
-  //     }),
-  //   }),
-  // )
-  // .optional(),
   repeatability: z.string({
     required_error: "Please select a repeatability",
   }), // TODO: add validation, or change to enum
@@ -136,43 +127,6 @@ type Condition<T> = {
   inputType?: string;
   inputProps?: any;
 };
-
-// const triggerCreateSchema = z.object({
-//   title: z
-//     .string({
-//       required_error: "Title is required",
-//     })
-//     .trim()
-//     .min(4, { message: "Must be between 4 and 200 characters" })
-//     .max(200, { message: "Must be between 4 and 200 characters" })
-//     .refine((value) => isAlphaNumericExtended(value, true), {
-//       message: ALPHA_NUMERIC_EXTENDED_MESSAGE,
-//     }),
-//   description: z
-//     .string()
-//     .max(500, { message: "Must not be more than 500 characters" })
-//     .optional(),
-//   fields: z.array(
-//     z.object({
-//       key: z
-//         .string()
-//         .min(4, { message: "Must be between 4 and 200 characters" })
-//         .max(200, { message: "Must be between 4 and 200 characters" })
-//         .refine((value) => isAlphaNumericExtended(value), {
-//           message: ALPHA_NUMERIC_EXTENDED_MESSAGE,
-//         }),
-//       type: FieldTypeEnum,
-//       label: z.string().optional(),
-//     }),
-//   ),
-// });
-
-// type TextCondition = Condition<string>;
-// type IntegerCondition = Condition<number>;
-
-function getOperationsForField(field: FieldDefinition) {
-  return operations; // TODO: filter based on field type
-}
 
 export default function Page() {
   const form = useForm<FormData>({
@@ -356,7 +310,11 @@ export default function Page() {
                 <FormItem>
                   <FormLabel>Title</FormLabel>
                   <FormControl>
-                    <Input placeholder="Title" {...field} />
+                    <InputWithCounter
+                      placeholder="Title"
+                      maxLength={ValidationLengths.TITLE_MAX_LENGTH}
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -371,7 +329,11 @@ export default function Page() {
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Description" {...field} />
+                    <TextareaWithCounter
+                      placeholder="Description"
+                      maxLength={ValidationLengths.DESCRIPTION_MAX_LENGTH}
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

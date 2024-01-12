@@ -1,3 +1,5 @@
+import cz.habarta.typescript.generator.EnumMapping
+import cz.habarta.typescript.generator.Jackson2Configuration
 import cz.habarta.typescript.generator.JsonLibrary
 import cz.habarta.typescript.generator.TypeScriptFileType
 import cz.habarta.typescript.generator.TypeScriptOutputKind
@@ -128,10 +130,19 @@ jib {
 tasks {
     generateTypeScript {
         jsonLibrary = JsonLibrary.jackson2
-        classPatterns = listOf("com.arsahub.backend.dtos.*.*")
+        jackson2Configuration =
+            Jackson2Configuration().apply {
+                enumsUsingToString = true
+            }
+        classPatterns =
+            listOf(
+                "com.arsahub.backend.dtos.Validation*",
+                "com.arsahub.backend.dtos.*.*",
+            )
         outputKind = TypeScriptOutputKind.module
         outputFileType = TypeScriptFileType.implementationFile
         outputFile = "generated-types.ts"
+        mapEnum = EnumMapping.asEnum
     }
 }
 

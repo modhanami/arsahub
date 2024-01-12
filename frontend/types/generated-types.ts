@@ -1,7 +1,7 @@
 /* tslint:disable */
 /* eslint-disable */
 
-// Generated using typescript-generator version 3.2.1263 on 2024-01-07 13:10:55.
+// Generated using typescript-generator version 3.2.1263 on 2024-01-12 16:15:44.
 
 export interface AchievementCreateRequest {
   title: string | null;
@@ -217,3 +217,40 @@ export interface ManagedMappedSuperclass extends Managed {}
 export interface Managed extends PrimeAmongSecondarySupertypes {}
 
 export interface PrimeAmongSecondarySupertypes {}
+
+export const enum ValidationLengths {
+  TITLE_MIN_LENGTH = 4,
+  TITLE_MAX_LENGTH = 200,
+  DESCRIPTION_MAX_LENGTH = 500,
+  KEY_MIN_LENGTH = 4,
+  KEY_MAX_LENGTH = 200,
+  PASSWORD_MIN_LENGTH = 8,
+  PASSWORD_MAX_LENGTH = 50,
+  LABEL_MIN_LENGTH = 4,
+  LABEL_MAX_LENGTH = 200,
+  APP_USER_UID_MIN_LENGTH = 4,
+  APP_USER_UID_MAX_LENGTH = 200,
+  APP_USER_DISPLAY_NAME_MIN_LENGTH = 4,
+  APP_USER_DISPLAY_NAME_MAX_LENGTH = 200,
+}
+
+export const enum ValidationMessages {
+  TITLE_REQUIRED = "Title is required",
+  TITLE_LENGTH = "Title must be between 4 and 200 characters",
+  TITLE_PATTERN = "Title must contain only alphanumeric characters, spaces, underscores, and dashes",
+  DESCRIPTION_LENGTH = "Description cannot be longer than 500 characters",
+  KEY_REQUIRED = "Key is required",
+  KEY_LENGTH = "Key must be between 4 and 200 characters",
+  KEY_PATTERN = "Key must contain only alphanumeric characters, underscores, and dashes",
+  PASSWORD_REQUIRED = "Password is required",
+  PASSWORD_LENGTH = "Password must be between 8 and 50 characters",
+  TYPE_REQUIRED = "Type is required",
+  LABEL_LENGTH = "Label must be between 4 and 200 characters",
+  REPEATABILITY_REQUIRED = "Repeatability is required",
+  APP_USER_UID_REQUIRED = "App user UID is required",
+  APP_USER_UID_LENGTH = "UID must be between 4 and 200 characters",
+  APP_USER_UID_PATTERN = "UID must contain only alphanumeric characters, underscores, and dashes",
+  APP_USER_DISPLAY_NAME_REQUIRED = "Display name is required",
+  APP_USER_DISPLAY_NAME_LENGTH = "Display name must be between 4 and 200 characters",
+  APP_USER_DISPLAY_NAME_PATTERN = "Display name must contain only alphanumeric characters, underscores, and dashes",
+}

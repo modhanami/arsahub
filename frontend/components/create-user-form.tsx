@@ -2,7 +2,6 @@
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -26,20 +25,24 @@ import { toast } from "./ui/use-toast";
 import { useRouter } from "next/navigation";
 import { Icons } from "@/components/icons";
 import { useCreateAppUser } from "@/hooks";
+import { ValidationLengths, ValidationMessages } from "@/types/generated-types";
+import { isApiError, isApiValidationError } from "@/api";
+import { HttpStatusCode } from "axios";
+import { InputWithCounter } from "@/components/ui/input-with-counter";
 
 export const userCreateSchema = z.object({
   uniqueId: z
     .string({
-      required_error: "Unique ID is required",
+      required_error: ValidationMessages.APP_USER_UID_REQUIRED,
     })
-    .min(4, { message: "Must be between 4 and 200 characters" })
-    .max(200, { message: "Must be between 4 and 200 characters" }),
+    .min(4, { message: ValidationMessages.APP_USER_UID_LENGTH })
+    .max(200, { message: ValidationMessages.APP_USER_UID_LENGTH }),
   displayName: z
     .string({
-      required_error: "Display name is required",
+      required_error: ValidationMessages.APP_USER_DISPLAY_NAME_REQUIRED,
     })
-    .min(4, { message: "Must be between 4 and 200 characters" })
-    .max(500, { message: "Must not be more than 500 characters" }),
+    .min(4, { message: ValidationMessages.APP_USER_DISPLAY_NAME_LENGTH })
+    .max(200, { message: ValidationMessages.APP_USER_DISPLAY_NAME_LENGTH }),
 });
 
 type FormData = z.infer<typeof userCreateSchema>;
@@ -66,7 +69,20 @@ export function UserCreateForm() {
           });
           setIsOpen(false);
         },
-        // TODO: handle error
+        onError: (error, b, c) => {
+          console.log("error", error);
+          if (isApiValidationError(error)) {
+            // TODO: handle validation errors
+          }
+          if (isApiError(error)) {
+            // root error
+            if (error.response?.status === HttpStatusCode.Conflict) {
+              form.setError("uniqueId", {
+                message: error.response.data.message,
+              });
+            }
+          }
+        },
       },
     );
   }
@@ -98,7 +114,11 @@ export function UserCreateForm() {
                       Used for referencing your user in the API.
                     </FormDescription>
                     <FormControl>
-                      <Input placeholder="Unique ID of your user" {...field} />
+                      <InputWithCounter
+                        placeholder="Unique ID of your user"
+                        maxLength={ValidationLengths.APP_USER_UID_MAX_LENGTH}
+                        {...field}
+                      />
                     </FormControl>
                     <FormDescription />
                     <FormMessage />
@@ -115,8 +135,11 @@ export function UserCreateForm() {
                       The display name of your user.
                     </FormDescription>
                     <FormControl>
-                      <Input
+                      <InputWithCounter
                         placeholder="Display name of your user"
+                        maxLength={
+                          ValidationLengths.APP_USER_DISPLAY_NAME_MAX_LENGTH
+                        }
                         {...field}
                       />
                     </FormControl>

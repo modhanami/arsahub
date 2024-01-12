@@ -11,4 +11,9 @@ interface AchievementRepository : JpaRepository<Achievement, Long> {
         id: Long,
         app: App,
     ): Achievement?
+
+    fun findByTitleAndApp(
+        title: String,
+        app: App,
+    ): Achievement?
 }
