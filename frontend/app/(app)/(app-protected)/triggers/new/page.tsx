@@ -255,9 +255,10 @@ export default function Page() {
                       <FormControl>
                         <Input placeholder="Key" {...field} />
                       </FormControl>
-                      {form.formState.touchedFields["fields"]?.[index]?.key && (
-                        <FormMessage />
-                      )}
+                      {form.formState.touchedFields["fields"]?.[index]?.key &&
+                        form.formState.dirtyFields["fields"]?.[index]?.key && (
+                          <FormMessage />
+                        )}
                     </FormItem>
                   )}
                 />
