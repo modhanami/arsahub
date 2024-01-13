@@ -12,10 +12,12 @@ export function UserProtectedPage({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (isLoading) {
+      console.log("[UserProtectedPage] isLoading");
       return;
     }
 
     if (!currentUser) {
+      console.log("[UserProtectedPage] No currentUser, redirecting to login");
       router.push(`/login?redirect=${pathname}`);
       return;
     }

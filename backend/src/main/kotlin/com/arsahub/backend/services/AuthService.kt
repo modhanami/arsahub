@@ -25,23 +25,29 @@ class AuthService(
 ) {
     class UnauthorizedUserException : UnauthorizedException("Email or password is incorrect")
 
-    fun generateAccessToken(user: User): String {
-        val tomorrow =
-            Date.from(
-                Instant.now().plus(
-                    Duration.ofDays(1),
-                ),
-            )
-        val token =
-            Jwts.builder()
-                .subject(user.email)
-                .claim("id", user.userId)
-                .claim("email", user.email)
-                .expiration(tomorrow)
-                .signWith(authProperties.secretKey)
-                .compact()
+    class UnauthorizedRefreshTokenException : UnauthorizedException("Refresh token is invalid")
 
-        return token
+    fun generateAccessToken(user: User): String {
+        val expirationTime = Date.from(Instant.now().plus(ACCESS_TOKEN_LIFETIME))
+        return generateToken(user, expirationTime)
+    }
+
+    fun generateRefreshToken(user: User): String {
+        val expirationTime = Date.from(Instant.now().plus(REFRESH_TOKEN_LIFETIME))
+        return generateToken(user, expirationTime)
+    }
+
+    private fun generateToken(
+        user: User,
+        expirationTime: Date,
+    ): String {
+        return Jwts.builder()
+            .subject(user.email)
+            .claim("id", user.userId)
+            .claim("email", user.email)
+            .expiration(expirationTime)
+            .signWith(authProperties.secretKey)
+            .compact()
     }
 
     data class UserCreateResult(val user: User, val app: App)
@@ -89,5 +95,23 @@ class AuthService(
                 apiKey = apiKeyService.generateAPIKey(),
             )
         return appRepository.save(newApp)
+    }
+
+    fun authenticateRefreshToken(refreshToken: String): User {
+        val claims =
+            Jwts.parser()
+                .verifyWith(authProperties.secretKey)
+                .build()
+                .parseSignedClaims(refreshToken)
+                .payload
+
+        val userId = claims["id"]?.toString()?.toLong() ?: throw UnauthorizedRefreshTokenException()
+        return userRepository.findById(userId).orElseThrow { UnauthorizedRefreshTokenException() }
+    }
+
+    companion object {
+        //        val ACCESS_TOKEN_LIFETIME: Duration = Duration.ofSeconds(2)
+        val ACCESS_TOKEN_LIFETIME: Duration = Duration.ofMinutes(15)
+        val REFRESH_TOKEN_LIFETIME: Duration = Duration.ofDays(7)
     }
 }

@@ -11,10 +11,11 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { useAuth } from "../../lib/current-user";
+import { useCurrentUser } from "../../lib/current-user";
 import { Button } from "@/components/ui/button";
 import { isApiError, isApiValidationError } from "@/api";
 import { HttpStatusCode } from "axios";
+import { useEffect } from "react";
 
 const loginSchema = z.object({
   email: z
@@ -39,15 +40,18 @@ export default function Page() {
   const searchParams = useSearchParams();
   const form = useForm<FormData>({
     resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "a@a.ab",
+      password: "123456789",
+    },
   });
   const { control, setError, handleSubmit } = form;
 
-  const { login } = useAuth();
+  const { currentUser, isLoading: isAuthLoading, login } = useCurrentUser();
 
   async function handleLogin(data: FormData) {
     try {
       await login(data.email, data.password);
-      router.push(searchParams.get("redirect") || "/");
     } catch (error: any) {
       console.log("Error", error);
 
@@ -78,6 +82,29 @@ export default function Page() {
       }
     }
   }
+
+  useEffect(() => {
+    if (isAuthLoading) {
+      console.log("[LoginPage] Loading user...");
+      return;
+    }
+
+    if (!currentUser) {
+      console.log("[LoginPage] No currentUser");
+      return;
+    }
+
+    if (searchParams.get("redirect")) {
+      const redirectUrl = searchParams.get("redirect");
+      console.log("[LoginPage] Redirecting to", redirectUrl);
+      if (redirectUrl) {
+        router.push(redirectUrl);
+      }
+    } else {
+      console.log("[LoginPage] No redirect URL, redirecting to /");
+      router.push("/");
+    }
+  }, [currentUser, isAuthLoading, router, searchParams]);
 
   return (
     <div className="flex justify-center w-full h-screen">

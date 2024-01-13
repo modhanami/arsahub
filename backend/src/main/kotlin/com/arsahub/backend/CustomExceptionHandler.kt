@@ -3,6 +3,7 @@ package com.arsahub.backend
 import com.arsahub.backend.dtos.response.ApiError
 import com.arsahub.backend.dtos.response.ApiValidationError
 import com.arsahub.backend.exceptions.ConflictException
+import com.arsahub.backend.exceptions.NotFoundException
 import com.arsahub.backend.exceptions.UnauthorizedException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -36,6 +37,12 @@ class CustomExceptionHandler {
     fun handleUnauthorizedExceptions(ex: UnauthorizedException): ResponseEntity<ApiError> {
         val response = ApiError(ex.message ?: "Unauthorized")
         return ResponseEntity(response, HttpStatus.UNAUTHORIZED)
+    }
+
+    @ExceptionHandler(NotFoundException::class)
+    fun handleNotFoundExceptions(ex: NotFoundException): ResponseEntity<ApiError> {
+        val response = ApiError(ex.message ?: "Not found")
+        return ResponseEntity(response, HttpStatus.NOT_FOUND)
     }
 
     @ExceptionHandler(ResponseStatusException::class)

@@ -30,9 +30,23 @@ instance.interceptors.response.use(
   async (error) => {
     if (!axios.isAxiosError(error)) {
       console.error("Unknown Error:", error);
+      return Promise.reject(error);
     }
 
     if (error.response) {
+      // TODO: handle expired token
+      // if (!error.config) {
+      //   return Promise.reject(error);
+      // }
+      //
+      // let hasAlreadyRetried = error.config?._retry;
+      // if (error.response.status === 401 && !hasAlreadyRetried) {
+      //   error.config._retry = true;
+      //   const response = await refreshAccessToken();
+      //   if (response) {
+      //     return instance.request(error.config);
+      //   }
+      // }
       return Promise.reject(error);
     }
 
@@ -199,7 +213,7 @@ export async function fetchLeaderboard(appId: number, type: string) {
   return data;
 }
 
-export async function fetchUserByAccessToken(
+export async function fetchCurrentUserWithAccessToken(
   accessToken: string,
 ): Promise<UserResponseWithAccessToken> {
   const { data } = await instance.get<UserResponse>(
@@ -217,11 +231,36 @@ export async function fetchUserByAccessToken(
 }
 
 export async function loginUser(email: string, password: string) {
-  const { data } = await instance.post<LoginResponse>(`${API_URL}/auth/login`, {
-    email,
-    password,
-  });
+  const { data } = await instance.post<LoginResponse>(
+    `${API_URL}/auth/login`,
+    {
+      email,
+      password,
+    },
+    {
+      withCredentials: true,
+    },
+  );
   return data;
+}
+
+export async function logoutUser() {
+  await instance.post<void>(`${API_URL}/auth/logout`, null, {
+    withCredentials: true,
+  });
+}
+
+export async function refreshAccessToken(): Promise<LoginResponse> {
+  const { data } = await instance.post<LoginResponse>(
+    `${API_URL}/auth/refresh`,
+    null,
+    {
+      withCredentials: true,
+    },
+  );
+  return {
+    accessToken: data.accessToken,
+  };
 }
 
 export async function createAppUser(

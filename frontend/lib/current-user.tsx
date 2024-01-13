@@ -1,37 +1,23 @@
 "use client";
-import { toast } from "../components/ui/use-toast";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useCurrentApp } from "@/lib/current-app";
 import { useUser } from "@/hooks";
-import { isApiError, loginUser } from "@/api";
+import { isApiError, loginUser, logoutUser, refreshAccessToken } from "@/api";
+import { UserResponseWithAccessToken } from "@/types";
 
 export function useCurrentUser() {
-  const { isLoading: isAuthLoading, logout, accessToken } = useAuth();
-
-  const { data: currentUser, isLoading, error } = useUser(accessToken);
-
-  useEffect(() => {
-    if (isApiError(error)) {
-      toast({
-        title: "Invalid credentials",
-        description: error.message,
-        variant: "destructive",
-      });
-      logout();
-    }
-  }, [logout, error]);
-
-  return {
-    currentUser,
-    isLoading: isLoading || isAuthLoading,
-  };
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useCurrentUser must be used within an AuthProvider");
+  }
+  return context;
 }
 
 export interface AuthContextType {
-  accessToken: string | null;
   login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   isLoading: boolean;
+  currentUser: UserResponseWithAccessToken | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -40,42 +26,72 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const { clearCurrentApp } = useCurrentApp();
+  const {
+    data: currentUser,
+    isLoading: isUserLoading,
+    error: errorUser,
+  } = useUser(accessToken);
 
   useEffect(() => {
-    setAccessToken(localStorage.getItem("access-token"));
-    setIsLoading(false);
+    async function init() {
+      console.log("[AuthProvider] init");
+      try {
+        const response = await refreshAccessToken();
+        setAccessToken(response.accessToken);
+        console.log("[AuthProvider] init success");
+      } catch (error) {
+        console.log("[AuthProvider] init error", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    init().then(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!errorUser) {
+      return;
+    }
+
+    if (!isApiError(errorUser)) {
+      console.log("[AuthProvider] errorUser is not ApiError", errorUser);
+      return;
+    } else {
+      console.log("[AuthProvider] errorUser is ApiError", errorUser);
+    }
+
+    if (errorUser.response?.status === 401) {
+      console.log("[AuthProvider] errorUser 401");
+      refreshAccessToken().then((response) => {
+        setAccessToken(response.accessToken);
+      });
+      return;
+    }
+  }, [errorUser]);
 
   async function login(email: string, password: string) {
     const { accessToken } = await loginUser(email, password);
     setAccessToken(accessToken);
-    localStorage.setItem("access-token", accessToken);
+    console.log("[AuthProvider] login success");
   }
 
-  function logout() {
+  async function logout() {
+    await logoutUser();
     setAccessToken(null);
-    localStorage.removeItem("access-token");
     clearCurrentApp();
   }
 
   return (
     <AuthContext.Provider
       value={{
-        accessToken,
+        currentUser: currentUser ?? null,
         login,
         logout,
-        isLoading,
+        isLoading: isLoading || isUserLoading,
       }}
     >
       {children}
     </AuthContext.Provider>
   );
 }
-
-export const useAuth = (): AuthContextType => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
-};
