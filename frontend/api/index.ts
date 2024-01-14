@@ -18,6 +18,7 @@ import {
 
 import axios from "axios";
 import { ApiErrorHolder, UserResponseWithAccessToken } from "@/types";
+import { useCurrentUser } from "@/lib/current-user";
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -34,19 +35,24 @@ instance.interceptors.response.use(
     }
 
     if (error.response) {
-      // TODO: handle expired token
-      // if (!error.config) {
-      //   return Promise.reject(error);
-      // }
-      //
-      // let hasAlreadyRetried = error.config?._retry;
-      // if (error.response.status === 401 && !hasAlreadyRetried) {
-      //   error.config._retry = true;
-      //   const response = await refreshAccessToken();
-      //   if (response) {
-      //     return instance.request(error.config);
-      //   }
-      // }
+      if (
+        error.config &&
+        error.response.status === 401 &&
+        !error.config.isRefreshTokenRequest &&
+        !error.config.isRetryRequest
+      ) {
+        const { refresh } = useCurrentUser.getState();
+        console.log("[API interceptor] Access token expired, refreshing");
+        console.log(error);
+        await refresh();
+
+        console.log("[API interceptor] Retrying request", error.config);
+        return instance.request({
+          ...error.config,
+          isRetryRequest: true,
+        });
+      }
+
       return Promise.reject(error);
     }
 
@@ -256,6 +262,7 @@ export async function refreshAccessToken(): Promise<LoginResponse> {
     null,
     {
       withCredentials: true,
+      isRefreshTokenRequest: true,
     },
   );
   return {

@@ -5,7 +5,6 @@ import { Providers } from "../components/providers";
 import { Toaster } from "../components/ui/toaster";
 import "./globals.css";
 import { AppApiKeyProvider } from "@/lib/current-app";
-import { AuthProvider } from "@/lib/current-user";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -30,11 +29,9 @@ export default function RootLayout({
         >
           <Providers>
             <AppApiKeyProvider>
-              <AuthProvider>
-                {/* <ModeToggle /> */}
-                {children}
-                <Toaster />
-              </AuthProvider>
+              {/* <ModeToggle /> */}
+              {children}
+              <Toaster />
             </AppApiKeyProvider>
           </Providers>
         </ThemeProvider>

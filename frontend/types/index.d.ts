@@ -68,7 +68,8 @@ export type ApiErrorHolder<T = unknown, D = any> = AxiosError<T, D>;
 
 declare module "axios" {
   export interface AxiosRequestConfig {
-    _retry?: boolean;
+    isRefreshTokenRequest?: boolean;
+    isRetryRequest?: boolean;
   }
 
   export interface AxiosError {

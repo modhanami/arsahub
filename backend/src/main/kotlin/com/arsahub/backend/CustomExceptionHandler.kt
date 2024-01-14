@@ -5,6 +5,7 @@ import com.arsahub.backend.dtos.response.ApiValidationError
 import com.arsahub.backend.exceptions.ConflictException
 import com.arsahub.backend.exceptions.NotFoundException
 import com.arsahub.backend.exceptions.UnauthorizedException
+import io.jsonwebtoken.ClaimJwtException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.MethodArgumentNotValidException
@@ -43,6 +44,12 @@ class CustomExceptionHandler {
     fun handleNotFoundExceptions(ex: NotFoundException): ResponseEntity<ApiError> {
         val response = ApiError(ex.message ?: "Not found")
         return ResponseEntity(response, HttpStatus.NOT_FOUND)
+    }
+
+    @ExceptionHandler(ClaimJwtException::class)
+    fun handleClaimJwtExceptions(ex: ClaimJwtException): ResponseEntity<ApiError> {
+        val response = ApiError(ex.message ?: "Invalid token")
+        return ResponseEntity(response, HttpStatus.UNAUTHORIZED)
     }
 
     @ExceptionHandler(ResponseStatusException::class)

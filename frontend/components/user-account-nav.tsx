@@ -15,10 +15,10 @@ import { Button } from "./ui/button";
 import { useCurrentUser } from "@/lib/current-user";
 
 export function UserAccountNav() {
-  const { currentUser, logout } = useCurrentUser();
+  const { currentUser, isLoading, logout } = useCurrentUser();
   const router = useRouter();
 
-  if (!currentUser) {
+  if (isLoading || !currentUser) {
     return (
       <Button
         variant="outline"
