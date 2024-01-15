@@ -11,15 +11,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { UserAvatar } from "@/components/user-avatar";
 import { useRouter } from "next/navigation";
-import { useAuth, useCurrentUser } from "../lib/current-user";
 import { Button } from "./ui/button";
+import { useCurrentUser } from "@/lib/current-user";
 
 export function UserAccountNav() {
-  const { currentUser } = useCurrentUser();
-  const { logout } = useAuth();
+  const { currentUser, isLoading, logout } = useCurrentUser();
   const router = useRouter();
 
-  if (!currentUser) {
+  if (isLoading || !currentUser) {
     return (
       <Button
         variant="outline"
@@ -31,8 +30,8 @@ export function UserAccountNav() {
     );
   }
 
-  function handleLogout() {
-    logout();
+  async function handleLogout() {
+    await logout();
     router.push("/login");
   }
 

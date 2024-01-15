@@ -9,11 +9,11 @@ import {
   fetchAppByAPIKey,
   fetchAppUser,
   fetchAppUsers,
+  fetchCurrentUserWithAccessToken,
   fetchLeaderboard,
   fetchMyApp,
   fetchRules,
   fetchTriggers,
-  fetchUserByAccessToken,
   sendTrigger,
 } from "@/api";
 import {
@@ -160,7 +160,7 @@ export function useAppByAPIKey(apiKey: string | null) {
 export function useUser(accessToken: string | null) {
   return useQuery<UserResponseWithAccessToken, Error>({
     queryKey: ["user", accessToken],
-    queryFn: () => fetchUserByAccessToken(accessToken!!),
+    queryFn: () => fetchCurrentUserWithAccessToken(accessToken!!),
     enabled: !!accessToken,
   });
 }

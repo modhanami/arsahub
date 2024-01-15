@@ -65,3 +65,14 @@ export type UserResponseWithAccessToken = UserResponse & {
 };
 
 export type ApiErrorHolder<T = unknown, D = any> = AxiosError<T, D>;
+
+declare module "axios" {
+  export interface AxiosRequestConfig {
+    isRefreshTokenRequest?: boolean;
+    isRetryRequest?: boolean;
+  }
+
+  export interface AxiosError {
+    config: AxiosRequestConfig;
+  }
+}

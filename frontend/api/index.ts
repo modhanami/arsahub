@@ -18,6 +18,7 @@ import {
 
 import axios from "axios";
 import { ApiErrorHolder, UserResponseWithAccessToken } from "@/types";
+import { useCurrentUser } from "@/lib/current-user";
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -30,9 +31,28 @@ instance.interceptors.response.use(
   async (error) => {
     if (!axios.isAxiosError(error)) {
       console.error("Unknown Error:", error);
+      return Promise.reject(error);
     }
 
     if (error.response) {
+      if (
+        error.config &&
+        error.response.status === 401 &&
+        !error.config.isRefreshTokenRequest &&
+        !error.config.isRetryRequest
+      ) {
+        const { refresh } = useCurrentUser.getState();
+        console.log("[API interceptor] Access token expired, refreshing");
+        console.log(error);
+        await refresh();
+
+        console.log("[API interceptor] Retrying request", error.config);
+        return instance.request({
+          ...error.config,
+          isRetryRequest: true,
+        });
+      }
+
       return Promise.reject(error);
     }
 
@@ -199,7 +219,7 @@ export async function fetchLeaderboard(appId: number, type: string) {
   return data;
 }
 
-export async function fetchUserByAccessToken(
+export async function fetchCurrentUserWithAccessToken(
   accessToken: string,
 ): Promise<UserResponseWithAccessToken> {
   const { data } = await instance.get<UserResponse>(
@@ -217,11 +237,37 @@ export async function fetchUserByAccessToken(
 }
 
 export async function loginUser(email: string, password: string) {
-  const { data } = await instance.post<LoginResponse>(`${API_URL}/auth/login`, {
-    email,
-    password,
-  });
+  const { data } = await instance.post<LoginResponse>(
+    `${API_URL}/auth/login`,
+    {
+      email,
+      password,
+    },
+    {
+      withCredentials: true,
+    },
+  );
   return data;
+}
+
+export async function logoutUser() {
+  await instance.post<void>(`${API_URL}/auth/logout`, null, {
+    withCredentials: true,
+  });
+}
+
+export async function refreshAccessToken(): Promise<LoginResponse> {
+  const { data } = await instance.post<LoginResponse>(
+    `${API_URL}/auth/refresh`,
+    null,
+    {
+      withCredentials: true,
+      isRefreshTokenRequest: true,
+    },
+  );
+  return {
+    accessToken: data.accessToken,
+  };
 }
 
 export async function createAppUser(
