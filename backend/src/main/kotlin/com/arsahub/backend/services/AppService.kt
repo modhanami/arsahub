@@ -26,7 +26,7 @@ class AppUserAlreadyExistsException : ConflictException("App user with this UID 
 
 class AppNotFoundException(appId: Long) : NotFoundException("App with ID $appId not found")
 
-class AppNotFoundForUserException : Exception("App not found for this user")
+class AppNotFoundForUserException : NotFoundException("App not found for this user")
 
 class UserNotFoundException : NotFoundException("User with this ID not found")
 

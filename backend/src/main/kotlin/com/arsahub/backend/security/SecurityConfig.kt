@@ -2,6 +2,7 @@ package com.arsahub.backend.security
 
 import com.arsahub.backend.security.auth.AppAuthenticationFilter
 import com.arsahub.backend.security.auth.AuthProperties
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration
@@ -27,6 +28,18 @@ class SecurityConfig(
     private val authenticationConfiguration: AuthenticationConfiguration,
     private val authProperties: AuthProperties,
 ) {
+    @Value("\${cors.allowed-origins}")
+    private lateinit var allowedOrigins: List<String>
+
+    @Value("\${cors.allowed-headers}")
+    private lateinit var allowedHeaders: List<String>
+
+    @Value("\${cors.allowed-methods}")
+    private lateinit var allowedMethods: List<String>
+
+    @Value("\${cors.allow-credentials}")
+    private var allowCredentials: Boolean = false
+
     @Bean
     fun filterChain(http: HttpSecurity): SecurityFilterChain {
         val appAuthenticationFilter = AppAuthenticationFilter(authenticationConfiguration)
@@ -51,10 +64,10 @@ class SecurityConfig(
     fun corsConfigurationSource(): CorsConfigurationSource {
         // TODO: extract this to the config file
         val configuration = CorsConfiguration()
-        configuration.addAllowedOrigin("http://localhost:3000")
-        configuration.addAllowedHeader("*")
-        configuration.addAllowedMethod("*")
-        configuration.allowCredentials = true
+        configuration.allowedOrigins = allowedOrigins
+        configuration.allowedHeaders = allowedHeaders
+        configuration.allowedMethods = allowedMethods
+        configuration.allowCredentials = allowCredentials
         val source = UrlBasedCorsConfigurationSource()
         source.registerCorsConfiguration("/**", configuration)
 
