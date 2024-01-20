@@ -1,7 +1,7 @@
 /* tslint:disable */
 /* eslint-disable */
 
-// Generated using typescript-generator version 3.2.1263 on 2024-01-12 16:15:44.
+// Generated using typescript-generator version 3.2.1263 on 2024-01-20 21:33:35.
 
 export interface AchievementCreateRequest {
   title: string | null;
@@ -102,6 +102,8 @@ export interface AppUserResponse {
   displayName: string;
   points: number;
   achievements: AchievementResponse[];
+  createdAt: Date | null;
+  updatedAt: Date | null;
 }
 
 export interface AppWithAPIToken {
