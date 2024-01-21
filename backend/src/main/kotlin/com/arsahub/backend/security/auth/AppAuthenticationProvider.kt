@@ -6,6 +6,8 @@ import org.springframework.security.authentication.AuthenticationProvider
 import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.security.core.Authentication
 import org.springframework.stereotype.Component
+import org.springframework.web.context.request.RequestAttributes
+import org.springframework.web.context.request.RequestContextHolder
 
 @Component
 class AppAuthenticationProvider(
@@ -18,7 +20,10 @@ class AppAuthenticationProvider(
         if (app == null || !apiKeyService.validateKeyForApp(app, apiKey)) {
             throw BadCredentialsException("The API key is invalid.")
         }
-        return AppAuthenticationToken.authenticated(apiKey, app)
+        val result = AppAuthenticationToken.authenticated(apiKey, app)
+        val requestAttributes = RequestContextHolder.currentRequestAttributes()
+        requestAttributes.setAttribute(CURRENT_APP_ATTRIBUTE, app, RequestAttributes.SCOPE_REQUEST)
+        return result
     }
 
     override fun supports(authentication: Class<*>): Boolean {

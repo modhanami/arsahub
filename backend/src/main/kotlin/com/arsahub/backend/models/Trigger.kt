@@ -13,6 +13,7 @@ import jakarta.persistence.OneToMany
 import jakarta.persistence.Table
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
+import org.hibernate.annotations.TenantId
 
 @Entity
 @Table(name = "`trigger`")
@@ -29,6 +30,10 @@ class Trigger(
     @NotNull
     @Column(name = "key", nullable = false, length = Integer.MAX_VALUE)
     var key: String? = null,
+    @NotNull
+    @Column(name = "app_id", insertable = false, updatable = false, nullable = false)
+    @TenantId
+    var appId: Long? = null,
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "app_id", nullable = false)

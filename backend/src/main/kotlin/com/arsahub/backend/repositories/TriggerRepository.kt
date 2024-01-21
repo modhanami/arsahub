@@ -10,5 +10,5 @@ interface TriggerRepository : JpaRepository<Trigger, Long> {
         app: App,
     ): Trigger?
 
-    fun findAllByAppId(appId: Long): List<Trigger>
+//    fun findAllByAppId(appId: Long): List<Trigger>
 }
