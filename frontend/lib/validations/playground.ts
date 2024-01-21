@@ -1,21 +1,27 @@
 import * as z from "zod";
-// export const ruleCreateSchema = z.object({
-//   name: z.string(),
-//   description: z.string().optional(),
-//   trigger: z.object({
-//     key: z.string(),
-//   }),
-//   action: z.discriminatedUnion("key", [
-//     pointsAddSchema,
-//     achievementUnlockSchema,
-//   ]),
-// });
 
-// send trigger for a user in an activity
+const textParamSchema = z.object({
+  type: z.literal("text"),
+  key: z.string(),
+  value: z.string(),
+});
+
+const integerParamSchema = z.object({
+  type: z.literal("integer"),
+  key: z.string(),
+  value: z.coerce.number().int(),
+});
 
 export const playgroundTriggerSchema = z.object({
-  userId: z.string(),
-  trigger: z.z.object({
-    key: z.string(),
+  userId: z.string().min(1, {
+    message: "Please select a user",
   }),
+  trigger: z.z.object({
+    key: z.string().min(1, {
+      message: "Please select a trigger",
+    }),
+  }),
+  params: z.array(
+    z.discriminatedUnion("type", [textParamSchema, integerParamSchema]),
+  ),
 });
