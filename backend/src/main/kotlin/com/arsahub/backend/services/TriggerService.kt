@@ -87,31 +87,36 @@ class TriggerService(
     }
 
     fun validateParamsAgainstTriggerFields(
-        params: Map<String, Any>?,
+        conditions: Map<String, Any>?,
         fields: Iterable<TriggerField>,
     ) {
-        for (paramKey in params?.keys ?: emptyList()) {
-            val field = fields.find { it.key == paramKey } ?: continue
-            val fieldValue = params?.get(paramKey)
+        for (conditionKey in conditions?.keys ?: emptyList()) {
+            // ensure the key and it's value are not empty
+            require(conditionKey.isNotBlank()) { "Condition key cannot be empty" }
+            val conditionValue = conditions?.get(conditionKey)
+            require(conditionValue != null && conditionValue.toString().isNotBlank()) {
+                "Condition value cannot be empty"
+            }
 
-            val fieldType = TriggerFieldType.fromString(field.type!!)
+            val targetField = fields.find { it.key == conditionKey } ?: continue
+            val targetFieldType = TriggerFieldType.fromString(targetField.type!!)
 
-            requireNotNull(fieldType) {
-                val message = "Field ${field.key} has an invalid type: ${field.type}"
+            requireNotNull(targetFieldType) {
+                val message = "Field ${targetField.key} has an invalid type: ${targetField.type}"
                 logger.error { message }
                 message
             }
 
-            when (fieldType) {
+            when (targetFieldType) {
                 TriggerFieldType.INTEGER ->
                     require(
-                        fieldValue is Int,
-                    ) { "Field ${field.key} is not an integer, got $fieldValue" }
+                        conditionValue is Int,
+                    ) { "Field ${targetField.key} is not an integer, got $conditionValue" }
 
                 TriggerFieldType.TEXT ->
                     require(
-                        fieldValue is String,
-                    ) { "Field ${field.key} is not a text, got $fieldValue" }
+                        conditionValue is String,
+                    ) { "Field ${targetField.key} is not a text, got $conditionValue" }
             }
         }
     }

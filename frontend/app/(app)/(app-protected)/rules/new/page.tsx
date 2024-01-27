@@ -221,17 +221,18 @@ export default function Page() {
   }
 
   function onSubmit(data: FormData) {
+    const currentConditionErrors = { ...conditionErrors };
     for (const condition of conditions) {
       try {
         console.log("condition", condition);
-        conditionErrors[condition.uuid] = "";
+        currentConditionErrors[condition.uuid] = "";
 
         if (condition.field === "") {
-          conditionErrors[condition.uuid] = "Please select a field";
+          currentConditionErrors[condition.uuid] = "Please select a field";
         } else if (condition.operator === "") {
-          conditionErrors[condition.uuid] = "Please select an operator";
+          currentConditionErrors[condition.uuid] = "Please select an operator";
         } else if (condition.value.trim() === "") {
-          conditionErrors[condition.uuid] = "Please enter a value";
+          currentConditionErrors[condition.uuid] = "Please enter a value";
         }
 
         if (condition.fieldDefinition?.type === "integer") {
@@ -239,7 +240,7 @@ export default function Page() {
         }
       } catch (e) {
         console.error(e);
-        conditionErrors[condition.uuid] = "Please enter a valid value";
+        currentConditionErrors[condition.uuid] = "Please enter a valid value";
 
         toast({
           title: "Error",
@@ -249,6 +250,15 @@ export default function Page() {
 
         return;
       }
+    }
+
+    if (
+      !conditions.every(
+        (condition) => currentConditionErrors[condition.uuid] === "",
+      )
+    ) {
+      setConditionErrors(currentConditionErrors);
+      return;
     }
 
     const finalConditions = conditions.reduce(
