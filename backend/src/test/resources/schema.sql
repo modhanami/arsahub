@@ -42,10 +42,11 @@ create table achievement
     description    text,
     created_at     timestamp with time zone default now() not null,
     updated_at     timestamp with time zone default now() not null,
-    image_url      text,
+    image_key      text,
     app_id         bigint
         constraint achievement_app_app_id_fk
-        references app
+        references app,
+    image_metadata jsonb
 );
 
 create table trigger

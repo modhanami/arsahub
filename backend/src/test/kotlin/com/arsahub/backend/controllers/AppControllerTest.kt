@@ -560,7 +560,7 @@ class AppControllerTest() {
         val jsonBody =
             """
             {
-              "title": "When workshop ID 1 completed, add 100 points, unlimited",
+              "title": "When workshop ID 1 completed then add 100 points - unlimited",
               "trigger": {
                 "key": "${trigger.key}"
               },
@@ -584,7 +584,7 @@ class AppControllerTest() {
                 .content(jsonBody),
         )
             .andExpect(status().isCreated)
-            .andExpect(jsonPath("$.title").value("When workshop ID 1 completed, add 100 points, unlimited"))
+            .andExpect(jsonPath("$.title").value("When workshop ID 1 completed then add 100 points - unlimited"))
             .andExpect(jsonPath("$.trigger.key").value("workshop_completed"))
             .andExpect(jsonPath("$.action").value("add_points"))
             .andExpect(jsonPath("$.actionPoints").value(100))
@@ -595,7 +595,7 @@ class AppControllerTest() {
         val rules = ruleService.listRules(authSetup.app)
         assertEquals(1, rules.size)
         val rule = rules[0]
-        assertEquals("When workshop ID 1 completed, add 100 points, unlimited", rule.title)
+        assertEquals("When workshop ID 1 completed then add 100 points - unlimited", rule.title)
         assertEquals("workshop_completed", rule.trigger?.key)
         assertEquals("add_points", rule.action)
         assertEquals(100, rule.actionPoints)
@@ -1062,6 +1062,6 @@ class AppControllerTest() {
         @Container
         @ServiceConnection
         val postgres: PostgreSQLContainer<Nothing> =
-            PostgreSQLContainer<Nothing>("postgres:16-alpine").withInitScript("init.sql")
+            PostgreSQLContainer<Nothing>("postgres:16-alpine").withInitScript("schema.sql")
     }
 }

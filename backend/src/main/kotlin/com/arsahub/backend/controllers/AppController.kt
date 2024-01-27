@@ -1,6 +1,7 @@
 package com.arsahub.backend.controllers
 
 import com.arsahub.backend.dtos.request.AchievementCreateRequest
+import com.arsahub.backend.dtos.request.AchievementSetImageRequest
 import com.arsahub.backend.dtos.request.AppUserCreateRequest
 import com.arsahub.backend.dtos.request.RuleCreateRequest
 import com.arsahub.backend.dtos.request.TriggerCreateRequest
@@ -30,6 +31,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -37,8 +39,10 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.RequestPart
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.multipart.MultipartFile
 
 @RestController
 @RequestMapping("/api/apps")
@@ -292,6 +296,21 @@ class AppController(
         @CurrentApp app: App,
     ): AchievementResponse {
         return achievementService.createAchievement(app, request).let { AchievementResponse.fromEntity(it) }
+    }
+
+    @PostMapping("/achievements/{achievementId}/image", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
+    fun setImageForAchievement(
+        @CurrentApp app: App,
+        @PathVariable achievementId: Long,
+        @RequestPart("image") image: MultipartFile,
+    ): AchievementResponse {
+        return achievementService.setImageForAchievement(
+            app,
+            AchievementSetImageRequest(
+                achievementId = achievementId,
+                image = image,
+            ),
+        ).let { AchievementResponse.fromEntity(it) }
     }
 
     @Operation(

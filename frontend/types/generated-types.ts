@@ -1,11 +1,16 @@
 /* tslint:disable */
 /* eslint-disable */
 
-// Generated using typescript-generator version 3.2.1263 on 2024-01-20 21:33:35.
+// Generated using typescript-generator version 3.2.1263 on 2024-01-24 19:51:35.
 
 export interface AchievementCreateRequest {
   title: string | null;
   description: string | null;
+}
+
+export interface AchievementSetImageRequest {
+  achievementId: number;
+  image: MultipartFile;
 }
 
 export interface Action {
@@ -79,7 +84,8 @@ export interface AchievementResponse {
   achievementId: number;
   title: string;
   description: string | null;
-  imageUrl: string | null;
+  imageKey: string | null;
+  imageMetadata: { [index: string]: any } | null;
 }
 
 export interface ApiError {
@@ -170,6 +176,16 @@ export interface PointsUpdate extends AppUpdate {
   points: number;
 }
 
+export interface MultipartFile extends InputStreamSource {
+  name: string;
+  bytes: any;
+  empty: boolean;
+  resource: Resource;
+  size: number;
+  contentType: string;
+  originalFilename: string;
+}
+
 export interface App
   extends AuditedEntity,
     ManagedEntity,
@@ -187,6 +203,21 @@ export interface Entry {
   userId: string;
   memberName: string;
   score: number;
+}
+
+export interface Resource extends InputStreamSource {
+  open: boolean;
+  file: any;
+  readable: boolean;
+  url: URL;
+  description: string;
+  filename: string;
+  uri: URI;
+  contentAsByteArray: any;
+}
+
+export interface InputStreamSource {
+  inputStream: any;
 }
 
 export interface User
@@ -214,11 +245,19 @@ export interface PersistentAttributeInterceptable
 
 export interface SelfDirtinessTracker extends PrimeAmongSecondarySupertypes {}
 
+export interface URL extends Serializable {}
+
+export interface URI extends Comparable<URI>, Serializable {}
+
 export interface ManagedMappedSuperclass extends Managed {}
 
 export interface Managed extends PrimeAmongSecondarySupertypes {}
 
 export interface PrimeAmongSecondarySupertypes {}
+
+export interface Serializable {}
+
+export interface Comparable<T> {}
 
 export const enum ValidationLengths {
   TITLE_MIN_LENGTH = 4,
