@@ -1,5 +1,8 @@
 import { Icons } from "../components/icons";
-import { UserResponse } from "@/types/generated-types";
+import {
+  AchievementSetImageRequest,
+  UserResponse,
+} from "@/types/generated-types";
 import { AxiosError } from "axios";
 
 export type NavItem = {
@@ -76,3 +79,10 @@ declare module "axios" {
     config: AxiosRequestConfig;
   }
 }
+
+export type AchievementSetImageRequestClient = Omit<
+  AchievementSetImageRequest,
+  "image"
+> & {
+  image: File;
+};

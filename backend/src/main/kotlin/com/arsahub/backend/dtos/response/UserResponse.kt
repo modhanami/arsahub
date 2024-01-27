@@ -17,3 +17,10 @@ data class UserResponse(
         }
     }
 }
+
+//
+// fun User.toUserResponse(): UserResponse = UserResponse(
+//    userId = userId,
+//    name = name,
+//    username = username,
+// )

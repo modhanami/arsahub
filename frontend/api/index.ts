@@ -17,7 +17,11 @@ import {
 } from "../types/generated-types";
 
 import axios from "axios";
-import { ApiErrorHolder, UserResponseWithAccessToken } from "@/types";
+import {
+  AchievementSetImageRequestClient,
+  ApiErrorHolder,
+  UserResponseWithAccessToken,
+} from "@/types";
 import { useCurrentUser } from "@/lib/current-user";
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -105,6 +109,25 @@ export async function createAchievement(
   const { data } = await instance.post<AchievementResponse>(
     `${API_URL}/apps/achievements`,
     newAchievement,
+    {
+      headers: {
+        ...makeAppAuthHeader(app),
+      },
+    },
+  );
+  return data;
+}
+
+export async function setAchievementImage(
+  app: AppResponse,
+  { achievementId, image }: AchievementSetImageRequestClient,
+) {
+  const formData = new FormData();
+  formData.append("image", image);
+
+  const { data } = await instance.post<AchievementResponse>(
+    `${API_URL}/apps/achievements/${achievementId}/image`,
+    formData,
     {
       headers: {
         ...makeAppAuthHeader(app),

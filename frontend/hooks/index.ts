@@ -15,15 +15,20 @@ import {
   fetchRules,
   fetchTriggers,
   sendTrigger,
+  setAchievementImage,
 } from "@/api";
 import {
   AchievementCreateRequest,
+  AchievementResponse,
   AppUserCreateRequest,
   RuleCreateRequest,
   TriggerCreateRequest,
   TriggerSendRequest,
 } from "@/types/generated-types";
-import { UserResponseWithAccessToken } from "@/types";
+import {
+  AchievementSetImageRequestClient,
+  UserResponseWithAccessToken,
+} from "@/types";
 import { useCurrentUser } from "@/lib/current-user";
 
 export function useAppUsers() {
@@ -63,6 +68,40 @@ export function useCreateAchievement() {
       createAchievement(currentApp, newAchievement),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["achievements"] });
+    },
+  });
+}
+
+export function useSetAchievementImage() {
+  const { currentApp } = useCurrentApp();
+  const queryClient = useQueryClient();
+  if (!currentApp) {
+    throw new Error("No current app");
+  }
+
+  return useMutation({
+    mutationFn: (request: AchievementSetImageRequestClient) =>
+      setAchievementImage(currentApp, request),
+    onSuccess: async (data, variables) => {
+      // invalidate only the achievement that was updated
+      queryClient.setQueryData(
+        ["achievements"],
+        (oldData: AchievementResponse[] | undefined) => {
+          if (!oldData) {
+            return [];
+          }
+          return oldData.map((achievement) => {
+            if (achievement.achievementId === variables.achievementId) {
+              return {
+                ...achievement,
+                imageKey: data.imageKey,
+              };
+            } else {
+              return achievement;
+            }
+          });
+        },
+      );
     },
   });
 }

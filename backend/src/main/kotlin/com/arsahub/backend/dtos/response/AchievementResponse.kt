@@ -6,7 +6,8 @@ data class AchievementResponse(
     val achievementId: Long,
     val title: String,
     val description: String?,
-    val imageUrl: String?,
+    val imageKey: String?,
+    val imageMetadata: Map<String, Any>?,
 ) {
     companion object {
         fun fromEntity(achievement: Achievement): AchievementResponse {
@@ -14,7 +15,8 @@ data class AchievementResponse(
                 achievementId = achievement.achievementId!!,
                 title = achievement.title,
                 description = achievement.description,
-                imageUrl = achievement.imageUrl,
+                imageKey = achievement.imageKey,
+                imageMetadata = achievement.imageMetadata,
             )
         }
     }
