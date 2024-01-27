@@ -1050,6 +1050,111 @@ class AppControllerTest() {
         assertEquals(100, userAfter.points)
     }
 
+    // More rules validation
+
+    // Disallow empty condition key or value
+    @Test
+    fun `fails with 400 when creating a rule with empty condition key`() {
+        // Arrange
+        val trigger = createWorkshopCompletedTrigger(authSetup.app)
+
+        // Act & Assert HTTP
+        mockMvc.performWithAppAuth(
+            post("/api/apps/rules")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "title": "When workshop ID 1 completed then add 100 points - unlimited",
+                      "trigger": {
+                        "key": "${trigger.key}"
+                      },
+                      "action": {
+                        "key": "add_points",
+                        "params": {
+                          "points": 100
+                        }
+                      },
+                      "conditions": {
+                        "": 1
+                      },
+                      "repeatability": "unlimited"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.message").value("Condition key cannot be empty"))
+    }
+
+    @Test
+    fun `fails with 400 when creating a rule with empty condition value`() {
+        // Arrange
+        val trigger = createWorkshopCompletedTrigger(authSetup.app)
+
+        // Act & Assert HTTP
+        mockMvc.performWithAppAuth(
+            post("/api/apps/rules")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "title": "When workshop ID 1 completed then add 100 points - unlimited",
+                      "trigger": {
+                        "key": "${trigger.key}"
+                      },
+                      "action": {
+                        "key": "add_points",
+                        "params": {
+                          "points": 100
+                        }
+                      },
+                      "conditions": {
+                        "workshopId": ""
+                      },
+                      "repeatability": "unlimited"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.message").value("Condition value cannot be empty"))
+    }
+
+    @Test
+    fun `fails with 400 when creating a rule with null condition value`() {
+        // Arrange
+        val trigger = createWorkshopCompletedTrigger(authSetup.app)
+
+        // Act & Assert HTTP
+        mockMvc.performWithAppAuth(
+            post("/api/apps/rules")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "title": "When workshop ID 1 completed then add 100 points - unlimited",
+                      "trigger": {
+                        "key": "${trigger.key}"
+                      },
+                      "action": {
+                        "key": "add_points",
+                        "params": {
+                          "points": 100
+                        }
+                      },
+                      "conditions": {
+                        "workshopId": null
+                      },
+                      "repeatability": "unlimited"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.message").value("Condition value cannot be empty"))
+    }
+
     // Forward-chaining
 
     // TODO: Implement forward-chaining and support new triggers, e.g., when a user reaches 100 points, etc.
