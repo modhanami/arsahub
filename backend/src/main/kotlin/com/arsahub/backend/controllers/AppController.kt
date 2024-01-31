@@ -3,6 +3,8 @@ package com.arsahub.backend.controllers
 import com.arsahub.backend.dtos.request.AchievementCreateRequest
 import com.arsahub.backend.dtos.request.AchievementSetImageRequest
 import com.arsahub.backend.dtos.request.AppUserCreateRequest
+import com.arsahub.backend.dtos.request.RewardCreateRequest
+import com.arsahub.backend.dtos.request.RewardRedeemRequest
 import com.arsahub.backend.dtos.request.RuleCreateRequest
 import com.arsahub.backend.dtos.request.TriggerCreateRequest
 import com.arsahub.backend.dtos.request.TriggerSendRequest
@@ -11,7 +13,9 @@ import com.arsahub.backend.dtos.response.ApiValidationError
 import com.arsahub.backend.dtos.response.AppResponse
 import com.arsahub.backend.dtos.response.AppUserResponse
 import com.arsahub.backend.dtos.response.LeaderboardResponse
+import com.arsahub.backend.dtos.response.RewardResponse
 import com.arsahub.backend.dtos.response.RuleResponse
+import com.arsahub.backend.dtos.response.TransactionResponse
 import com.arsahub.backend.dtos.response.TriggerResponse
 import com.arsahub.backend.dtos.response.UserResponse
 import com.arsahub.backend.models.App
@@ -20,6 +24,7 @@ import com.arsahub.backend.services.AchievementService
 import com.arsahub.backend.services.AppService
 import com.arsahub.backend.services.LeaderboardService
 import com.arsahub.backend.services.RuleService
+import com.arsahub.backend.services.ShopService
 import com.arsahub.backend.services.TriggerService
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -54,6 +59,7 @@ class AppController(
     private val triggerService: TriggerService,
     private val ruleService: RuleService,
     private val achievementService: AchievementService,
+    private val shopService: ShopService,
 ) {
     @Operation(
         summary = "Create a trigger for an app",
@@ -347,5 +353,53 @@ class AppController(
         @PathVariable userId: String,
     ): AppUserResponse {
         return appService.getAppUserOrThrow(appId, userId).let { AppUserResponse.fromEntity(it) }
+    }
+
+    @Operation(
+        summary = "Get rewards",
+        responses = [
+            ApiResponse(
+                responseCode = "200",
+            ),
+        ],
+    )
+    @GetMapping("/shop/rewards")
+    fun getRewards(
+        @CurrentApp app: App,
+    ): List<RewardResponse> {
+        return shopService.getRewards(app).map { RewardResponse.fromEntity(it) }
+    }
+
+    @Operation(
+        summary = "Redeem a reward",
+        responses = [
+            ApiResponse(
+                responseCode = "200",
+            ),
+        ],
+    )
+    @PostMapping("/shop/rewards/redeem")
+    fun redeemReward(
+        @CurrentApp app: App,
+        @Valid @RequestBody request: RewardRedeemRequest,
+    ): TransactionResponse {
+        return shopService.redeemReward(app, request).let { TransactionResponse.fromEntity(it) }
+    }
+
+    @Operation(
+        summary = "Create a reward",
+        responses = [
+            ApiResponse(
+                responseCode = "201",
+            ),
+        ],
+    )
+    @PostMapping("/shop/rewards")
+    @ResponseStatus(HttpStatus.CREATED)
+    fun createReward(
+        @CurrentApp app: App,
+        @Valid @RequestBody request: RewardCreateRequest,
+    ): RewardResponse {
+        return shopService.createReward(app, request).let { RewardResponse.fromEntity(it) }
     }
 }
