@@ -5,6 +5,7 @@ import com.arsahub.backend.dtos.request.AchievementSetImageRequest
 import com.arsahub.backend.dtos.request.AppUserCreateRequest
 import com.arsahub.backend.dtos.request.RewardCreateRequest
 import com.arsahub.backend.dtos.request.RewardRedeemRequest
+import com.arsahub.backend.dtos.request.RewardSetImageRequest
 import com.arsahub.backend.dtos.request.RuleCreateRequest
 import com.arsahub.backend.dtos.request.TriggerCreateRequest
 import com.arsahub.backend.dtos.request.TriggerSendRequest
@@ -401,5 +402,20 @@ class AppController(
         @Valid @RequestBody request: RewardCreateRequest,
     ): RewardResponse {
         return shopService.createReward(app, request).let { RewardResponse.fromEntity(it) }
+    }
+
+    @PostMapping("/shop/rewards/{rewardId}/image", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
+    fun setImageForReward(
+        @CurrentApp app: App,
+        @PathVariable rewardId: Long,
+        @RequestPart("image") image: MultipartFile,
+    ): RewardResponse {
+        return shopService.setImageForReward(
+            app,
+            RewardSetImageRequest(
+                rewardId = rewardId,
+                image = image,
+            ),
+        ).let { RewardResponse.fromEntity(it) }
     }
 }

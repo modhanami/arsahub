@@ -37,6 +37,11 @@ class Reward(
     var data: MutableMap<String, Any>? = null,
     @Column(name = "quantity")
     var quantity: Int? = null,
+    @Column(name = "image_key", length = Integer.MAX_VALUE)
+    var imageKey: String? = null,
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "image_metadata")
+    var imageMetadata: MutableMap<String, Any>? = null,
 ) : AuditedEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

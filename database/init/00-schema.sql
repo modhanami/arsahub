@@ -258,6 +258,8 @@ create table reward
     created_at  timestamp default now() not null,
     updated_at  timestamp default now() not null,
     quantity    integer,
+    image_key   text,
+    image_metadata jsonb,
     unique (name, type_id)
 );
 

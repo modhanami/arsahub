@@ -1,7 +1,7 @@
 /* tslint:disable */
 /* eslint-disable */
 
-// Generated using typescript-generator version 3.2.1263 on 2024-01-24 19:51:35.
+// Generated using typescript-generator version 3.2.1263 on 2024-02-03 11:39:50.
 
 export interface AchievementCreateRequest {
   title: string | null;
@@ -40,6 +40,23 @@ export interface FieldDefinition {
 export interface KeyAndParams {
   key: string;
   params: { [index: string]: any } | null;
+}
+
+export interface RewardCreateRequest {
+  price: number | null;
+  quantity: number | null;
+  name: string | null;
+  description: string | null;
+}
+
+export interface RewardRedeemRequest {
+  rewardId: number;
+  userId: string;
+}
+
+export interface RewardSetImageRequest {
+  rewardId: number;
+  image: MultipartFile;
 }
 
 export interface RuleCreateRequest {
@@ -126,6 +143,16 @@ export interface LoginResponse {
   accessToken: string;
 }
 
+export interface RewardResponse {
+  id: number | null;
+  name: string | null;
+  description: string | null;
+  price: number | null;
+  quantity: number | null;
+  imageKey: string | null;
+  imageMetadata: { [index: string]: any } | null;
+}
+
 export interface RuleResponse {
   createdAt: Date | null;
   updatedAt: Date | null;
@@ -142,6 +169,13 @@ export interface RuleResponse {
 
 export interface SignupResponse {
   accessToken: string;
+}
+
+export interface TransactionResponse {
+  id: number | null;
+  pointsSpent: number | null;
+  createdAt: number | null;
+  referenceNumber: string | null;
 }
 
 export interface TriggerResponse {
@@ -177,13 +211,13 @@ export interface PointsUpdate extends AppUpdate {
 }
 
 export interface MultipartFile extends InputStreamSource {
+  contentType: string;
+  originalFilename: string;
   name: string;
   bytes: any;
   empty: boolean;
   resource: Resource;
   size: number;
-  contentType: string;
-  originalFilename: string;
 }
 
 export interface App
@@ -206,14 +240,14 @@ export interface Entry {
 }
 
 export interface Resource extends InputStreamSource {
-  open: boolean;
   file: any;
-  readable: boolean;
   url: URL;
+  readable: boolean;
   description: string;
   filename: string;
   uri: URI;
   contentAsByteArray: any;
+  open: boolean;
 }
 
 export interface InputStreamSource {
@@ -262,6 +296,8 @@ export interface Comparable<T> {}
 export const enum ValidationLengths {
   TITLE_MIN_LENGTH = 4,
   TITLE_MAX_LENGTH = 200,
+  NAME_MIN_LENGTH = 4,
+  NAME_MAX_LENGTH = 200,
   DESCRIPTION_MAX_LENGTH = 500,
   KEY_MIN_LENGTH = 4,
   KEY_MAX_LENGTH = 200,
@@ -279,6 +315,9 @@ export const enum ValidationMessages {
   TITLE_REQUIRED = "Title is required",
   TITLE_LENGTH = "Title must be between 4 and 200 characters",
   TITLE_PATTERN = "Title must contain only alphanumeric characters, spaces, underscores, and dashes",
+  NAME_REQUIRED = "Name is required",
+  NAME_LENGTH = "Name must be between 4 and 200 characters",
+  NAME_PATTERN = "Name must contain only alphanumeric characters, spaces, underscores, and dashes",
   DESCRIPTION_LENGTH = "Description cannot be longer than 500 characters",
   KEY_REQUIRED = "Key is required",
   KEY_LENGTH = "Key must be between 4 and 200 characters",

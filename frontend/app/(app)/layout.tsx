@@ -49,6 +49,12 @@ function createSideNavItems(): SidebarNavItem[] {
     },
     {
       type: "item",
+      title: "Rewards",
+      href: `/rewards`,
+      icon: "reward",
+    },
+    {
+      type: "item",
       title: "Leaderboard",
       href: `/leaderboard`,
       icon: "leaderboard",
