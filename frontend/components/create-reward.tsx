@@ -73,11 +73,12 @@ export const rewardCreateSchema = z.object({
     .refine((value) => value > 0, {
       message: "Price must be a positive number",
     }),
-  quantity: z
+  quantity: z.coerce
     .number({
-      required_error: "Quantity is required",
+      required_error: "Quantity must be a positive number",
+      invalid_type_error: "Quantity must be a positive number",
     })
-    .int({ message: "Quantity must be an integer" })
+    .int({ message: "Quantity must be a positive number" })
     .positive({ message: "Quantity must be a positive number" }),
   image: z
     .custom<FileList>((files) => files instanceof FileList, {

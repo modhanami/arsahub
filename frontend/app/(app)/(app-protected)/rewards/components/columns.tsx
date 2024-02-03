@@ -68,6 +68,24 @@ export const columns: ColumnDef<RewardResponse>[] = [
     },
   },
   {
+    accessorKey: "quantity",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Quantity" />
+    ),
+    cell: ({ row }) => {
+      const amount = parseFloat(row.getValue("quantity"));
+      const formatted = new Intl.NumberFormat("en-US").format(amount);
+
+      return (
+        <div className="flex space-x-2">
+          <span className="max-w-[500px] truncate font-medium">
+            {formatted}
+          </span>
+        </div>
+      );
+    },
+  },
+  {
     accessorKey: "createdAt",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Created At" />
