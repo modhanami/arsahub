@@ -1420,6 +1420,41 @@ class AppControllerTest() {
     }
 
     @Test
+    fun `create reward - success - no quantity`() {
+        // Arrange
+        val jsonBody =
+            """
+            {
+                "name": "10 Points",
+                "description": "10 Points",
+                "price": 10,
+                "quantity": null
+            }
+            """.trimIndent()
+
+        // Act & Assert HTTP
+        mockMvc.performWithAppAuth(
+            post("/api/apps/shop/rewards")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonBody),
+        )
+            .andExpect(status().isCreated)
+            .andExpect(jsonPath("$.name").value("10 Points"))
+            .andExpect(jsonPath("$.description").value("10 Points"))
+            .andExpect(jsonPath("$.price").value(10))
+            .andExpect(jsonPath("$.quantity").value(null))
+
+        // Assert DB
+        val rewards = rewardRepository.findAll()
+        assertEquals(1, rewards.size)
+        val reward = rewards[0]
+        assertEquals("10 Points", reward.name)
+        assertEquals("10 Points", reward.description)
+        assertEquals(10, reward.price)
+        assertEquals(null, reward.quantity)
+    }
+
+    @Test
     fun `create reward - failed - invalid price`() {
         // Arrange
         val jsonBody =

@@ -79,7 +79,8 @@ export const rewardCreateSchema = z.object({
       invalid_type_error: "Quantity must be a positive number",
     })
     .int({ message: "Quantity must be a positive number" })
-    .positive({ message: "Quantity must be a positive number" }),
+    .positive({ message: "Quantity must be a positive number" })
+    .or(z.literal("")),
   image: z
     .custom<FileList>((files) => files instanceof FileList, {
       message: "Image is required",
@@ -117,7 +118,6 @@ export function RewardCreateForm() {
     defaultValues: {
       name: "",
       description: "",
-      quantity: 1,
     },
   });
   const [isOpen, setIsOpen] = React.useState(false);
@@ -132,7 +132,7 @@ export function RewardCreateForm() {
         name: values.name,
         description: values.description || null,
         price: values.price,
-        quantity: values.quantity,
+        quantity: values.quantity === "" ? null : values.quantity,
       },
       {
         onSuccess: async (data) => {

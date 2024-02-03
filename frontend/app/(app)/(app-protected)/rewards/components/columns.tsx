@@ -74,7 +74,9 @@ export const columns: ColumnDef<RewardResponse>[] = [
     ),
     cell: ({ row }) => {
       const amount = parseFloat(row.getValue("quantity"));
-      const formatted = new Intl.NumberFormat("en-US").format(amount);
+      const formatted = Number.isNaN(amount)
+        ? "Unlimited"
+        : new Intl.NumberFormat("en-US").format(amount);
 
       return (
         <div className="flex space-x-2">

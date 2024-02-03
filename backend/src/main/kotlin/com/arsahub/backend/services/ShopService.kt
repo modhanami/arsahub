@@ -119,9 +119,10 @@ class ShopService(
             throw RewardInvalidPriceException()
         }
 
-        // validate quantity
-        if (request.quantity == null || request.quantity <= 0) {
-            throw RewardInvalidQuantityException()
+        request.quantity?.let {
+            if (it <= 0) {
+                throw RewardInvalidQuantityException()
+            }
         }
 
         // validate uniqueness of name

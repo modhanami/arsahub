@@ -10,7 +10,6 @@ class RewardCreateRequest(
     description: String? = null,
     @NotNull
     val price: Int?,
-    @NotNull
     val quantity: Int?,
 ) {
     @ValidName
