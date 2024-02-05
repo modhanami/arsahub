@@ -16,7 +16,6 @@ export default function ShopPage() {
 
   return (
     <div>
-      <h1>Shop</h1>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {rewards?.map((reward) => (
           <RewardItem
