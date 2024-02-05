@@ -14,6 +14,7 @@ import com.arsahub.backend.dtos.response.ApiValidationError
 import com.arsahub.backend.dtos.response.AppResponse
 import com.arsahub.backend.dtos.response.AppUserResponse
 import com.arsahub.backend.dtos.response.LeaderboardResponse
+import com.arsahub.backend.dtos.response.LoginResponse
 import com.arsahub.backend.dtos.response.RewardResponse
 import com.arsahub.backend.dtos.response.RuleResponse
 import com.arsahub.backend.dtos.response.TransactionResponse
@@ -23,6 +24,7 @@ import com.arsahub.backend.models.App
 import com.arsahub.backend.security.auth.CurrentApp
 import com.arsahub.backend.services.AchievementService
 import com.arsahub.backend.services.AppService
+import com.arsahub.backend.services.AuthService
 import com.arsahub.backend.services.LeaderboardService
 import com.arsahub.backend.services.RuleService
 import com.arsahub.backend.services.ShopService
@@ -36,6 +38,9 @@ import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
+import jakarta.validation.constraints.NotEmpty
+import jakarta.validation.constraints.NotNull
+import jakarta.validation.constraints.Positive
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -61,6 +66,7 @@ class AppController(
     private val ruleService: RuleService,
     private val achievementService: AchievementService,
     private val shopService: ShopService,
+    private val authService: AuthService,
 ) {
     @Operation(
         summary = "Create a trigger for an app",
@@ -417,5 +423,28 @@ class AppController(
                 image = image,
             ),
         ).let { RewardResponse.fromEntity(it) }
+    }
+
+    // Endpoint for generating developer-authenticated access tokens, for an app user, using the app's API key
+    data class AppUserTokenCreateRequest(
+        @field:NotEmpty
+        val userId: String,
+        // in seconds
+        @field:NotNull
+        @field:Positive
+        val expiresIn: Long,
+    )
+
+    // Endpoint for generating developer-authenticated access tokens, for an app user
+    @PostMapping("/auth/app-user-token")
+    fun createAppUserToken(
+        @CurrentApp app: App,
+        @Valid @RequestBody request: AppUserTokenCreateRequest,
+    ): LoginResponse {
+        val appId = app.id
+        requireNotNull(appId) { "App id is null" }
+        val appUser = appService.getAppUserOrThrow(appId, request.userId)
+        val accessToken = authService.generateAccessTokenForAppUser(appUser, request.expiresIn)
+        return LoginResponse(accessToken)
     }
 }

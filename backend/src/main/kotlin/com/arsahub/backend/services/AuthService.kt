@@ -4,6 +4,7 @@ import com.arsahub.backend.dtos.request.UserLoginRequest
 import com.arsahub.backend.dtos.request.UserSignupRequest
 import com.arsahub.backend.exceptions.UnauthorizedException
 import com.arsahub.backend.models.App
+import com.arsahub.backend.models.AppUser
 import com.arsahub.backend.models.User
 import com.arsahub.backend.repositories.AppRepository
 import com.arsahub.backend.repositories.UserRepository
@@ -14,6 +15,14 @@ import org.springframework.stereotype.Service
 import java.time.Duration
 import java.time.Instant
 import java.util.*
+
+sealed class UserType(
+    val value: String,
+) {
+    data object User : UserType("user")
+
+    data object AppUser : UserType("app_user")
+}
 
 @Service
 class AuthService(
@@ -29,26 +38,53 @@ class AuthService(
 
     fun generateAccessToken(user: User): String {
         val expirationTime = Date.from(Instant.now().plus(ACCESS_TOKEN_LIFETIME))
-        return generateToken(user, expirationTime)
+        return generateUserToken(user, expirationTime)
     }
 
     fun generateRefreshToken(user: User): String {
         val expirationTime = Date.from(Instant.now().plus(REFRESH_TOKEN_LIFETIME))
-        return generateToken(user, expirationTime)
+        return generateUserToken(user, expirationTime)
     }
 
-    private fun generateToken(
+    fun generateAccessTokenForAppUser(
+        appUser: AppUser,
+        expiresInSeconds: Long,
+    ): String {
+        val subject = appUser.userId
+        val id = appUser.id
+        requireNotNull(subject) { "App user userId is null" }
+        requireNotNull(id) { "App user id is null" }
+
+        val expirationTime = Date.from(Instant.now().plusSeconds(expiresInSeconds))
+        return createBaseTokenBuilder(subject, id, UserType.AppUser, expirationTime)
+            .compact()
+    }
+
+    private fun generateUserToken(
         user: User,
         expirationTime: Date,
     ): String {
-        return Jwts.builder()
-            .subject(user.email)
-            .claim("id", user.userId)
-            .claim("email", user.email)
-            .expiration(expirationTime)
-            .signWith(authProperties.secretKey)
+        val subject = user.email
+        val id = user.userId
+        requireNotNull(subject) { "User email is null" }
+        requireNotNull(id) { "User id is null" }
+
+        return createBaseTokenBuilder(subject, id, UserType.User, expirationTime)
+            .claim("email", subject)
             .compact()
     }
+
+    private fun createBaseTokenBuilder(
+        subject: String,
+        id: Long,
+        userType: UserType,
+        expirationTime: Date,
+    ) = Jwts.builder()
+        .subject(subject)
+        .claim("id", id)
+        .claim("type", userType.value)
+        .expiration(expirationTime)
+        .signWith(authProperties.secretKey)
 
     data class UserCreateResult(val user: User, val app: App)
 

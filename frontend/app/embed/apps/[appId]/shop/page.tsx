@@ -4,14 +4,25 @@ import { Image } from "@nextui-org/react";
 import { useRewards } from "@/hooks";
 import { RewardResponse } from "@/types/generated-types";
 import { getImageUrlFromKey } from "@/lib/image";
+import { useEffect } from "react";
 
+// this page is intended to be embedded in an iframe
 export default function ShopPage() {
   const { data: rewards, isLoading } = useRewards();
+
+  useEffect(() => {
+    // get auth token from url
+    const urlParams = new URLSearchParams(window.location.search);
+    const authToken = urlParams.get("token");
+    console.log("authToken", authToken);
+  }, []);
 
   if (isLoading) return "Loading...";
 
   function handleRedeemClick(reward: RewardResponse) {
     console.log("Redeem reward", reward);
+    // notify parent frame
+    window.postMessage({ type: "redeem-reward", reward }, "*");
   }
 
   return (

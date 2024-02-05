@@ -345,6 +345,18 @@ export async function fetchRewards(app: AppResponse) {
   return data;
 }
 
+export async function fetchRewardsForEmbed(token: string) {
+  const { data } = await instance.get<RewardResponse[]>(
+    `${API_URL}/apps/shop/rewards`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+  return data;
+}
+
 export async function createReward(
   app: AppResponse,
   newReward: RewardCreateRequest,

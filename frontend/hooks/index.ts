@@ -14,6 +14,7 @@ import {
   fetchLeaderboard,
   fetchMyApp,
   fetchRewards,
+  fetchRewardsForEmbed,
   fetchRules,
   fetchTriggers,
   sendTrigger,
@@ -245,6 +246,22 @@ export function useRewards() {
     queryKey: ["rewards"],
     queryFn: () => currentApp && fetchRewards(currentApp),
     enabled: !!currentApp,
+  });
+}
+
+interface EmbedApiRequestConfig {
+  token: string;
+}
+
+export function useRewardsForEmbed(
+  config: EmbedApiRequestConfig,
+  options = defaultOptions,
+) {
+  const { token } = config;
+  return useQuery({
+    queryKey: ["rewards", token],
+    queryFn: () => fetchRewardsForEmbed(token),
+    enabled: options.enabled,
   });
 }
 
