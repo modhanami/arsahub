@@ -7,6 +7,9 @@ enum class ValidationMessages(val message: String) {
     TITLE_REQUIRED(Constants.TITLE_REQUIRED),
     TITLE_LENGTH(Constants.TITLE_LENGTH),
     TITLE_PATTERN(Constants.TITLE_PATTERN),
+    NAME_REQUIRED(Constants.NAME_REQUIRED),
+    NAME_LENGTH(Constants.NAME_LENGTH),
+    NAME_PATTERN(Constants.NAME_PATTERN),
     DESCRIPTION_LENGTH(Constants.DESCRIPTION_LENGTH),
     KEY_REQUIRED(Constants.KEY_REQUIRED),
     KEY_LENGTH(Constants.KEY_LENGTH),
@@ -32,9 +35,13 @@ enum class ValidationMessages(val message: String) {
 
     object Constants {
         const val TITLE_REQUIRED = "Title is required"
+        const val NAME_REQUIRED = "Name is required"
         const val TITLE_LENGTH =
             "Title must be between ${ValidationLengths.Constants.TITLE_MIN} and ${ValidationLengths.Constants.TITLE_MAX} characters"
+        const val NAME_LENGTH =
+            "Name must be between ${ValidationLengths.Constants.NAME_MIN} and ${ValidationLengths.Constants.NAME_MAX} characters"
         const val TITLE_PATTERN = "Title must contain only alphanumeric characters, spaces, underscores, and dashes"
+        const val NAME_PATTERN = "Name must contain only alphanumeric characters, spaces, underscores, and dashes"
         const val DESCRIPTION_LENGTH =
             "Description cannot be longer than ${ValidationLengths.Constants.DESCRIPTION_MAX} characters"
         const val KEY_REQUIRED = "Key is required"
@@ -68,6 +75,8 @@ enum class ValidationLengths(
 ) {
     TITLE_MIN_LENGTH(Constants.TITLE_MIN),
     TITLE_MAX_LENGTH(Constants.TITLE_MAX),
+    NAME_MIN_LENGTH(Constants.NAME_MIN),
+    NAME_MAX_LENGTH(Constants.NAME_MAX),
     DESCRIPTION_MAX_LENGTH(Constants.DESCRIPTION_MAX),
     KEY_MIN_LENGTH(Constants.KEY_MIN),
     KEY_MAX_LENGTH(Constants.KEY_MAX),
@@ -84,6 +93,8 @@ enum class ValidationLengths(
     object Constants {
         const val TITLE_MIN = 4
         const val TITLE_MAX = 200
+        const val NAME_MIN = 4
+        const val NAME_MAX = 200
         const val DESCRIPTION_MAX = 500
         const val KEY_MIN = 4
         const val KEY_MAX = 200

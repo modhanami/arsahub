@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createAchievement,
   createAppUser,
+  createReward,
   createRule,
   createTrigger,
   fetchAchievements,
@@ -12,21 +13,26 @@ import {
   fetchCurrentUserWithAccessToken,
   fetchLeaderboard,
   fetchMyApp,
+  fetchRewards,
   fetchRules,
   fetchTriggers,
   sendTrigger,
   setAchievementImage,
+  setRewardImage,
 } from "@/api";
 import {
   AchievementCreateRequest,
   AchievementResponse,
   AppUserCreateRequest,
+  RewardCreateRequest,
+  RewardResponse,
   RuleCreateRequest,
   TriggerCreateRequest,
   TriggerSendRequest,
 } from "@/types/generated-types";
 import {
   AchievementSetImageRequestClient,
+  RewardSetImageRequestClient,
   UserResponseWithAccessToken,
 } from "@/types";
 import { useCurrentUser } from "@/lib/current-user";
@@ -226,6 +232,69 @@ export function useCreateAppUser() {
       createAppUser(currentApp, newUser),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["appUsers"] });
+    },
+  });
+}
+
+// Points shop
+
+export function useRewards() {
+  const { currentApp } = useCurrentApp();
+
+  return useQuery({
+    queryKey: ["rewards"],
+    queryFn: () => currentApp && fetchRewards(currentApp),
+    enabled: !!currentApp,
+  });
+}
+
+export function useCreateReward() {
+  const { currentApp } = useCurrentApp();
+  const queryClient = useQueryClient();
+  if (!currentApp) {
+    throw new Error("No current app");
+  }
+
+  return useMutation({
+    mutationKey: ["rewards"],
+    mutationFn: (newReward: RewardCreateRequest) =>
+      createReward(currentApp, newReward),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["rewards"] });
+    },
+  });
+}
+
+export function useSetRewardImage() {
+  const { currentApp } = useCurrentApp();
+  const queryClient = useQueryClient();
+  if (!currentApp) {
+    throw new Error("No current app");
+  }
+
+  return useMutation({
+    mutationFn: (request: RewardSetImageRequestClient) =>
+      setRewardImage(currentApp, request),
+    onSuccess: async (data, variables) => {
+      // invalidate only the reward that was updated
+      queryClient.setQueryData(
+        ["rewards"],
+        (oldData: RewardResponse[] | undefined) => {
+          if (!oldData) {
+            return [];
+          }
+          return oldData.map((reward) => {
+            if (reward.id === variables.rewardId) {
+              return {
+                ...reward,
+                imageKey: data.imageKey,
+              };
+            } else {
+              return reward;
+            }
+          });
+        },
+      );
     },
   });
 }

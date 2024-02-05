@@ -21,6 +21,7 @@ import {
   Loader2,
   Lock,
   LucideProps,
+  LucideTicket,
   Medal,
   Moon,
   MoreVertical,
@@ -28,6 +29,7 @@ import {
   Plus,
   ScrollText,
   Settings,
+  ShoppingCartIcon,
   SunMedium,
   ToyBrick,
   Trash,
@@ -94,4 +96,6 @@ export const Icons = {
   achievement: Medal,
   experiment: FlaskConical,
   random: Dices,
+  reward: LucideTicket,
+  pointsShop: ShoppingCartIcon,
 };

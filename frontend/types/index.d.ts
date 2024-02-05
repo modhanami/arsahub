@@ -86,3 +86,10 @@ export type AchievementSetImageRequestClient = Omit<
 > & {
   image: File;
 };
+
+export type RewardSetImageRequestClient = Omit<
+  RewardSetImageRequest,
+  "image"
+> & {
+  image: File;
+};

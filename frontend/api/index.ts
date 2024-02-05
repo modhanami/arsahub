@@ -8,6 +8,8 @@ import {
   AppUserResponse,
   LeaderboardResponse,
   LoginResponse,
+  RewardCreateRequest,
+  RewardResponse,
   RuleCreateRequest,
   RuleResponse,
   TriggerCreateRequest,
@@ -20,6 +22,7 @@ import axios from "axios";
 import {
   AchievementSetImageRequestClient,
   ApiErrorHolder,
+  RewardSetImageRequestClient,
   UserResponseWithAccessToken,
 } from "@/types";
 import { useCurrentUser } from "@/lib/current-user";
@@ -327,5 +330,52 @@ export async function fetchAppByAPIKey(apiKey: string) {
       ...makeAppAuthHeaderWithToken(apiKey),
     },
   });
+  return data;
+}
+
+export async function fetchRewards(app: AppResponse) {
+  const { data } = await instance.get<RewardResponse[]>(
+    `${API_URL}/apps/shop/rewards`,
+    {
+      headers: {
+        ...makeAppAuthHeader(app),
+      },
+    },
+  );
+  return data;
+}
+
+export async function createReward(
+  app: AppResponse,
+  newReward: RewardCreateRequest,
+) {
+  const { data } = await instance.post<RewardResponse>(
+    `${API_URL}/apps/shop/rewards`,
+    newReward,
+    {
+      headers: {
+        ...makeAppAuthHeader(app),
+      },
+    },
+  );
+  return data;
+}
+
+export async function setRewardImage(
+  app: AppResponse,
+  { rewardId, image }: RewardSetImageRequestClient,
+) {
+  const formData = new FormData();
+  formData.append("image", image);
+
+  const { data } = await instance.post<RewardResponse>(
+    `${API_URL}/apps/shop/rewards/${rewardId}/image`,
+    formData,
+    {
+      headers: {
+        ...makeAppAuthHeader(app),
+      },
+    },
+  );
   return data;
 }
