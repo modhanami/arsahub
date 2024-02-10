@@ -13,6 +13,8 @@
     "@formkit/auto-animate": "^0.8.0",
     "@hookform/resolvers": "^3.3.2",
     "@nextui-org/react": "^2.2.9",
+    "@ory/client": "^1.6.1",
+    "@ory/integrations": "^1.1.5",
     "@radix-ui/react-accordion": "^1.1.2",
     "@radix-ui/react-alert-dialog": "^1.0.5",
     "@radix-ui/react-aspect-ratio": "^1.0.3",
