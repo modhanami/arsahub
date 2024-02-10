@@ -93,3 +93,11 @@ export type RewardSetImageRequestClient = Omit<
 > & {
   image: File;
 };
+
+export type ArsahubUser = {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  fullName: string;
+};

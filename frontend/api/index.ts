@@ -25,7 +25,6 @@ import {
   RewardSetImageRequestClient,
   UserResponseWithAccessToken,
 } from "@/types";
-import { useCurrentUser } from "@/lib/current-user";
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -42,24 +41,6 @@ instance.interceptors.response.use(
     }
 
     if (error.response) {
-      if (
-        error.config &&
-        error.response.status === 401 &&
-        !error.config.isRefreshTokenRequest &&
-        !error.config.isRetryRequest
-      ) {
-        const { refresh } = useCurrentUser.getState();
-        console.log("[API interceptor] Access token expired, refreshing");
-        console.log(error);
-        await refresh();
-
-        console.log("[API interceptor] Retrying request", error.config);
-        return instance.request({
-          ...error.config,
-          isRetryRequest: true,
-        });
-      }
-
       return Promise.reject(error);
     }
 
@@ -229,12 +210,8 @@ export async function createRule(app: AppResponse, newRule: RuleCreateRequest) {
 
 export type UserUUID = string;
 
-export async function fetchMyApp(accessToken: string) {
-  const { data } = await instance.get<AppResponse>(`${API_URL}/apps/me`, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
+export async function fetchMyApp() {
+  const { data } = await instance.get<AppResponse>(`${API_URL}/apps/me`);
   return data;
 }
 

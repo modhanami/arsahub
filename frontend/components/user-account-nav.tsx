@@ -10,29 +10,23 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { UserAvatar } from "@/components/user-avatar";
-import { useRouter } from "next/navigation";
 import { Button } from "./ui/button";
 import { useCurrentUser } from "@/lib/current-user";
 
 export function UserAccountNav() {
-  const { currentUser, isLoading, logout } = useCurrentUser();
-  const router = useRouter();
+  const { currentUser, isLoading, startLoginFlow, startLogoutFlow } =
+    useCurrentUser();
 
   if (isLoading || !currentUser) {
     return (
       <Button
         variant="outline"
         className="text-sm"
-        onClick={() => router.push("/login")}
+        onClick={() => startLoginFlow({ returnTo: window.location.href })}
       >
         Login
       </Button>
     );
-  }
-
-  async function handleLogout() {
-    await logout();
-    router.push("/login");
   }
 
   return (
@@ -43,8 +37,8 @@ export function UserAccountNav() {
       <DropdownMenuContent align="end">
         <div className="flex items-center justify-start gap-2 p-2">
           <div className="flex flex-col space-y-1 leading-none">
-            {currentUser?.name && (
-              <p className="font-medium">{currentUser.name}</p>
+            {currentUser && (
+              <p className="font-medium">{currentUser.fullName}</p>
             )}
             {/* {user.name && (
               <p className="w-[200px] truncate text-sm text-muted-foreground">
@@ -66,7 +60,11 @@ export function UserAccountNav() {
         <DropdownMenuSeparator />
         <DropdownMenuItem
           className="cursor-pointer"
-          onSelect={() => handleLogout()}
+          onClick={() =>
+            startLogoutFlow({
+              returnTo: window.location.href,
+            })
+          }
         >
           Logout
         </DropdownMenuItem>
