@@ -11,10 +11,8 @@ import com.arsahub.backend.exceptions.ConflictException
 import com.arsahub.backend.exceptions.NotFoundException
 import com.arsahub.backend.models.App
 import com.arsahub.backend.models.AppUser
-import com.arsahub.backend.models.User
 import com.arsahub.backend.repositories.AppRepository
 import com.arsahub.backend.repositories.AppUserRepository
-import com.arsahub.backend.repositories.UserRepository
 import com.arsahub.backend.services.actionhandlers.ActionResult
 import com.arsahub.backend.services.ruleengine.RuleEngine
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -32,7 +30,6 @@ class UserNotFoundException : NotFoundException("User with this ID not found")
 
 @Service
 class AppService(
-    private val userRepository: UserRepository,
     private val appRepository: AppRepository,
     private val appUserRepository: AppUserRepository,
     private val socketIOService: SocketIOService,
@@ -155,9 +152,5 @@ class AppService(
 
             is ActionResult.Nothing -> {}
         }
-    }
-
-    fun getUserById(userId: Long): User {
-        return userRepository.findById(userId).orElseThrow { UserNotFoundException() }
     }
 }

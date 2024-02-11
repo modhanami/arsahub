@@ -38,25 +38,15 @@ export function UserAccountNav() {
         <div className="flex items-center justify-start gap-2 p-2">
           <div className="flex flex-col space-y-1 leading-none">
             {currentUser && (
-              <p className="font-medium">{currentUser.fullName}</p>
+              <div className="gap-2 flex flex-col">
+                <p className="font-medium">{currentUser.fullName}</p>
+                <p className="w-[200px] truncate text-sm text-muted-foreground">
+                  {currentUser.email}
+                </p>
+              </div>
             )}
-            {/* {user.name && (
-              <p className="w-[200px] truncate text-sm text-muted-foreground">
-                {user.name}
-              </p>
-            )} */}
           </div>
         </div>
-        {/* <DropdownMenuSeparator /> */}
-        {/* <DropdownMenuItem asChild>
-          <Link href="/dashboard">Dashboard</Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href="/dashboard/billing">Billing</Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href="/dashboard/settings">Settings</Link>
-        </DropdownMenuItem> */}
         <DropdownMenuSeparator />
         <DropdownMenuItem
           className="cursor-pointer"

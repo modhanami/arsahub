@@ -10,11 +10,11 @@ import org.springframework.security.web.util.matcher.RequestMatcher
 import org.springframework.stereotype.Component
 
 @Component
-class AppAuthenticationFilter(
+class ExternalUserAuthenticationFilter(
     authenticationManager: AuthenticationManager,
 ) : AuthenticationFilter(
         authenticationManager,
-        AppAuthenticationConverter(),
+        ExternalUserAuthenticationConverter(),
     ) {
     init {
         setSuccessHandler { _, _, _ -> }
@@ -25,7 +25,7 @@ class AppAuthenticationFilter(
                 AntPathRequestMatcher("/api/activities/**/leaderboard"),
                 AntPathRequestMatcher("/api/activities/**/profile"),
                 AntPathRequestMatcher("/api/apps", HttpMethod.GET.toString()),
-                AntPathRequestMatcher("/api/apps/me", HttpMethod.GET.toString()),
+//                AntPathRequestMatcher("/api/apps/me", HttpMethod.GET.toString()),
                 AntPathRequestMatcher("/api/apps/users/current", HttpMethod.GET.toString()),
                 AntPathRequestMatcher("/api/apps/*/users/*", HttpMethod.GET.toString()), // TODO: reevaluate this
                 AntPathRequestMatcher("/api/apps/*/leaderboard", HttpMethod.GET.toString()), // TODO: reevaluate this

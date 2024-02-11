@@ -94,7 +94,7 @@ export type RewardSetImageRequestClient = Omit<
   image: File;
 };
 
-export type ArsahubUser = {
+export type UserIdentity = {
   id: string;
   email: string;
   firstName: string;

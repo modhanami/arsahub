@@ -2,10 +2,10 @@
 import { AvatarProps } from "@radix-ui/react-avatar";
 
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
-import { ArsahubUser } from "@/types";
+import { UserIdentity } from "@/types";
 
 interface UserAvatarProps extends AvatarProps {
-  user: ArsahubUser;
+  user: UserIdentity;
 }
 
 export function UserAvatar({ user, ...props }: UserAvatarProps) {

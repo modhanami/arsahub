@@ -78,6 +78,7 @@ dependencies {
     implementation("org.liquibase:liquibase-core")
     implementation("com.jayway.jsonpath:json-path:2.8.0")
     implementation("software.amazon.awssdk:s3")
+    implementation("sh.ory:ory-client:1.6.1")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     runtimeOnly("org.postgresql:postgresql")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")

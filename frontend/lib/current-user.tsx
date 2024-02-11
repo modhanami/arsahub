@@ -2,7 +2,7 @@
 import { Configuration, FrontendApi, Session } from "@ory/client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArsahubUser } from "@/types"; // Get your Ory url from .env
+import { UserIdentity } from "@/types"; // Get your Ory url from .env
 
 // Get your Ory url from .env
 // Or localhost for local development
@@ -16,19 +16,24 @@ const ory = new FrontendApi(
   }),
 );
 
-export function useCurrentUser(): {
-  // session: Session | undefined;
-  // identity: Identity | undefined;
-  currentUser: ArsahubUser | undefined;
+interface UseCurrentUserOptions {
+  startLoginFlowIfUnauthenticated?: boolean;
+}
+
+export function useCurrentUser({
+  startLoginFlowIfUnauthenticated = false,
+}: UseCurrentUserOptions = {}): {
+  currentUser: UserIdentity | undefined;
   isLoading: boolean;
   startLoginFlow: (args: { returnTo: string }) => void;
+  startRegistrationFlow: (args: { returnTo: string }) => void;
   startLogoutFlow: (args: { returnTo: string }) => void;
 } {
   const router = useRouter();
   const [session, setSession] = useState<Session | undefined>();
   const [isLoading, setIsLoading] = useState(true);
   const identity = session?.identity;
-  const user: ArsahubUser | undefined = identity
+  const user: UserIdentity | undefined = identity
     ? {
         id: identity.id,
         email: identity?.traits.email,
@@ -41,28 +46,49 @@ export function useCurrentUser(): {
     : undefined;
 
   useEffect(() => {
-    ory
-      .toSession()
-      .then(({ data }) => {
-        // User has a session!
-        setSession(data);
-      })
-      .catch((e) => {
-        console.error(e);
-        const encodedCurrentUrl = encodeURIComponent(window.location.href);
-        return router.push(
-          `${basePath}/ui/login?return_to=${encodedCurrentUrl}`,
-        );
-      })
-      .finally(() => {
+    async function init() {
+      try {
+        try {
+          const { data } = await ory.toSession();
+          // User has a session!
+          setSession(data);
+        } catch (e) {
+          console.error(e);
+          if (startLoginFlowIfUnauthenticated) {
+            const encodedCurrentUrl = encodeURIComponent(window.location.href);
+            return router.push(
+              `${basePath}/ui/login?return_to=${encodedCurrentUrl}`,
+            );
+          }
+        }
+      } finally {
         setIsLoading(false);
-      });
+      }
+    }
+
+    init();
   }, [router]);
 
   function startLoginFlow({ returnTo }: { returnTo: string }) {
     ory
       .createBrowserLoginFlow({
         returnTo,
+      })
+      .then(({ data }) => {
+        router.push(data.request_url);
+      })
+      .catch((e) => {
+        console.error(e);
+      });
+  }
+
+  function startRegistrationFlow({ returnTo }: { returnTo: string }) {
+    ory
+      .createBrowserRegistrationFlow({
+        returnTo,
+      })
+      .then(({ data }) => {
+        router.push(data.request_url);
       })
       .catch((e) => {
         console.error(e);
@@ -88,6 +114,7 @@ export function useCurrentUser(): {
     currentUser: user,
     isLoading,
     startLoginFlow,
+    startRegistrationFlow,
     startLogoutFlow,
   };
 }
