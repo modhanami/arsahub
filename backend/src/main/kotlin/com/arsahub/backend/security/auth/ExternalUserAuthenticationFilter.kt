@@ -12,9 +12,10 @@ import org.springframework.stereotype.Component
 @Component
 class ExternalUserAuthenticationFilter(
     authenticationManager: AuthenticationManager,
+    oryService: OryService,
 ) : AuthenticationFilter(
         authenticationManager,
-        ExternalUserAuthenticationConverter(),
+        ExternalUserAuthenticationConverter(oryService),
     ) {
     init {
         setSuccessHandler { _, _, _ -> }

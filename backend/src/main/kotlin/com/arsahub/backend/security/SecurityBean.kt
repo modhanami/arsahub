@@ -1,7 +1,6 @@
 package com.arsahub.backend.security
 
 import com.arsahub.backend.security.auth.AppAuthenticationProvider
-import com.arsahub.backend.security.auth.AuthProperties
 import com.arsahub.backend.security.auth.ExternalUserAuthenticationProvider
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
@@ -18,7 +17,6 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 class SecurityBean(
     private val appAuthenticationProvider: AppAuthenticationProvider,
     private val externalUserAuthenticationProvider: ExternalUserAuthenticationProvider,
-    private val authProperties: AuthProperties,
 ) {
     @Value("\${cors.allowed-origins}")
     private lateinit var allowedOrigins: List<String>

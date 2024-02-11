@@ -18,28 +18,21 @@ data class UserIdentity(
             identity: Identity,
             internalUser: User,
         ): UserIdentity {
-            val traits = identity.traits as? Map<*, *>
-            val email = traits?.get("email") as? String ?: ""
-            val firstName = traits?.get("first_name") as? String ?: ""
-            val lastName = traits?.get("last_name") as? String ?: ""
-            val fullName = "$firstName $lastName"
-
-            val internalUserId = requireNotNull(internalUser.userId) { "Internal user ID is null" }
-
-            return UserIdentity(
-                externalUserId = identity.id,
-                email = email,
-                firstName = firstName,
-                lastName = lastName,
-                fullName = fullName,
-                internalUserId = internalUserId,
-            )
+            identity.parseOryIdentity().let {
+                return UserIdentity(
+                    externalUserId = it.id,
+                    internalUserId = internalUser.userId!!,
+                    email = it.email,
+                    firstName = it.firstName,
+                    lastName = it.lastName,
+                    fullName = it.fullName,
+                )
+            }
         }
     }
 }
 
 class ExternalUserAuthenticationToken(
-    val sessionCookie: String,
     val identity: Identity,
     val userIdentity: UserIdentity? = null,
     val user: User? = null,
@@ -54,7 +47,7 @@ class ExternalUserAuthenticationToken(
     }
 
     override fun getCredentials(): Any {
-        return sessionCookie
+        return ""
     }
 
     override fun getDetails(): Any? {
@@ -75,12 +68,10 @@ class ExternalUserAuthenticationToken(
 
     companion object {
         fun authenticated(
-            sessionCookie: String,
             identity: Identity,
             user: User,
         ): ExternalUserAuthenticationToken {
             return ExternalUserAuthenticationToken(
-                sessionCookie,
                 identity,
                 UserIdentity.create(
                     identity,
@@ -91,11 +82,8 @@ class ExternalUserAuthenticationToken(
             )
         }
 
-        fun unauthenticated(
-            sessionCookie: String,
-            identity: Identity,
-        ): ExternalUserAuthenticationToken {
-            return ExternalUserAuthenticationToken(sessionCookie, identity, null, null, false)
+        fun unauthenticated(identity: Identity): ExternalUserAuthenticationToken {
+            return ExternalUserAuthenticationToken(identity, null, null, false)
         }
     }
 }

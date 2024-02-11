@@ -14,7 +14,10 @@ create table "user"
         primary key,
     created_at       timestamp with time zone default now() not null,
     updated_at       timestamp with time zone default now() not null,
-    external_user_id text
+    external_user_id text,
+    email            text default 'a@a.a':: text not null,
+    first_name       text default 'FirstName':: text not null,
+    last_name        text default 'LastName':: text not null
 );
 
 create table app

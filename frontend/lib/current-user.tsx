@@ -1,8 +1,9 @@
-"use client";
+"use strict";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import { Configuration, FrontendApi, Session } from "@ory/client";
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { UserIdentity } from "@/types"; // Get your Ory url from .env
+import { UserIdentity } from "@/types";
+import { syncExternalUser } from "@/api"; // Get your Ory url from .env
 
 // Get your Ory url from .env
 // Or localhost for local development
@@ -16,22 +17,26 @@ const ory = new FrontendApi(
   }),
 );
 
-interface UseCurrentUserOptions {
-  startLoginFlowIfUnauthenticated?: boolean;
-}
-
-export function useCurrentUser({
-  startLoginFlowIfUnauthenticated = false,
-}: UseCurrentUserOptions = {}): {
+interface CurrentUserContextProps {
   currentUser: UserIdentity | undefined;
   isLoading: boolean;
   startLoginFlow: (args: { returnTo: string }) => void;
   startRegistrationFlow: (args: { returnTo: string }) => void;
   startLogoutFlow: (args: { returnTo: string }) => void;
-} {
+}
+
+const CurrentUserContext = createContext<CurrentUserContextProps | undefined>(
+  undefined,
+);
+
+export function CurrentUserProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const router = useRouter();
-  const [session, setSession] = useState<Session | undefined>();
   const [isLoading, setIsLoading] = useState(true);
+  const [session, setSession] = useState<Session | undefined>();
   const identity = session?.identity;
   const user: UserIdentity | undefined = identity
     ? {
@@ -48,28 +53,31 @@ export function useCurrentUser({
   useEffect(() => {
     async function init() {
       try {
-        try {
-          const { data } = await ory.toSession();
-          // User has a session!
-          setSession(data);
-        } catch (e) {
-          console.error(e);
-          if (startLoginFlowIfUnauthenticated) {
-            const encodedCurrentUrl = encodeURIComponent(window.location.href);
-            return router.push(
-              `${basePath}/ui/login?return_to=${encodedCurrentUrl}`,
-            );
-          }
-        }
+        const { data } = await ory.toSession();
+        // User has a session!
+        setSession(data);
+
+        // Sync the user with the external provider
+        await syncExternalUser();
+      } catch (e) {
+        console.error(e);
+        const encodedCurrentUrl = encodeURIComponent(window.location.href);
+        return router.push(
+          `${basePath}/ui/login?return_to=${encodedCurrentUrl}`,
+        );
       } finally {
         setIsLoading(false);
       }
     }
-
     init();
-  }, [router]);
+  }, []);
 
   function startLoginFlow({ returnTo }: { returnTo: string }) {
+    if (user) {
+      console.warn("User is already logged in");
+      return;
+    }
+
     ory
       .createBrowserLoginFlow({
         returnTo,
@@ -108,13 +116,25 @@ export function useCurrentUser({
       });
   }
 
-  return {
-    // session,
-    // identity,
-    currentUser: user,
-    isLoading,
-    startLoginFlow,
-    startRegistrationFlow,
-    startLogoutFlow,
-  };
+  return (
+    <CurrentUserContext.Provider
+      value={{
+        currentUser: user,
+        isLoading,
+        startLoginFlow,
+        startRegistrationFlow,
+        startLogoutFlow,
+      }}
+    >
+      {children}
+    </CurrentUserContext.Provider>
+  );
+}
+
+export function useCurrentUser() {
+  const context = useContext(CurrentUserContext);
+  if (!context) {
+    throw new Error("useCurrentUser must be used within a CurrentUserProvider");
+  }
+  return context;
 }

@@ -358,3 +358,8 @@ export async function setRewardImage(
   );
   return data;
 }
+
+export async function syncExternalUser(): Promise<void> {
+  console.log("syncExternalUser");
+  await instance.post<void>(`${API_URL}/auth/sync`, null);
+}
