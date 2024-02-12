@@ -22,6 +22,10 @@ class SecurityConfig(
     fun filterChain(http: HttpSecurity): SecurityFilterChain {
         http {
             authorizeHttpRequests {
+                // TODO: evaluate auth for iframes.
+                // Currently both Leaderboards and app user profiles are public.
+                authorize("/api/apps/*/leaderboard", permitAll)
+                authorize("/api/apps/*/users/*", permitAll)
                 authorize(anyRequest, authenticated)
             }
             oauth2ResourceServer {
