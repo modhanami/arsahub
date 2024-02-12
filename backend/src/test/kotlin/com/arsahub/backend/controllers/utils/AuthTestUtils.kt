@@ -40,9 +40,9 @@ object AuthTestUtils {
                     userRepository.save(
                         User(
                             externalUserId = faker.random.nextUUID(),
+                            googleUserId = faker.random.nextUUID(),
                             email = faker.internet.email(),
-                            firstName = faker.name.firstName(),
-                            lastName = faker.name.lastName(),
+                            name = faker.name.name(),
                         ),
                     )
 

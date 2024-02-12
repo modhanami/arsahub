@@ -1,47 +1,39 @@
 package com.arsahub.backend.services
 
+import com.arsahub.backend.dtos.supabase.SupabaseGoogleIdentity
 import com.arsahub.backend.models.User
 import com.arsahub.backend.repositories.UserRepository
-import com.arsahub.backend.security.auth.OryService
-import com.arsahub.backend.security.auth.parseOryIdentity
 import io.github.oshai.kotlinlogging.KotlinLogging
-import jakarta.servlet.http.HttpServletRequest
 import org.springframework.stereotype.Service
-import sh.ory.model.Identity
+import org.springframework.transaction.annotation.Transactional
 
 @Service
-class AuthService(private val userRepository: UserRepository, private val oryService: OryService) {
+class AuthService(private val userRepository: UserRepository) {
     private val logger = KotlinLogging.logger {}
 
-    fun syncOry(request: HttpServletRequest): User {
-        val session = oryService.getSession(request.cookies.toList())
-        val externalUser = session.identity
-        requireNotNull(externalUser) { "No identity found in session" }
-        return syncOry(externalUser)
-    }
+    @Transactional
+    fun syncSupabaseGoogleIdentity(identity: SupabaseGoogleIdentity): User {
+        val identityIdsMessage =
+            "Supabase user ID ${identity.supabaseUserId} and Google user ID ${identity.googleUserId}"
 
-    fun syncOry(identity: Identity): User {
-        val externalUser = identity.parseOryIdentity()
-        var user = userRepository.findByExternalUserId(externalUser.id)
-        if (user == null) {
-            logger.info { "User not found for identity ${externalUser.id}, auto creating new user" }
-            user =
-                userRepository.save(
-                    User(
-                        externalUserId = externalUser.id,
-                        email = externalUser.email,
-                        firstName = externalUser.firstName,
-                        lastName = externalUser.lastName,
-                    ),
-                )
+        logger.info { "Syncing user data for $identityIdsMessage" }
+        val user = userRepository.findByExternalUserId(identity.supabaseUserId)
+
+        return if (user == null) {
+            logger.info { "User not found for $identityIdsMessage, creating user" }
+            userRepository.save(
+                User(
+                    externalUserId = identity.supabaseUserId,
+                    googleUserId = identity.googleUserId,
+                    email = identity.email,
+                    name = identity.name,
+                ),
+            )
         } else {
-            logger.info { "User ${user.userId} found for identity ${externalUser.id}, updating user data" }
-            user.email = externalUser.email
-            user.firstName = externalUser.firstName
-            user.lastName = externalUser.lastName
+            logger.info { "User ${user.userId} found for $identityIdsMessage, updating user" }
+            user.email = identity.email
+            user.name = identity.name
             userRepository.save(user)
         }
-
-        return user
     }
 }

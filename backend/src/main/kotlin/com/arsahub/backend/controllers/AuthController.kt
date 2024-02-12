@@ -1,7 +1,9 @@
 package com.arsahub.backend.controllers
 
+import com.arsahub.backend.dtos.response.UserResponse
+import com.arsahub.backend.dtos.supabase.SupabaseGoogleIdentity
 import com.arsahub.backend.services.AuthService
-import jakarta.servlet.http.HttpServletRequest
+import com.arsahub.backend.services.SupabaseGoogleIdentityPrincipal
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
@@ -11,12 +13,12 @@ import org.springframework.web.bind.annotation.RestController
 class AuthController(
     private val authService: AuthService,
 ) {
-    // Sync Ory user data with our database
+    // Sync Supabase user data with our database
     // TODO: evaluate if this should be replaced with a webhook
-    @PostMapping("/sync")
-    fun sync(request: HttpServletRequest) {
-        authService.syncOry(
-            request,
-        )
+    @PostMapping("/sync/supabase")
+    fun syncSupabase(
+        @SupabaseGoogleIdentityPrincipal identity: SupabaseGoogleIdentity,
+    ): UserResponse {
+        return authService.syncSupabaseGoogleIdentity(identity).let { UserResponse.fromEntity(it) }
     }
 }

@@ -28,6 +28,10 @@ const nextConfig = {
       },
     ];
   },
+  webpack: (config, { isServer }) => {
+    config.resolve.fallback = { fs: false, tls: false };
+    return config;
+  },
 };
 
 module.exports = nextConfig;

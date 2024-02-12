@@ -93,11 +93,3 @@ export type RewardSetImageRequestClient = Omit<
 > & {
   image: File;
 };
-
-export type UserIdentity = {
-  id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  fullName: string;
-};

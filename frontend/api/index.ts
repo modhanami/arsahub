@@ -25,6 +25,7 @@ import {
   RewardSetImageRequestClient,
   UserResponseWithAccessToken,
 } from "@/types";
+import { supabase } from "@/lib/supabase";
 
 export const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
@@ -213,7 +214,12 @@ export async function createRule(app: AppResponse, newRule: RuleCreateRequest) {
 export type UserUUID = string;
 
 export async function fetchMyApp() {
-  const { data } = await instance.get<AppResponse>(`${API_URL}/apps/me`);
+  const accessToken = await getSupabaseAccessToken();
+  const { data } = await instance.get<AppResponse>(`${API_URL}/apps/me`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
   return data;
 }
 
@@ -359,7 +365,28 @@ export async function setRewardImage(
   return data;
 }
 
-export async function syncExternalUser(): Promise<void> {
-  console.log("syncExternalUser");
-  await instance.post<void>(`${API_URL}/auth/sync`, null);
+async function getSupabaseAccessToken(): Promise<string> {
+  const { data, error } = await supabase.auth.getSession();
+  const accessToken = data?.session?.access_token;
+  if (error || !accessToken) {
+    console.error("Supabase getSession error:", error);
+    throw new Error("Supabase getSession error");
+  }
+  return accessToken;
+}
+
+export async function syncSupabaseIdentity() {
+  console.log("syncSupabaseIdentity");
+  const accessToken = await getSupabaseAccessToken();
+  const { data } = await instance.post<UserResponse>(
+    `${API_URL}/auth/sync/supabase`,
+    null,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    },
+  );
+
+  return data;
 }

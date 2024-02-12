@@ -1,24 +1,13 @@
 "use strict";
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { Configuration, FrontendApi, Session } from "@ory/client";
 import { useRouter } from "next/navigation";
-import { UserIdentity } from "@/types";
-import { syncExternalUser } from "@/api"; // Get your Ory url from .env
-
-// Get your Ory url from .env
-// Or localhost for local development
-const basePath = process.env.NEXT_PUBLIC_ORY_SDK_URL || "http://localhost:4000";
-const ory = new FrontendApi(
-  new Configuration({
-    basePath: "http://localhost:4000",
-    baseOptions: {
-      withCredentials: true,
-    },
-  }),
-);
+import { supabase } from "@/lib/supabase";
+import { Session } from "@supabase/supabase-js";
+import { syncSupabaseIdentity } from "@/api";
+import { UserIdentity } from "@/types/generated-types";
 
 interface CurrentUserContextProps {
-  currentUser: UserIdentity | undefined;
+  currentUser: UserIdentity | null;
   isLoading: boolean;
   startLoginFlow: (args: { returnTo: string }) => void;
   startRegistrationFlow: (args: { returnTo: string }) => void;
@@ -36,84 +25,54 @@ export function CurrentUserProvider({
 }) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
-  const [session, setSession] = useState<Session | undefined>();
-  const identity = session?.identity;
-  const user: UserIdentity | undefined = identity
-    ? {
-        id: identity.id,
-        email: identity?.traits.email,
-        firstName: identity.traits.first_name,
-        lastName: identity.traits.last_name,
-        get fullName() {
-          return `${this.firstName} ${this.lastName}`;
-        },
-      }
-    : undefined;
+  const [user, setUser] = useState<UserIdentity | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {
     async function init() {
-      try {
-        const { data } = await ory.toSession();
-        // User has a session!
-        setSession(data);
-
-        // Sync the user with the external provider
-        await syncExternalUser();
-      } catch (e) {
-        console.error(e);
-        const encodedCurrentUrl = encodeURIComponent(window.location.href);
-        return router.push(
-          `${basePath}/ui/login?return_to=${encodedCurrentUrl}`,
-        );
-      } finally {
-        setIsLoading(false);
-      }
+      supabase.auth.onAuthStateChange(async (event, session) => {
+        console.log(event, session);
+        setSession(session);
+        if (
+          event === "INITIAL_SESSION" ||
+          event === "SIGNED_IN" ||
+          event === "USER_UPDATED"
+        ) {
+          const internalUser = await syncSupabaseIdentity();
+          setUser({
+            internalUserId: internalUser.internalUserId,
+            externalUserId: internalUser.externalUserId,
+            googleUserId: internalUser.googleUserId,
+            email: internalUser.email,
+            name: internalUser.name,
+          });
+        }
+      });
     }
-    init();
+
+    init().then(() => {
+      setIsLoading(false);
+    });
   }, []);
 
-  function startLoginFlow({ returnTo }: { returnTo: string }) {
+  async function startLoginFlow({ returnTo }: { returnTo: string }) {
     if (user) {
       console.warn("User is already logged in");
       return;
     }
 
-    ory
-      .createBrowserLoginFlow({
-        returnTo,
-      })
-      .then(({ data }) => {
-        router.push(data.request_url);
-      })
-      .catch((e) => {
-        console.error(e);
-      });
+    supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: returnTo,
+      },
+    });
   }
 
-  function startRegistrationFlow({ returnTo }: { returnTo: string }) {
-    ory
-      .createBrowserRegistrationFlow({
-        returnTo,
-      })
-      .then(({ data }) => {
-        router.push(data.request_url);
-      })
-      .catch((e) => {
-        console.error(e);
-      });
-  }
+  function startRegistrationFlow({ returnTo }: { returnTo: string }) {}
 
-  function startLogoutFlow({ returnTo }: { returnTo: string }) {
-    ory
-      .createBrowserLogoutFlow({
-        returnTo: returnTo,
-      })
-      .then(({ data }) => {
-        router.push(data.logout_url);
-      })
-      .catch((e) => {
-        console.error(e);
-      });
+  async function startLogoutFlow({ returnTo }: { returnTo: string }) {
+    await supabase.auth.signOut();
   }
 
   return (

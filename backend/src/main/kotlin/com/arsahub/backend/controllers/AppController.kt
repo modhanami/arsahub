@@ -18,14 +18,15 @@ import com.arsahub.backend.dtos.response.RewardResponse
 import com.arsahub.backend.dtos.response.RuleResponse
 import com.arsahub.backend.dtos.response.TransactionResponse
 import com.arsahub.backend.dtos.response.TriggerResponse
+import com.arsahub.backend.dtos.supabase.UserIdentity
 import com.arsahub.backend.models.App
 import com.arsahub.backend.security.auth.CurrentApp
-import com.arsahub.backend.security.auth.UserIdentity
 import com.arsahub.backend.services.AchievementService
 import com.arsahub.backend.services.AppService
 import com.arsahub.backend.services.LeaderboardService
 import com.arsahub.backend.services.RuleService
 import com.arsahub.backend.services.ShopService
+import com.arsahub.backend.services.SupabaseUserIdentityPrincipal
 import com.arsahub.backend.services.TriggerService
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -39,7 +40,6 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
-import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -156,10 +156,10 @@ class AppController(
     )
     @GetMapping("/me")
     fun getAppForCurrentUser(
-        @AuthenticationPrincipal userIdentity: UserIdentity,
+        @SupabaseUserIdentityPrincipal identity: UserIdentity,
     ): AppResponse {
-        logger.info { "Getting app for user ${userIdentity.internalUserId} (external: ${userIdentity.externalUserId})" }
-        return appService.getAppByUserId(userIdentity.internalUserId).let { AppResponse.fromEntity(it) }
+        logger.info { "Getting app for user ${identity.internalUserId} with external ID ${identity.externalUserId}" }
+        return appService.getAppByUserId(identity.internalUserId).let { AppResponse.fromEntity(it) }
     }
 
     @Operation(
@@ -404,4 +404,6 @@ class AppController(
             ),
         ).let { RewardResponse.fromEntity(it) }
     }
+
+    // Invite a user to the app. The user
 }

@@ -1,7 +1,5 @@
 "use client";
 
-// import { signOut } from "next-auth/react"
-
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,7 +37,7 @@ export function UserAccountNav() {
           <div className="flex flex-col space-y-1 leading-none">
             {currentUser && (
               <div className="gap-2 flex flex-col">
-                <p className="font-medium">{currentUser.fullName}</p>
+                <p className="font-medium">{currentUser.name}</p>
                 <p className="w-[200px] truncate text-sm text-muted-foreground">
                   {currentUser.email}
                 </p>

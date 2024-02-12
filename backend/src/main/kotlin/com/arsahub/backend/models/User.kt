@@ -18,11 +18,11 @@ class User(
     @Column(name = "email", nullable = false, length = Integer.MAX_VALUE)
     var email: String? = null,
     @NotNull
-    @Column(name = "first_name", nullable = false, length = Integer.MAX_VALUE)
-    var firstName: String? = null,
+    @Column(name = "google_user_id", nullable = false, length = Integer.MAX_VALUE)
+    var googleUserId: String? = null,
     @NotNull
-    @Column(name = "last_name", nullable = false, length = Integer.MAX_VALUE)
-    var lastName: String? = null,
+    @Column(name = "name", nullable = false, length = Integer.MAX_VALUE)
+    var name: String? = null,
 ) : AuditedEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
