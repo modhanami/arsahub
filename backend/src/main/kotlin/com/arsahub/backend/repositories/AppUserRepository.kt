@@ -16,4 +16,9 @@ interface AppUserRepository : JpaRepository<AppUser, Long> {
     ): AppUser?
 
     fun findAllByApp(app: App): List<AppUser>
+
+    fun findByAppAndUserEmail(
+        app: App,
+        email: String,
+    ): AppUser?
 }
