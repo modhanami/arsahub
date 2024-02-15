@@ -186,11 +186,10 @@ export function useLeaderboard(appId: number, type: string) {
 
 export function useOwnedApp() {
   const { currentUser } = useCurrentUser();
-  const accessToken = currentUser?.accessToken;
   return useQuery({
-    queryKey: ["app", "byAccessToken", accessToken],
-    queryFn: () => fetchMyApp(accessToken!!),
-    enabled: !!accessToken,
+    queryKey: ["app"],
+    queryFn: fetchMyApp,
+    enabled: !!currentUser,
   });
 }
 

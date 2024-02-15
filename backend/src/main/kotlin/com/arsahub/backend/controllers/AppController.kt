@@ -18,7 +18,7 @@ import com.arsahub.backend.dtos.response.RewardResponse
 import com.arsahub.backend.dtos.response.RuleResponse
 import com.arsahub.backend.dtos.response.TransactionResponse
 import com.arsahub.backend.dtos.response.TriggerResponse
-import com.arsahub.backend.dtos.response.UserResponse
+import com.arsahub.backend.dtos.supabase.UserIdentity
 import com.arsahub.backend.models.App
 import com.arsahub.backend.security.auth.CurrentApp
 import com.arsahub.backend.services.AchievementService
@@ -26,10 +26,12 @@ import com.arsahub.backend.services.AppService
 import com.arsahub.backend.services.LeaderboardService
 import com.arsahub.backend.services.RuleService
 import com.arsahub.backend.services.ShopService
+import com.arsahub.backend.services.SupabaseUserIdentityPrincipal
 import com.arsahub.backend.services.TriggerService
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
@@ -38,7 +40,6 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
-import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -62,6 +63,8 @@ class AppController(
     private val achievementService: AchievementService,
     private val shopService: ShopService,
 ) {
+    private val logger = KotlinLogging.logger {}
+
     @Operation(
         summary = "Create a trigger for an app",
         responses = [
@@ -153,10 +156,10 @@ class AppController(
     )
     @GetMapping("/me")
     fun getAppForCurrentUser(
-        @AuthenticationPrincipal jwt: org.springframework.security.oauth2.jwt.Jwt,
+        @SupabaseUserIdentityPrincipal identity: UserIdentity,
     ): AppResponse {
-        val userId = jwt.claims["id"] as? Long ?: throw IllegalArgumentException("User ID not found in JWT")
-        return appService.getAppByUserId(userId).let { AppResponse.fromEntity(it) }
+        logger.info { "Getting app for user ${identity.internalUserId} with external ID ${identity.externalUserId}" }
+        return appService.getAppByUserId(identity.internalUserId).let { AppResponse.fromEntity(it) }
     }
 
     @Operation(
@@ -173,23 +176,6 @@ class AppController(
         @CurrentApp app: App,
     ): AppResponse {
         return AppResponse.fromEntity(app)
-    }
-
-    @Operation(
-        summary = "Get a specific user by UUID", // TODO: remove this after the user auth is implemented
-        responses = [
-            ApiResponse(
-                responseCode = "200",
-                content = [Content(schema = Schema(implementation = UserResponse::class))],
-            ),
-        ],
-    )
-    @GetMapping("/users/current")
-    fun getUserByUUID(
-        @AuthenticationPrincipal jwt: org.springframework.security.oauth2.jwt.Jwt,
-    ): UserResponse {
-        val userId = jwt.claims["id"] as? Long ?: throw IllegalArgumentException("User ID not found in JWT")
-        return appService.getUserById(userId).let { UserResponse.fromEntity(it) }
     }
 
     @Operation(
@@ -418,4 +404,6 @@ class AppController(
             ),
         ).let { RewardResponse.fromEntity(it) }
     }
+
+    // Invite a user to the app. The user
 }

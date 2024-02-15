@@ -2,17 +2,24 @@ package com.arsahub.backend.dtos.response
 
 import com.arsahub.backend.models.User
 
+// TODO: evaluate duplication with UserIdentity
 data class UserResponse(
-    val userId: Long?,
+    val userId: Long, // TODO: remove this after backward compatibility is no longer needed
+    val internalUserId: Long,
+    val externalUserId: String,
+    val googleUserId: String,
+    val email: String,
     val name: String,
-    val username: String?,
 ) {
     companion object {
         fun fromEntity(user: User): UserResponse {
             return UserResponse(
-                userId = user.userId,
-                name = user.name,
-                username = user.username,
+                userId = user.userId!!,
+                internalUserId = user.userId!!,
+                externalUserId = user.externalUserId!!,
+                googleUserId = user.googleUserId!!,
+                email = user.email!!,
+                name = user.name!!,
             )
         }
     }

@@ -1,7 +1,7 @@
 /* tslint:disable */
 /* eslint-disable */
 
-// Generated using typescript-generator version 3.2.1263 on 2024-02-03 11:39:50.
+// Generated using typescript-generator version 3.2.1263 on 2024-02-12 14:15:15.
 
 export interface AchievementCreateRequest {
   title: string | null;
@@ -189,9 +189,12 @@ export interface TriggerResponse {
 }
 
 export interface UserResponse {
-  userId: number | null;
+  userId: number;
+  internalUserId: number;
+  externalUserId: string;
+  googleUserId: string;
+  email: string;
   name: string;
-  username: string | null;
 }
 
 export interface AchievementUnlock extends AppUpdate {
@@ -210,14 +213,29 @@ export interface PointsUpdate extends AppUpdate {
   points: number;
 }
 
+export interface SupabaseGoogleIdentity {
+  supabaseUserId: string;
+  googleUserId: string;
+  email: string;
+  name: string;
+}
+
+export interface UserIdentity {
+  internalUserId: number;
+  externalUserId: string;
+  googleUserId: string;
+  email: string;
+  name: string;
+}
+
 export interface MultipartFile extends InputStreamSource {
-  contentType: string;
-  originalFilename: string;
   name: string;
   bytes: any;
   empty: boolean;
   resource: Resource;
   size: number;
+  contentType: string;
+  originalFilename: string;
 }
 
 export interface App
@@ -240,14 +258,14 @@ export interface Entry {
 }
 
 export interface Resource extends InputStreamSource {
+  open: boolean;
   file: any;
-  url: URL;
   readable: boolean;
+  url: URL;
   description: string;
   filename: string;
   uri: URI;
   contentAsByteArray: any;
-  open: boolean;
 }
 
 export interface InputStreamSource {
@@ -259,11 +277,10 @@ export interface User
     ManagedEntity,
     PersistentAttributeInterceptable,
     SelfDirtinessTracker {
-  username: string;
-  name: string;
-  uuid: string | null;
-  password: string | null;
+  externalUserId: string | null;
   email: string | null;
+  googleUserId: string | null;
+  name: string | null;
   userId: number | null;
 }
 

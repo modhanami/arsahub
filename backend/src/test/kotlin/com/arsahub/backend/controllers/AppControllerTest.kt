@@ -21,10 +21,12 @@ import com.arsahub.backend.models.RuleRepeatability
 import com.arsahub.backend.models.Trigger
 import com.arsahub.backend.models.UnlimitedRuleRepeatability
 import com.arsahub.backend.repositories.AchievementRepository
+import com.arsahub.backend.repositories.AppRepository
 import com.arsahub.backend.repositories.AppUserRepository
 import com.arsahub.backend.repositories.RewardRepository
 import com.arsahub.backend.repositories.RuleRepository
 import com.arsahub.backend.repositories.TransactionRepository
+import com.arsahub.backend.repositories.UserRepository
 import com.arsahub.backend.services.AppService
 import com.arsahub.backend.services.AuthService
 import com.arsahub.backend.services.RuleService
@@ -66,6 +68,9 @@ import java.util.*
 @Transactional
 class AppControllerTest() {
     @Autowired
+    private lateinit var appRepository: AppRepository
+
+    @Autowired
     private lateinit var transactionRepository: TransactionRepository
 
     @Autowired
@@ -98,6 +103,9 @@ class AppControllerTest() {
     private lateinit var appUserRepository: AppUserRepository
 
     @Autowired
+    private lateinit var userRepository: UserRepository
+
+    @Autowired
     private lateinit var mockMvc: MockMvc
 
     @MockBean
@@ -112,7 +120,8 @@ class AppControllerTest() {
     fun setUp() {
         authSetup =
             setupAuth(
-                authService,
+                userRepository,
+                appRepository,
             )
         setGlobalAuthSetup(authSetup)
     }
@@ -970,7 +979,7 @@ class AppControllerTest() {
         val user = createAppUser(authSetup.app)
         val rule = setupWorkshopCompletedRule(authSetup.app, 1, "trust me", 100)
 
-        val otherApp = setupAuth(authService).app
+        val otherApp = setupAuth(userRepository, appRepository).app
         val otherUser = createAppUser(otherApp)
 
         // Act & Assert
@@ -995,7 +1004,7 @@ class AppControllerTest() {
         val user = createAppUser(authSetup.app)
         val rule = setupWorkshopCompletedRule(authSetup.app, 1, "trust me", 100)
 
-        val otherApp = setupAuth(authService).app
+        val otherApp = setupAuth(userRepository, appRepository).app
         val otherUser1 =
             createAppUser(otherApp, userId = UUID.randomUUID().toString())
         val otherUser2 = createAppUser(otherApp, userId = UUID.randomUUID().toString())
@@ -1598,7 +1607,7 @@ class AppControllerTest() {
                 ),
             )
 
-        val otherApp = setupAuth(authService).app
+        val otherApp = setupAuth(userRepository, appRepository).app
         val otherAppReward =
             rewardRepository.save(
                 Reward(

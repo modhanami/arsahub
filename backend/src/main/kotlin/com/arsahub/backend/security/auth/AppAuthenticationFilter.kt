@@ -1,17 +1,19 @@
 package com.arsahub.backend.security.auth
 
 import org.springframework.http.HttpMethod
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration
+import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.web.authentication.AuthenticationFilter
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher
 import org.springframework.security.web.util.matcher.NegatedRequestMatcher
 import org.springframework.security.web.util.matcher.OrRequestMatcher
 import org.springframework.security.web.util.matcher.RequestMatcher
+import org.springframework.stereotype.Component
 
+@Component
 class AppAuthenticationFilter(
-    authenticationConfiguration: AuthenticationConfiguration,
+    authenticationManager: AuthenticationManager,
 ) : AuthenticationFilter(
-        authenticationConfiguration.authenticationManager,
+        authenticationManager,
         AppAuthenticationConverter(),
     ) {
     init {

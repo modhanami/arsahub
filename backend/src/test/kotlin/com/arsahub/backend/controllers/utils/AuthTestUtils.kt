@@ -1,9 +1,9 @@
 package com.arsahub.backend.controllers.utils
 
-import com.arsahub.backend.dtos.request.UserSignupRequest
 import com.arsahub.backend.models.App
 import com.arsahub.backend.models.User
-import com.arsahub.backend.services.AuthService
+import com.arsahub.backend.repositories.AppRepository
+import com.arsahub.backend.repositories.UserRepository
 import io.github.serpro69.kfaker.faker
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.ResultActions
@@ -28,16 +28,35 @@ object AuthTestUtils {
         return this.perform(requestBuilder.header("X-API-Key", "${app.apiKey}"))
     }
 
-    fun setupAuth(authService: AuthService): AuthSetup {
+    fun setupAuth(
+        userRepository: UserRepository,
+        appRepository: AppRepository,
+    ): AuthSetup {
         val faker = faker { }
 
         val (currentUser, currentApp) =
-            authService.createUser(
-                UserSignupRequest(
-                    email = faker.internet.email(),
-                    password = "password",
-                ),
-            )
+            run {
+                val user =
+                    userRepository.save(
+                        User(
+                            externalUserId = faker.random.nextUUID(),
+                            googleUserId = faker.random.nextUUID(),
+                            email = faker.internet.email(),
+                            name = faker.name.name(),
+                        ),
+                    )
+
+                val app =
+                    appRepository.save(
+                        App(
+                            title = faker.name.name(),
+                            apiKey = faker.random.nextUUID(),
+                            owner = user,
+                        ),
+                    )
+
+                Pair(user, app)
+            }
 
         return AuthSetup(
             user = currentUser,

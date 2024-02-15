@@ -25,10 +25,12 @@ import {
   RewardSetImageRequestClient,
   UserResponseWithAccessToken,
 } from "@/types";
-import { useCurrentUser } from "@/lib/current-user";
+import { supabase } from "@/lib/supabase";
 
-export const API_URL = process.env.NEXT_PUBLIC_API_URL;
+export const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
 
+console.log("API_URL", API_URL);
 const instance = axios.create({
   baseURL: API_URL,
 });
@@ -42,24 +44,6 @@ instance.interceptors.response.use(
     }
 
     if (error.response) {
-      if (
-        error.config &&
-        error.response.status === 401 &&
-        !error.config.isRefreshTokenRequest &&
-        !error.config.isRetryRequest
-      ) {
-        const { refresh } = useCurrentUser.getState();
-        console.log("[API interceptor] Access token expired, refreshing");
-        console.log(error);
-        await refresh();
-
-        console.log("[API interceptor] Retrying request", error.config);
-        return instance.request({
-          ...error.config,
-          isRetryRequest: true,
-        });
-      }
-
       return Promise.reject(error);
     }
 
@@ -229,7 +213,8 @@ export async function createRule(app: AppResponse, newRule: RuleCreateRequest) {
 
 export type UserUUID = string;
 
-export async function fetchMyApp(accessToken: string) {
+export async function fetchMyApp() {
+  const accessToken = await getSupabaseAccessToken();
   const { data } = await instance.get<AppResponse>(`${API_URL}/apps/me`, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -377,5 +362,31 @@ export async function setRewardImage(
       },
     },
   );
+  return data;
+}
+
+async function getSupabaseAccessToken(): Promise<string> {
+  const { data, error } = await supabase.auth.getSession();
+  const accessToken = data?.session?.access_token;
+  if (error || !accessToken) {
+    console.error("Supabase getSession error:", error);
+    throw new Error("Supabase getSession error");
+  }
+  return accessToken;
+}
+
+export async function syncSupabaseIdentity() {
+  console.log("syncSupabaseIdentity");
+  const accessToken = await getSupabaseAccessToken();
+  const { data } = await instance.post<UserResponse>(
+    `${API_URL}/auth/sync/supabase`,
+    null,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    },
+  );
+
   return data;
 }

@@ -20,6 +20,18 @@ const nextConfig = {
     ignoreBuildErrors: true, // TODO: Remove this when all errors are fixed
   },
   output: "standalone",
+  async rewrites() {
+    return [
+      {
+        source: "/api/:path*",
+        destination: "http://localhost:8080/api/:path*", // Proxy to Backend
+      },
+    ];
+  },
+  webpack: (config, { isServer }) => {
+    config.resolve.fallback = { fs: false, tls: false };
+    return config;
+  },
 };
 
 module.exports = nextConfig;
