@@ -3,7 +3,9 @@ package com.arsahub.backend.controllers
 import com.arsahub.backend.SocketIOService
 import com.arsahub.backend.controllers.utils.AuthSetup
 import com.arsahub.backend.controllers.utils.AuthTestUtils.performWithAppAuth
+import com.arsahub.backend.controllers.utils.AuthTestUtils.performWithUserAuth
 import com.arsahub.backend.controllers.utils.AuthTestUtils.setGlobalAuthSetup
+import com.arsahub.backend.controllers.utils.AuthTestUtils.setGlobalSecretKey
 import com.arsahub.backend.controllers.utils.AuthTestUtils.setupAuth
 import com.arsahub.backend.dtos.request.Action
 import com.arsahub.backend.dtos.request.ActionDefinition
@@ -42,11 +44,13 @@ import org.hamcrest.Matchers.containsInAnyOrder
 import org.hamcrest.Matchers.hasEntry
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
@@ -129,6 +133,9 @@ class AppControllerTest() {
     @Suppress("unused")
     private lateinit var socketIOService: SocketIOService // no-op
 
+    @Value("\${jwt.secret}")
+    private lateinit var secret: String
+
     @BeforeEach
     fun setUp() {
         ScriptUtils.runInitScript(JdbcDatabaseDelegate(postgres, ""), "pre-schema.sql")
@@ -141,6 +148,7 @@ class AppControllerTest() {
                 appRepository,
             )
         setGlobalAuthSetup(authSetup)
+        setGlobalSecretKey(secret)
     }
 
     data class TrigggerTestModel(
@@ -1789,16 +1797,17 @@ class AppControllerTest() {
             )
 
         // Act & Assert HTTP
-        mockMvc.performWithAppAuth(
+        mockMvc.performWithUserAuth(
             post("/api/apps/invitations/${appInvitation.id}/accept")
                 .contentType(MediaType.APPLICATION_JSON),
+            user = invitee,
         )
             .andExpect(status().isCreated)
 
         // Assert DB
         val appInvitations = appInvitationRepository.findAll()
         assertEquals(1, appInvitations.size)
-        val acceptedInvitationStatus = appInvitationStatusRepository.findByStatusIgnoreCase("accepted")
+        val acceptedInvitationStatus = getAcceptedAppInvitationStatus()
         assertEquals(
             acceptedInvitationStatus!!.status!!.lowercase(),
             appInvitations[0].invitationStatus!!.status!!.lowercase(),
@@ -1808,7 +1817,46 @@ class AppControllerTest() {
         assertNotNull(appUser)
     }
 
+    @Test
+    fun `user declines invitation - success`() {
+        // Arrange
+        val invitee = createInvitee()
+
+        val appInvitation =
+            appInvitationRepository.save(
+                AppInvitation(
+                    app = authSetup.app,
+                    user = invitee,
+                    invitationStatus = getPendingAppInvitationStatus(),
+                ),
+            )
+
+        // Act & Assert HTTP
+        mockMvc.performWithUserAuth(
+            post("/api/apps/invitations/${appInvitation.id}/decline")
+                .contentType(MediaType.APPLICATION_JSON),
+            user = invitee,
+        )
+            .andExpect(status().isNoContent)
+
+        // Assert DB
+        val appInvitations = appInvitationRepository.findAll()
+        assertEquals(1, appInvitations.size)
+        val declinedInvitationStatus = getDeclinedAppInvitationStatus()
+        assertEquals(
+            declinedInvitationStatus!!.status!!.lowercase(),
+            appInvitations[0].invitationStatus!!.status!!.lowercase(),
+        )
+
+        val appUser = appUserRepository.findByAppAndUserEmail(authSetup.app, invitee.email!!)
+        assertNull(appUser)
+    }
+
+    private fun getAcceptedAppInvitationStatus() = appInvitationStatusRepository.findByStatusIgnoreCase("accepted")
+
     private fun getPendingAppInvitationStatus() = appInvitationStatusRepository.findByStatusIgnoreCase("pending")
+
+    private fun getDeclinedAppInvitationStatus() = appInvitationStatusRepository.findByStatusIgnoreCase("declined")
 
     private fun createInvitee(): User {
         return userRepository.save(

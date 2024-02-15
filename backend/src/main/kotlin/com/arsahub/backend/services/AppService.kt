@@ -22,6 +22,7 @@ import com.arsahub.backend.repositories.UserRepository
 import com.arsahub.backend.services.actionhandlers.ActionResult
 import com.arsahub.backend.services.ruleengine.RuleEngine
 import io.github.oshai.kotlinlogging.KotlinLogging
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -200,30 +201,19 @@ class AppService(
 
     class AppInvitationNotFoundException : NotFoundException("Invitation not found")
 
-    class AppInvitationAcceptedException : ConflictException("Invitation already resolved")
+    class AppInvitationNotInPendingStateException : ConflictException("Invitation is not pending")
 
     @Transactional
     fun acceptInvitation(
+        invitationId: Long,
         identity: UserIdentity,
-        id: Long,
     ) {
-        // invitation exists and is for the user
-        val invitation =
-            appInvitationRepository.findByUserUserId(
-                identity.internalUserId,
-            )
-                ?: throw AppInvitationNotFoundException()
+        val invitation = getInvitationOrThrow(invitationId)
+        assertInvitationIsForUserOrThrow(invitation, identity)
 
-        if (invitation.user?.userId != identity.internalUserId) {
-            throw AppInvitationNotFoundException()
-        }
+        assertCanAcceptInvitationOrThrow(invitation)
 
-        // is pending
-        if (invitation.invitationStatus?.status != "pending") {
-            throw AppInvitationAcceptedException()
-        }
-
-        // resolve invitation
+        // accept invitation
         val acceptedStatus =
             appInvitationStatusRepository.findByStatusIgnoreCase("accepted")
                 ?: throw NotFoundException("Invitation status not found")
@@ -231,15 +221,62 @@ class AppService(
         invitation.invitationStatus = acceptedStatus
         appInvitationRepository.save(invitation)
 
-//        // add user to app
-//        val user = invitation.user!!
-//        val app = invitation.app!!
-//        val appUser =
-//            AppUser(
-//                userId = user.userId!!,
-//                displayName = user.displayName!!,
-//                app = app,
-//                points = 0,
-//            )
+        // add user to app
+        val user = invitation.user!!
+        val app = invitation.app!!
+        val appUser =
+            AppUser(
+                app = app,
+                user = user,
+                userId = user.email!!,
+                displayName = user.name!!,
+                points = 0,
+            )
+
+        appUserRepository.save(appUser)
+    }
+
+    private fun assertCanAcceptInvitationOrThrow(invitation: AppInvitation) {
+        if (invitation.invitationStatus?.status != "pending") {
+            throw AppInvitationNotInPendingStateException()
+        }
+    }
+
+    @Transactional
+    fun declineInvitation(
+        invitationId: Long,
+        identity: UserIdentity,
+    ) {
+        val invitation = getInvitationOrThrow(invitationId)
+        assertInvitationIsForUserOrThrow(invitation, identity)
+
+        assertCanDeclineInvitationOrThrow(invitation)
+
+        val declinedStatus =
+            appInvitationStatusRepository.findByStatusIgnoreCase("declined")
+                ?: throw NotFoundException("Invitation status not found")
+
+        invitation.invitationStatus = declinedStatus
+        appInvitationRepository.save(invitation)
+    }
+
+    private fun assertCanDeclineInvitationOrThrow(invitation: AppInvitation) {
+        if (invitation.invitationStatus?.status != "pending") {
+            throw AppInvitationNotInPendingStateException()
+        }
+    }
+
+    private fun getInvitationOrThrow(id: Long): AppInvitation {
+        return appInvitationRepository.findByIdOrNull(id)
+            ?: throw AppInvitationNotFoundException()
+    }
+
+    private fun assertInvitationIsForUserOrThrow(
+        invitation: AppInvitation,
+        identity: UserIdentity,
+    ) {
+        if (invitation.user?.userId != identity.internalUserId) {
+            throw AppInvitationNotFoundException()
+        }
     }
 }

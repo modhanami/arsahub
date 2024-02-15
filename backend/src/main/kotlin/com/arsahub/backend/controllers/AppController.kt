@@ -421,12 +421,22 @@ class AppController(
     }
 
     // user accepts
-    @PostMapping("/invitations/:id/accept")
+    @PostMapping("/invitations/{invitationId}/accept")
     @ResponseStatus(HttpStatus.CREATED)
     fun acceptInvitation(
+        @PathVariable invitationId: Long,
         @SupabaseUserIdentityPrincipal identity: UserIdentity,
-        @PathVariable id: Long,
     ) {
-        appService.acceptInvitation(identity, id)
+        appService.acceptInvitation(invitationId, identity)
+    }
+
+    // user declines
+    @PostMapping("/invitations/{invitationId}/decline")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun declineInvitation(
+        @PathVariable invitationId: Long,
+        @SupabaseUserIdentityPrincipal identity: UserIdentity,
+    ) {
+        appService.declineInvitation(invitationId, identity)
     }
 }
