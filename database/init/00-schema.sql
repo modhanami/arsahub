@@ -14,10 +14,12 @@ create table "user"
         primary key,
     created_at       timestamp with time zone default now() not null,
     updated_at       timestamp with time zone default now() not null,
-    external_user_id text not null,
+    external_user_id text not null
+        constraint user_pk
+        unique,
     email            text not null,
     google_user_id   text not null,
-    name             text default 'AAA':: text not null
+    name             text not null
 );
 
 create table app
@@ -105,7 +107,10 @@ create table app_user
     app_id       bigint                              not null
         constraint app_user_app_app_id_fk
         references app,
-    points       integer   default 0                 not null
+    points  integer default 0 not null,
+    user_id bigint
+        constraint app_user_user_user_id_fk
+        references "user"
 );
 
 create table rule_progress
@@ -278,5 +283,28 @@ create table transaction
     reference_number text                    not null
         constraint transaction_pk
         unique
+);
+
+create table app_invitation_status
+(
+    id bigserial
+        primary key,
+    status     text                                not null,
+    created_at timestamp default CURRENT_TIMESTAMP not null,
+    updated_at timestamp default CURRENT_TIMESTAMP not null
+);
+
+create table app_invitation
+(
+    id bigserial
+        primary key,
+    app_id               integer                             not null
+        references app,
+    user_id              integer                             not null
+        references "user",
+    invitation_status_id integer                             not null
+        references app_invitation_status,
+    created_at           timestamp default CURRENT_TIMESTAMP not null,
+    updated_at           timestamp default CURRENT_TIMESTAMP not null
 );
 
