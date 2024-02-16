@@ -30,6 +30,9 @@ class AppUser(
     var points: Int? = null,
     @OneToMany(mappedBy = "appUser")
     var achievements: MutableSet<AppUserAchievement> = mutableSetOf(),
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    var user: User? = null,
 ) : AuditedEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

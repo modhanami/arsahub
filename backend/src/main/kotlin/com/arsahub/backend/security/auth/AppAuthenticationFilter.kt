@@ -32,6 +32,7 @@ class AppAuthenticationFilter(
                 AntPathRequestMatcher("/swagger-ui/**"),
                 AntPathRequestMatcher("/v3/api-docs/**"),
                 AntPathRequestMatcher("/api/auth/**"),
+                AntPathRequestMatcher("/api/apps/invitations/*/*"),
             )
 
         setRequestMatcher(NegatedRequestMatcher(OrRequestMatcher(matchers)))

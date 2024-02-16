@@ -38,6 +38,7 @@ import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
+import jakarta.validation.constraints.NotEmpty
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.GetMapping
@@ -405,5 +406,37 @@ class AppController(
         ).let { RewardResponse.fromEntity(it) }
     }
 
-    // Invite a user to the app. The user
+    data class InviteUserRequest(
+        @NotEmpty
+        val email: String,
+    )
+
+    @PostMapping("/invitations")
+    @ResponseStatus(HttpStatus.CREATED)
+    fun inviteUser(
+        @CurrentApp app: App,
+        @Valid @RequestBody request: InviteUserRequest,
+    ) {
+        appService.inviteUser(app, request)
+    }
+
+    // user accepts
+    @PostMapping("/invitations/{invitationId}/accept")
+    @ResponseStatus(HttpStatus.CREATED)
+    fun acceptInvitation(
+        @PathVariable invitationId: Long,
+        @SupabaseUserIdentityPrincipal identity: UserIdentity,
+    ) {
+        appService.acceptInvitation(invitationId, identity)
+    }
+
+    // user declines
+    @PostMapping("/invitations/{invitationId}/decline")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun declineInvitation(
+        @PathVariable invitationId: Long,
+        @SupabaseUserIdentityPrincipal identity: UserIdentity,
+    ) {
+        appService.declineInvitation(invitationId, identity)
+    }
 }

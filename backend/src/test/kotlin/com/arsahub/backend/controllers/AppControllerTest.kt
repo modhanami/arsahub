@@ -3,7 +3,9 @@ package com.arsahub.backend.controllers
 import com.arsahub.backend.SocketIOService
 import com.arsahub.backend.controllers.utils.AuthSetup
 import com.arsahub.backend.controllers.utils.AuthTestUtils.performWithAppAuth
+import com.arsahub.backend.controllers.utils.AuthTestUtils.performWithUserAuth
 import com.arsahub.backend.controllers.utils.AuthTestUtils.setGlobalAuthSetup
+import com.arsahub.backend.controllers.utils.AuthTestUtils.setGlobalSecretKey
 import com.arsahub.backend.controllers.utils.AuthTestUtils.setupAuth
 import com.arsahub.backend.dtos.request.Action
 import com.arsahub.backend.dtos.request.ActionDefinition
@@ -13,6 +15,7 @@ import com.arsahub.backend.dtos.request.RuleCreateRequest
 import com.arsahub.backend.dtos.request.TriggerCreateRequest
 import com.arsahub.backend.dtos.request.TriggerDefinition
 import com.arsahub.backend.models.App
+import com.arsahub.backend.models.AppInvitation
 import com.arsahub.backend.models.AppUser
 import com.arsahub.backend.models.OncePerUserRuleRepeatability
 import com.arsahub.backend.models.Reward
@@ -20,7 +23,10 @@ import com.arsahub.backend.models.Rule
 import com.arsahub.backend.models.RuleRepeatability
 import com.arsahub.backend.models.Trigger
 import com.arsahub.backend.models.UnlimitedRuleRepeatability
+import com.arsahub.backend.models.User
 import com.arsahub.backend.repositories.AchievementRepository
+import com.arsahub.backend.repositories.AppInvitationRepository
+import com.arsahub.backend.repositories.AppInvitationStatusRepository
 import com.arsahub.backend.repositories.AppRepository
 import com.arsahub.backend.repositories.AppUserRepository
 import com.arsahub.backend.repositories.RewardRepository
@@ -37,11 +43,14 @@ import com.fasterxml.jackson.databind.node.ObjectNode
 import org.hamcrest.Matchers.containsInAnyOrder
 import org.hamcrest.Matchers.hasEntry
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
@@ -55,6 +64,8 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPat
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import org.springframework.transaction.annotation.Transactional
 import org.testcontainers.containers.PostgreSQLContainer
+import org.testcontainers.ext.ScriptUtils
+import org.testcontainers.jdbc.JdbcDatabaseDelegate
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 import java.util.*
@@ -67,6 +78,12 @@ import java.util.*
 @AutoConfigureMockMvc
 @Transactional
 class AppControllerTest() {
+    @Autowired
+    private lateinit var appInvitationStatusRepository: AppInvitationStatusRepository
+
+    @Autowired
+    private lateinit var appInvitationRepository: AppInvitationRepository
+
     @Autowired
     private lateinit var appRepository: AppRepository
 
@@ -116,14 +133,22 @@ class AppControllerTest() {
     @Suppress("unused")
     private lateinit var socketIOService: SocketIOService // no-op
 
+    @Value("\${jwt.secret}")
+    private lateinit var secret: String
+
     @BeforeEach
     fun setUp() {
+        ScriptUtils.runInitScript(JdbcDatabaseDelegate(postgres, ""), "pre-schema.sql")
+        ScriptUtils.runInitScript(JdbcDatabaseDelegate(postgres, ""), "schema.sql")
+        ScriptUtils.runInitScript(JdbcDatabaseDelegate(postgres, ""), "data.sql")
+
         authSetup =
             setupAuth(
                 userRepository,
                 appRepository,
             )
         setGlobalAuthSetup(authSetup)
+        setGlobalSecretKey(secret)
     }
 
     data class TrigggerTestModel(
@@ -1642,6 +1667,334 @@ class AppControllerTest() {
             )
     }
 
+    // App Invitations
+    // An app can invite a user to join the app. If they accept, they become an app user. If they decline, nothing happens.
+    // Scenarios
+    // - Invite a user successfully. Return 201 Created
+    // - Invite a user that already invited. Throw 409 Conflict
+    // - Invite a user that already joined. Throw 409 Conflict
+    // - Invite a user, user accepts. Return 201 Created
+    // - Invite a user, user declines. Return 204 No Content
+    // - Uninvited user tries to accept an invitation. Throw 404 Not Found
+    // - Uninvited user tries to decline an invitation. Throw 404 Not Found
+
+    @Test
+    fun `invite user - success`() {
+        // Arrange
+        val invitee = createInvitee()
+
+        // Act & Assert HTTP
+        mockMvc.performWithAppAuth(
+            post("/api/apps/invitations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "email": "${invitee.email}"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isCreated)
+
+        // Assert DB
+        val appInvitations = appInvitationRepository.findAll()
+        assertEquals(1, appInvitations.size)
+        val pendingInvitationStatus = getPendingAppInvitationStatus()
+        assertEquals(
+            pendingInvitationStatus!!.status!!.lowercase(),
+            appInvitations[0].invitationStatus!!.status!!.lowercase(),
+        )
+        val appInvitation = appInvitations[0]
+        assertEquals(authSetup.app.id, appInvitation.app?.id)
+        assertEquals(invitee.userId, appInvitation.user?.userId)
+    }
+
+    @Test
+    fun `invite user - success - already invited`() {
+        // Arrange
+        val invitee = createInvitee()
+
+        // Act & Assert HTTP
+        mockMvc.performWithAppAuth(
+            post("/api/apps/invitations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "email": "${invitee.email}"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isCreated)
+
+        mockMvc.performWithAppAuth(
+            post("/api/apps/invitations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "email": "${invitee.email}"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isConflict)
+
+        // Assert DB
+        val appInvitations = appInvitationRepository.findAll()
+        assertEquals(1, appInvitations.size)
+    }
+
+    @Test
+    fun `invite user - failed - user already joined`() {
+        // Arrange
+        val invitee = createInvitee()
+
+        val appUser =
+            appUserRepository.save(
+                AppUser(
+                    userId = invitee.userId.toString(),
+                    displayName = invitee.name,
+                    user = invitee,
+                    app = authSetup.app,
+                    points = 0,
+                ),
+            )
+
+        // Act & Assert HTTP
+        mockMvc.performWithAppAuth(
+            post("/api/apps/invitations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "email": "${invitee.email}"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isConflict)
+
+        // Assert DB
+        val appInvitations = appInvitationRepository.findAll()
+        assertEquals(0, appInvitations.size)
+    }
+
+    @Test
+    fun `user accepts invitation - success`() {
+        // Arrange
+        val invitee = createInvitee()
+
+        val appInvitation =
+            appInvitationRepository.save(
+                AppInvitation(
+                    app = authSetup.app,
+                    user = invitee,
+                    invitationStatus = getPendingAppInvitationStatus(),
+                ),
+            )
+
+        // Act & Assert HTTP
+        mockMvc.performWithUserAuth(
+            post("/api/apps/invitations/${appInvitation.id}/accept")
+                .contentType(MediaType.APPLICATION_JSON),
+            user = invitee,
+        )
+            .andExpect(status().isCreated)
+
+        // Assert DB
+        val appInvitations = appInvitationRepository.findAll()
+        assertEquals(1, appInvitations.size)
+        val acceptedInvitationStatus = getAcceptedAppInvitationStatus()
+        assertEquals(
+            acceptedInvitationStatus!!.status!!.lowercase(),
+            appInvitations[0].invitationStatus!!.status!!.lowercase(),
+        )
+
+        val appUser = appUserRepository.findByAppAndUserEmail(authSetup.app, invitee.email!!)
+        assertNotNull(appUser)
+    }
+
+    @Test
+    fun `user declines invitation - success`() {
+        // Arrange
+        val invitee = createInvitee()
+
+        val appInvitation =
+            appInvitationRepository.save(
+                AppInvitation(
+                    app = authSetup.app,
+                    user = invitee,
+                    invitationStatus = getPendingAppInvitationStatus(),
+                ),
+            )
+
+        // Act & Assert HTTP
+        mockMvc.performWithUserAuth(
+            post("/api/apps/invitations/${appInvitation.id}/decline")
+                .contentType(MediaType.APPLICATION_JSON),
+            user = invitee,
+        )
+            .andExpect(status().isNoContent)
+
+        // Assert DB
+        val appInvitations = appInvitationRepository.findAll()
+        assertEquals(1, appInvitations.size)
+        val declinedInvitationStatus = getDeclinedAppInvitationStatus()
+        assertEquals(
+            declinedInvitationStatus!!.status!!.lowercase(),
+            appInvitations[0].invitationStatus!!.status!!.lowercase(),
+        )
+
+        val appUser = appUserRepository.findByAppAndUserEmail(authSetup.app, invitee.email!!)
+        assertNull(appUser)
+    }
+
+    @Test
+    fun `user accepts invitation - failed - not invited`() {
+        // Arrange
+        val invitee = createInvitee()
+
+        // Act & Assert HTTP
+        mockMvc.performWithUserAuth(
+            post("/api/apps/invitations/999999999/accept")
+                .contentType(MediaType.APPLICATION_JSON),
+            user = invitee,
+        )
+            .andExpect(status().isNotFound)
+            .andExpect(jsonPath("$.message").value("Invitation not found"))
+    }
+
+    @Test
+    fun `user declines invitation - failed - not invited`() {
+        // Arrange
+        val invitee = createInvitee()
+
+        // Act & Assert HTTP
+        mockMvc.performWithUserAuth(
+            post("/api/apps/invitations/999999999/decline")
+                .contentType(MediaType.APPLICATION_JSON),
+            user = invitee,
+        )
+            .andExpect(status().isNotFound)
+            .andExpect(jsonPath("$.message").value("Invitation not found"))
+    }
+
+    @Test
+    fun `user accepts invitation - failed - already accepted`() {
+        // Arrange
+        val invitee = createInvitee()
+
+        val appInvitation =
+            appInvitationRepository.save(
+                AppInvitation(
+                    app = authSetup.app,
+                    user = invitee,
+                    invitationStatus = getAcceptedAppInvitationStatus(),
+                ),
+            )
+
+        // Act & Assert HTTP
+        mockMvc.performWithUserAuth(
+            post("/api/apps/invitations/${appInvitation.id}/accept")
+                .contentType(MediaType.APPLICATION_JSON),
+            user = invitee,
+        )
+            .andExpect(status().isConflict)
+            .andExpect(jsonPath("$.message").value("Invitation is not pending"))
+    }
+
+    @Test
+    fun `user accepts invitation - failed - already declined`() {
+        // Arrange
+        val invitee = createInvitee()
+
+        val appInvitation =
+            appInvitationRepository.save(
+                AppInvitation(
+                    app = authSetup.app,
+                    user = invitee,
+                    invitationStatus = getDeclinedAppInvitationStatus(),
+                ),
+            )
+
+        // Act & Assert HTTP
+        mockMvc.performWithUserAuth(
+            post("/api/apps/invitations/${appInvitation.id}/accept")
+                .contentType(MediaType.APPLICATION_JSON),
+            user = invitee,
+        )
+            .andExpect(status().isConflict)
+            .andExpect(jsonPath("$.message").value("Invitation is not pending"))
+    }
+
+    @Test
+    fun `user declines invitation - failed - already accepted`() {
+        // Arrange
+        val invitee = createInvitee()
+
+        val appInvitation =
+            appInvitationRepository.save(
+                AppInvitation(
+                    app = authSetup.app,
+                    user = invitee,
+                    invitationStatus = getAcceptedAppInvitationStatus(),
+                ),
+            )
+
+        // Act & Assert HTTP
+        mockMvc.performWithUserAuth(
+            post("/api/apps/invitations/${appInvitation.id}/decline")
+                .contentType(MediaType.APPLICATION_JSON),
+            user = invitee,
+        )
+            .andExpect(status().isConflict)
+            .andExpect(jsonPath("$.message").value("Invitation is not pending"))
+    }
+
+    @Test
+    fun `user declines invitation - failed - already declined`() {
+        // Arrange
+        val invitee = createInvitee()
+
+        val appInvitation =
+            appInvitationRepository.save(
+                AppInvitation(
+                    app = authSetup.app,
+                    user = invitee,
+                    invitationStatus = getDeclinedAppInvitationStatus(),
+                ),
+            )
+
+        // Act & Assert HTTP
+        mockMvc.performWithUserAuth(
+            post("/api/apps/invitations/${appInvitation.id}/decline")
+                .contentType(MediaType.APPLICATION_JSON),
+            user = invitee,
+        )
+            .andExpect(status().isConflict)
+            .andExpect(jsonPath("$.message").value("Invitation is not pending"))
+    }
+
+    private fun getAcceptedAppInvitationStatus() = appInvitationStatusRepository.findByStatusIgnoreCase("accepted")
+
+    private fun getPendingAppInvitationStatus() = appInvitationStatusRepository.findByStatusIgnoreCase("pending")
+
+    private fun getDeclinedAppInvitationStatus() = appInvitationStatusRepository.findByStatusIgnoreCase("declined")
+
+    private fun createInvitee(): User {
+        return userRepository.save(
+            User(
+                name = "Invitee",
+                externalUserId = UUID.randomUUID().toString(),
+                googleUserId = UUID.randomUUID().toString(),
+                email = "invitee@test.test",
+            ),
+        )
+    }
+
     // TODO: Implement forward-chaining and support new triggers, e.g., when a user reaches 100 points, etc.
     @Test
     @Disabled
@@ -1652,6 +2005,7 @@ class AppControllerTest() {
         @Container
         @ServiceConnection
         val postgres: PostgreSQLContainer<Nothing> =
-            PostgreSQLContainer<Nothing>("postgres:16-alpine").withInitScript("schema.sql")
+            PostgreSQLContainer<Nothing>("postgres:16-alpine")
+                .withReuse(true)
     }
 }
