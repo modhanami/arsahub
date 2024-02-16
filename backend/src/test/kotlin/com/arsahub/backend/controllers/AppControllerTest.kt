@@ -1852,6 +1852,132 @@ class AppControllerTest() {
         assertNull(appUser)
     }
 
+    @Test
+    fun `user accepts invitation - failed - not invited`() {
+        // Arrange
+        val invitee = createInvitee()
+
+        // Act & Assert HTTP
+        mockMvc.performWithUserAuth(
+            post("/api/apps/invitations/999999999/accept")
+                .contentType(MediaType.APPLICATION_JSON),
+            user = invitee,
+        )
+            .andExpect(status().isNotFound)
+            .andExpect(jsonPath("$.message").value("Invitation not found"))
+    }
+
+    @Test
+    fun `user declines invitation - failed - not invited`() {
+        // Arrange
+        val invitee = createInvitee()
+
+        // Act & Assert HTTP
+        mockMvc.performWithUserAuth(
+            post("/api/apps/invitations/999999999/decline")
+                .contentType(MediaType.APPLICATION_JSON),
+            user = invitee,
+        )
+            .andExpect(status().isNotFound)
+            .andExpect(jsonPath("$.message").value("Invitation not found"))
+    }
+
+    @Test
+    fun `user accepts invitation - failed - already accepted`() {
+        // Arrange
+        val invitee = createInvitee()
+
+        val appInvitation =
+            appInvitationRepository.save(
+                AppInvitation(
+                    app = authSetup.app,
+                    user = invitee,
+                    invitationStatus = getAcceptedAppInvitationStatus(),
+                ),
+            )
+
+        // Act & Assert HTTP
+        mockMvc.performWithUserAuth(
+            post("/api/apps/invitations/${appInvitation.id}/accept")
+                .contentType(MediaType.APPLICATION_JSON),
+            user = invitee,
+        )
+            .andExpect(status().isConflict)
+            .andExpect(jsonPath("$.message").value("Invitation is not pending"))
+    }
+
+    @Test
+    fun `user accepts invitation - failed - already declined`() {
+        // Arrange
+        val invitee = createInvitee()
+
+        val appInvitation =
+            appInvitationRepository.save(
+                AppInvitation(
+                    app = authSetup.app,
+                    user = invitee,
+                    invitationStatus = getDeclinedAppInvitationStatus(),
+                ),
+            )
+
+        // Act & Assert HTTP
+        mockMvc.performWithUserAuth(
+            post("/api/apps/invitations/${appInvitation.id}/accept")
+                .contentType(MediaType.APPLICATION_JSON),
+            user = invitee,
+        )
+            .andExpect(status().isConflict)
+            .andExpect(jsonPath("$.message").value("Invitation is not pending"))
+    }
+
+    @Test
+    fun `user declines invitation - failed - already accepted`() {
+        // Arrange
+        val invitee = createInvitee()
+
+        val appInvitation =
+            appInvitationRepository.save(
+                AppInvitation(
+                    app = authSetup.app,
+                    user = invitee,
+                    invitationStatus = getAcceptedAppInvitationStatus(),
+                ),
+            )
+
+        // Act & Assert HTTP
+        mockMvc.performWithUserAuth(
+            post("/api/apps/invitations/${appInvitation.id}/decline")
+                .contentType(MediaType.APPLICATION_JSON),
+            user = invitee,
+        )
+            .andExpect(status().isConflict)
+            .andExpect(jsonPath("$.message").value("Invitation is not pending"))
+    }
+
+    @Test
+    fun `user declines invitation - failed - already declined`() {
+        // Arrange
+        val invitee = createInvitee()
+
+        val appInvitation =
+            appInvitationRepository.save(
+                AppInvitation(
+                    app = authSetup.app,
+                    user = invitee,
+                    invitationStatus = getDeclinedAppInvitationStatus(),
+                ),
+            )
+
+        // Act & Assert HTTP
+        mockMvc.performWithUserAuth(
+            post("/api/apps/invitations/${appInvitation.id}/decline")
+                .contentType(MediaType.APPLICATION_JSON),
+            user = invitee,
+        )
+            .andExpect(status().isConflict)
+            .andExpect(jsonPath("$.message").value("Invitation is not pending"))
+    }
+
     private fun getAcceptedAppInvitationStatus() = appInvitationStatusRepository.findByStatusIgnoreCase("accepted")
 
     private fun getPendingAppInvitationStatus() = appInvitationStatusRepository.findByStatusIgnoreCase("pending")

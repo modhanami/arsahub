@@ -185,9 +185,7 @@ class AppService(
             throw UserAlreadyInvitedException()
         }
 
-        val invitationPendingStatus =
-            appInvitationStatusRepository.findByStatusIgnoreCase("pending")
-                ?: throw NotFoundException("Invitation status not found")
+        val invitationPendingStatus = getPendingAppInvitationStatusOrThrow()
 
         val invite =
             AppInvitation(
@@ -214,9 +212,7 @@ class AppService(
         assertCanAcceptInvitationOrThrow(invitation)
 
         // accept invitation
-        val acceptedStatus =
-            appInvitationStatusRepository.findByStatusIgnoreCase("accepted")
-                ?: throw NotFoundException("Invitation status not found")
+        val acceptedStatus = getAcceptedAppInvitationStatusOrThrow()
 
         invitation.invitationStatus = acceptedStatus
         appInvitationRepository.save(invitation)
@@ -252,9 +248,7 @@ class AppService(
 
         assertCanDeclineInvitationOrThrow(invitation)
 
-        val declinedStatus =
-            appInvitationStatusRepository.findByStatusIgnoreCase("declined")
-                ?: throw NotFoundException("Invitation status not found")
+        val declinedStatus = getDeclinedAppInvitationStatusOrThrow()
 
         invitation.invitationStatus = declinedStatus
         appInvitationRepository.save(invitation)
@@ -279,4 +273,19 @@ class AppService(
             throw AppInvitationNotFoundException()
         }
     }
+
+    private fun getAcceptedAppInvitationStatusOrThrow() =
+        checkNotNull(appInvitationStatusRepository.findByStatusIgnoreCase("accepted")) {
+            "App invitation status 'accepted' not found"
+        }
+
+    private fun getPendingAppInvitationStatusOrThrow() =
+        checkNotNull(appInvitationStatusRepository.findByStatusIgnoreCase("pending")) {
+            "App invitation status 'pending' not found"
+        }
+
+    private fun getDeclinedAppInvitationStatusOrThrow() =
+        checkNotNull(appInvitationStatusRepository.findByStatusIgnoreCase("declined")) {
+            "App invitation status 'declined' not found"
+        }
 }
