@@ -3,9 +3,13 @@ package com.arsahub.backend.dtos.request
 import com.arsahub.backend.dtos.annotations.ValidDescription
 import com.arsahub.backend.dtos.annotations.ValidTitle
 
-data class AchievementCreateRequest(
+class AchievementCreateRequest(
+    title: String,
+    description: String? = null,
+) {
     @ValidTitle
-    val title: String?,
+    val title: String = title.trim()
+
     @ValidDescription
-    val description: String?,
-)
+    val description: String? = description?.trim()
+}

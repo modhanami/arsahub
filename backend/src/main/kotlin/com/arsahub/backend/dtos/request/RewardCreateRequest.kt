@@ -2,7 +2,6 @@ package com.arsahub.backend.dtos.request
 
 import com.arsahub.backend.dtos.annotations.ValidDescription
 import com.arsahub.backend.dtos.annotations.ValidName
-import com.arsahub.backend.extensions.trimmed
 import jakarta.validation.constraints.NotNull
 
 class RewardCreateRequest(
@@ -13,8 +12,8 @@ class RewardCreateRequest(
     val quantity: Int?,
 ) {
     @ValidName
-    val name: String? = name.trimmed()
+    val name = name?.trim()
 
     @ValidDescription
-    val description: String? = description?.trimmed()
+    val description = description?.trim()
 }

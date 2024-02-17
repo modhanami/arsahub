@@ -5,19 +5,25 @@ import com.arsahub.backend.dtos.annotations.ValidDescription
 import com.arsahub.backend.dtos.annotations.ValidTitle
 import jakarta.validation.constraints.NotBlank
 
-data class RuleCreateRequest(
+class RuleCreateRequest(
     // TODO: remove nullability and actually customize jackson-module-kotlin
     //  with the Jackson2ObjectMapperBuilderCustomizer
-    @ValidTitle
-    val title: String?,
-    @ValidDescription
-    val description: String?,
+    title: String?,
+    description: String? = null,
     val trigger: TriggerDefinition,
     val action: ActionDefinition,
-    val conditions: Map<String, Any>?,
-    @field:NotBlank(message = ValidationMessages.Constants.REPEATABILITY_REQUIRED)
-    val repeatability: String,
-)
+    val conditions: Map<String, Any>? = null,
+    repeatability: String?,
+) {
+    @ValidTitle
+    val title = title?.trim()
+
+    @ValidDescription
+    val description = description?.trim()
+
+    @NotBlank(message = ValidationMessages.Constants.REPEATABILITY_REQUIRED)
+    val repeatability = repeatability?.trim()
+}
 
 typealias TriggerDefinition = KeyAndParams
 typealias ActionDefinition = KeyAndParams

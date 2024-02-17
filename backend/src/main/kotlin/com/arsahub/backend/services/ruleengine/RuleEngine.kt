@@ -36,7 +36,7 @@ class RuleEngine(
         rawRequestJson: Map<String, Any>,
         afterAction: (ActionResult) -> Unit,
     ) {
-        val trigger = triggerService.getTriggerOrThrow(request.key, app)
+        val trigger = triggerService.getTriggerOrThrow(request.key!!, app)
 
         logTrigger(trigger, app, appUser, rawRequestJson)
 

@@ -22,6 +22,7 @@ import com.arsahub.backend.repositories.UserRepository
 import com.arsahub.backend.services.actionhandlers.ActionResult
 import com.arsahub.backend.services.ruleengine.RuleEngine
 import io.github.oshai.kotlinlogging.KotlinLogging
+import jakarta.validation.Valid
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -97,10 +98,10 @@ class AppService(
 
     fun trigger(
         app: App,
-        request: TriggerSendRequest,
+        @Valid request: TriggerSendRequest,
         rawRequestJson: Map<String, Any>,
     ) {
-        val appUser = getAppUserOrThrow(app, request.userId)
+        val appUser = getAppUserOrThrow(app, request.userId!!)
         ruleEngine.trigger(app, appUser, request, rawRequestJson) { actionResult ->
             broadcastActionResult(actionResult, app, request.userId)
         }

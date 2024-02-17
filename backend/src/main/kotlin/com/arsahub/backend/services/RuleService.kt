@@ -28,16 +28,16 @@ class RuleService(
     ): Rule {
         val trigger =
             runCatching {
-                triggerService.getTriggerOrThrow(request.trigger.key, app)
+                triggerService.getTriggerOrThrow(request.trigger.key!!, app)
             }.getOrElse {
-                triggerService.getBuiltInTriggerOrThrow(request.trigger.key)
+                triggerService.getBuiltInTriggerOrThrow(request.trigger.key!!)
             }
 
         // validate action definition
         val parsedAction = parseActionDefinition(request.action)
 
         // validate repeatability
-        val ruleRepeatability = RuleRepeatability.valueOf(request.repeatability)
+        val ruleRepeatability = RuleRepeatability.valueOf(request.repeatability!!)
         validateRepeatabilityForBuiltInTrigger(ruleRepeatability, trigger)
 
         triggerService.validateParamsAgainstTriggerFields(request.conditions, trigger.fields)
