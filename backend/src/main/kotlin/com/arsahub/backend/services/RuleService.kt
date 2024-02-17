@@ -22,6 +22,13 @@ class RuleService(
         return ruleRepository.findAllByApp(app)
     }
 
+    fun getMatchingRules(
+        app: App,
+        trigger: Trigger,
+    ): List<Rule> {
+        return ruleRepository.findAllByAppAndTrigger_Key(app, trigger.key!!)
+    }
+
     fun createRule(
         app: App,
         request: RuleCreateRequest,

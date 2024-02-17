@@ -9,8 +9,8 @@ import com.arsahub.backend.models.RuleRepeatability
 import com.arsahub.backend.models.Trigger
 import com.arsahub.backend.models.TriggerLog
 import com.arsahub.backend.repositories.RuleProgressRepository
-import com.arsahub.backend.repositories.RuleRepository
 import com.arsahub.backend.repositories.TriggerLogRepository
+import com.arsahub.backend.services.RuleService
 import com.arsahub.backend.services.TriggerService
 import com.arsahub.backend.services.actionhandlers.ActionHandlerRegistry
 import com.arsahub.backend.services.actionhandlers.ActionResult
@@ -20,11 +20,11 @@ import org.springframework.transaction.annotation.Transactional
 
 @Service
 class RuleEngine(
-    private val ruleRepository: RuleRepository,
     private val actionHandlerRegistry: ActionHandlerRegistry,
     private val triggerLogRepository: TriggerLogRepository,
     private val ruleProgressRepository: RuleProgressRepository,
     private val triggerService: TriggerService,
+    private val ruleService: RuleService,
 ) {
     private val logger = KotlinLogging.logger {}
 
@@ -42,7 +42,7 @@ class RuleEngine(
 
         triggerService.validateParamsAgainstTriggerFields(request.params, trigger.fields)
 
-        val matchingRules = getMatchingRules(app, trigger)
+        val matchingRules = ruleService.getMatchingRules(app, trigger)
         val actionResults = processMatchingRules(matchingRules, appUser, request.params, afterAction)
 
         handleForwardChain(app, appUser, actionResults, afterAction)
@@ -98,8 +98,7 @@ class RuleEngine(
         }
 
         val pointsReachedTrigger = triggerService.getBuiltInTriggerOrThrow("points_reached")
-        val matchingRules =
-            getMatchingRules(app, pointsReachedTrigger)
+        val matchingRules = ruleService.getMatchingRules(app, pointsReachedTrigger)
 
         logger.debug { "Found ${matchingRules.size} matching rules for points_reached trigger" }
         processMatchingRules(matchingRules, appUser, emptyMap(), afterAction)
@@ -213,12 +212,5 @@ class RuleEngine(
         }
 
         return true
-    }
-
-    private fun getMatchingRules(
-        app: App,
-        trigger: Trigger,
-    ): List<Rule> {
-        return ruleRepository.findAllByAppAndTrigger_Key(app, trigger.key!!)
     }
 }

@@ -46,6 +46,7 @@ import org.hamcrest.Matchers.hasEntry
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -58,6 +59,7 @@ import org.springframework.boot.testcontainers.service.connection.ServiceConnect
 import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -2243,6 +2245,64 @@ class AppControllerTest() {
         )
             .andExpect(status().isConflict)
             .andExpect(jsonPath("$.message").value("Trigger with the same title already exists"))
+    }
+
+    // Deletion
+
+    // Delete trigger: Only when no rules are using it
+    @Test
+    fun `delete trigger - success`() {
+        // Arrange
+        val trigger = createWorkshopCompletedTrigger(authSetup.app)
+        val triggerFromDB = triggerRepository.findById(trigger.id!!).get()
+        assertNotNull(triggerFromDB)
+
+        // Act & Assert HTTP
+        mockMvc.performWithAppAuth(
+            delete("/api/apps/triggers/${trigger.id}"),
+        )
+            .andExpect(status().isNoContent)
+
+        // Assert DB
+        val triggers = triggerRepository.findById(trigger.id!!)
+        assertTrue(triggers.isEmpty)
+    }
+
+    @Test
+    fun `delete trigger - failed - rules are using it`() {
+        // Arrange
+        val subjectTrigger = createWorkshopCompletedTrigger(authSetup.app)
+        val rule =
+            createRule(authSetup.app) {
+                title = "When workshop completed then add 100 points"
+                trigger = subjectTrigger
+                action {
+                    addPoints(100)
+                }
+                repeatability = UnlimitedRuleRepeatability
+            }
+
+        // Act & Assert HTTP
+        mockMvc.performWithAppAuth(
+            delete("/api/apps/triggers/${subjectTrigger.id}"),
+        )
+            .andExpect(status().isConflict)
+            .andExpect(jsonPath("$.message").value("Trigger is used by one or more rules"))
+    }
+
+    @Test
+    fun `delete trigger - unauthorized - different app`() {
+        // Arrange
+        val otherApp = setupAuth(userRepository, appRepository).app
+        val trigger = createWorkshopCompletedTrigger(authSetup.app)
+
+        // Act & Assert HTTP
+        mockMvc.performWithAppAuth(
+            delete("/api/apps/triggers/${trigger.id}"),
+            app = otherApp,
+        )
+            .andExpect(status().isNotFound)
+            .andExpect(jsonPath("$.message").value("Trigger not found"))
     }
 
     private fun getPointsReachedTrigger() = triggerRepository.findByKey("points_reached")!!

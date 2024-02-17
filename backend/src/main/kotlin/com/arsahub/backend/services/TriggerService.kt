@@ -4,22 +4,26 @@ import com.arsahub.backend.dtos.request.TriggerCreateRequest
 import com.arsahub.backend.exceptions.ConflictException
 import com.arsahub.backend.exceptions.NotFoundException
 import com.arsahub.backend.models.App
+import com.arsahub.backend.models.Rule
 import com.arsahub.backend.models.Trigger
 import com.arsahub.backend.models.TriggerField
 import com.arsahub.backend.models.TriggerFieldType
+import com.arsahub.backend.repositories.RuleRepository
 import com.arsahub.backend.repositories.TriggerRepository
 import com.arsahub.backend.utils.KeyUtils
 import io.github.oshai.kotlinlogging.KotlinLogging
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 
 class TriggerConflictException :
     ConflictException("Trigger with the same title already exists")
 
-class TriggerNotFoundException(triggerKey: String) : NotFoundException("Trigger with key $triggerKey not found")
+class TriggerNotFoundException : NotFoundException("Trigger not found")
 
 @Service
 class TriggerService(
     private val triggerRepository: TriggerRepository,
+    private val ruleRepository: RuleRepository,
 ) {
     private val logger = KotlinLogging.logger {}
 
@@ -35,11 +39,11 @@ class TriggerService(
         key: String,
         app: App,
     ): Trigger {
-        return triggerRepository.findByKeyAndApp(key, app) ?: throw TriggerNotFoundException(key)
+        return triggerRepository.findByKeyAndApp(key, app) ?: throw TriggerNotFoundException()
     }
 
     fun getBuiltInTriggerOrThrow(key: String): Trigger {
-        return triggerRepository.findByKey(key) ?: throw TriggerNotFoundException(key)
+        return triggerRepository.findByKey(key) ?: throw TriggerNotFoundException()
     }
 
     fun createTrigger(
@@ -51,7 +55,7 @@ class TriggerService(
                 "Name = ${request.title}"
         }
 
-        val autoKey = KeyUtils.generateKeyFromTitle(request.title!!) ?: throw IllegalArgumentException("Invalid title")
+        val autoKey = KeyUtils.generateKeyFromTitle(request.title!!)
         logger.debug { "Generated key: $autoKey" }
         if (autoKey.isBlank()) {
             logger.error { "Generated key is empty" }
@@ -136,5 +140,47 @@ class TriggerService(
                     ) { "Field ${targetField.key} is not a text, got $conditionValue" }
             }
         }
+    }
+
+    fun deleteTrigger(
+        currentApp: App,
+        triggerId: Long,
+    ) {
+        val trigger = triggerRepository.findByIdOrNull(triggerId) ?: throw TriggerNotFoundException()
+        assertCanDeleteTrigger(currentApp, trigger)
+
+        assertTriggerNotInUse(currentApp, trigger)
+
+        triggerRepository.delete(trigger)
+    }
+
+    private fun assertCanDeleteTrigger(
+        currentApp: App,
+        trigger: Trigger,
+    ) {
+        if (trigger.app != currentApp) {
+            throw TriggerNotFoundException()
+        }
+    }
+
+    class TriggerInUseException :
+        ConflictException("Trigger is used by one or more rules")
+
+    private fun assertTriggerNotInUse(
+        currentApp: App,
+        trigger: Trigger,
+    ) {
+        val rules = getMatchingRules(currentApp, trigger)
+        if (rules.isNotEmpty()) {
+            throw TriggerInUseException()
+        }
+    }
+
+    // TODO: duplicated from RuleService
+    fun getMatchingRules(
+        app: App,
+        trigger: Trigger,
+    ): List<Rule> {
+        return ruleRepository.findAllByAppAndTrigger_Key(app, trigger.key!!)
     }
 }

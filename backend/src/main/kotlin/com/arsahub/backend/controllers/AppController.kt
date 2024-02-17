@@ -41,6 +41,7 @@ import jakarta.validation.Valid
 import jakarta.validation.constraints.NotEmpty
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -102,6 +103,15 @@ class AppController(
         @RequestParam(name = "with-built-in", required = false, defaultValue = "false") withBuiltIn: Boolean,
     ): List<TriggerResponse> {
         return triggerService.getTriggers(app, withBuiltIn).map { TriggerResponse.fromEntity(it) }
+    }
+
+    @DeleteMapping("/triggers/{triggerId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun deleteTrigger(
+        @CurrentApp app: App,
+        @PathVariable triggerId: Long,
+    ) {
+        triggerService.deleteTrigger(app, triggerId)
     }
 
     @Operation(
