@@ -13,3 +13,7 @@ export function formatDate(input: string | number): string {
     year: "numeric",
   });
 }
+
+export function getReturnTo(path?: string) {
+  return `${window.location.origin}/${path || ""}`;
+}

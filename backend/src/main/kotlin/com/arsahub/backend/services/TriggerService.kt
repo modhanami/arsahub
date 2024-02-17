@@ -22,8 +22,12 @@ class TriggerService(
 ) {
     private val logger = KotlinLogging.logger {}
 
-    fun getTriggers(app: App): List<Trigger> {
-        return triggerRepository.findAllByAppId(app.id!!)
+    fun getTriggers(
+        app: App,
+        withBuiltIn: Boolean = false,
+    ): List<Trigger> {
+        return triggerRepository.findAllByAppId(app.id!!) +
+            if (withBuiltIn) triggerRepository.findAllByAppIdIsNull() else emptyList()
     }
 
     fun getTriggerOrThrow(
