@@ -47,7 +47,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.springframework.beans.factory.annotation.Autowired
@@ -2004,6 +2003,7 @@ class AppControllerTest() {
     @Test
     fun `create rule with points_reached trigger - success`() {
         val pointsReachedTriggerKey = "points_reached"
+
         // Act & Assert HTTP
         mockMvc.performWithAppAuth(
             post("/api/apps/rules")
@@ -2013,7 +2013,7 @@ class AppControllerTest() {
                     {
                       "title": "When user reaches 100 points then add 50 points",
                       "trigger": {
-                        "key": $pointsReachedTriggerKey
+                        "key": "$pointsReachedTriggerKey"
                       },
                       "action": {
                         "key": "add_points",
@@ -2044,15 +2044,69 @@ class AppControllerTest() {
     }
 
     @Test
+    fun `create rule with points_reached trigger - failed - repeatability not once_per_user`() {
+        val pointsReachedTriggerKey = "points_reached"
+
+        // Act & Assert HTTP
+        mockMvc.performWithAppAuth(
+            post("/api/apps/rules")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "title": "When user reaches 100 points then add 50 points",
+                      "trigger": {
+                        "key": "$pointsReachedTriggerKey"
+                      },
+                      "action": {
+                        "key": "add_points",
+                        "params": {
+                          "points": 50
+                        }
+                      },
+                      "conditions": {
+                        "points": 100
+                      },
+                      "repeatability": "unlimited"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.message").value("Repeatability must be once_per_user for this trigger"))
+    }
+
+    @Test
     fun `points_reached trigger - success - user reaches points`() {
         // Arrange
         val user = createAppUser(authSetup.app)
 
+        val allTriggers = triggerRepository.findAll()
+        for (trigger in allTriggers) {
+            println("Trigger: ${trigger.key}")
+        }
         val pointsReachedTrigger = getPointsReachedTrigger()
         val emptyTrigger =
             createTrigger(authSetup.app) {
+                title = "Empty trigger"
                 key = "empty"
             }
+
+        fun sendEmptyTrigger() =
+            mockMvc.performWithAppAuth(
+                post("/api/apps/trigger")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        """
+                        {
+                            "key": "${emptyTrigger.key}",
+                            "params": {},
+                            "userId": "${user.userId}"
+                            }
+                        """.trimIndent(),
+                    ),
+            )
+                .andExpect(status().isOk)
 
         val ruleAdd60PointsWhenEmptyTriggerFired =
             createRule(authSetup.app) {
@@ -2071,48 +2125,35 @@ class AppControllerTest() {
                 action {
                     addPoints(50)
                 }
+                conditions {
+                    eq("points", 100)
+                }
                 repeatability = OncePerUserRuleRepeatability
             }
 
-        // Act & Assert
-        mockMvc.performWithAppAuth(
-            post("/api/apps/trigger")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    """
-                    {
-                        "key": "${emptyTrigger.key}",
-                        "params": {},
-                        "userId": "${user.userId}"
-                        }
-                    """.trimIndent(),
-                ),
-        )
-            .andExpect(status().isOk)
+        // Act & Assert - 1st round of empty trigger
+        sendEmptyTrigger()
 
-        mockMvc.performWithAppAuth(
-            post("/api/apps/trigger")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    """
-                    {
-                        "key": "${pointsReachedTrigger.key}",
-                        "params": {
-                            "points": 100
-                        },
-                        "userId": "${user.userId}"
-                        }
-                    """.trimIndent(),
-                ),
-        )
-            .andExpect(status().isOk)
+        // Assert DB - user has 60 points
+        val userAfterEmptyTriggerFired = appUserRepository.findById(user.id!!)
+        assertEquals(60, userAfterEmptyTriggerFired.get().points)
+
+        // Act & Assert - 2nd round of empty trigger
+        sendEmptyTrigger()
+
+        // Assert DB - user has 170 points (+ 60 + 50 from points_reached trigger)
+        val userAfterEmptyTriggerFiredAgain = appUserRepository.findById(user.id!!)
+        assertEquals(170, userAfterEmptyTriggerFiredAgain.get().points)
+
+        // Act & Assert - 2nd round of empty trigger
+        sendEmptyTrigger()
+
+        // Assert DB - user has 230 (+ 60) points without points_reached trigger being fired again
+        val userAfterEmptyTriggerFiredAgainAgain = appUserRepository.findById(user.id!!)
+        assertEquals(230, userAfterEmptyTriggerFiredAgainAgain.get().points)
     }
 
-    // TODO: Implement forward-chaining and support new triggers, e.g., when a user reaches 100 points, etc.
-    @Test
-    @Disabled
-    fun testForwardChainingRuleAtoRuleB() {
-    }
+    private fun getPointsReachedTrigger() = triggerRepository.findByKey("points_reached")!!
 
     companion object {
         @Container
@@ -2122,5 +2163,3 @@ class AppControllerTest() {
                 .withReuse(true)
     }
 }
-
-private fun getPointsReachedTrigger() = triggerRepository.findByKey("points_reached")!!

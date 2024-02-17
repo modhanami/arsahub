@@ -15,5 +15,7 @@ interface TriggerRepository : JpaRepository<Trigger, Long> {
     // Built-in triggers don't belong to any app
     fun findAllByAppIdOrAppIdIsNull(appId: Long): List<Trigger>
 
+    fun findAllByAppIdIsNull(): List<Trigger>
+
     fun findByKey(key: String): Trigger?
 }

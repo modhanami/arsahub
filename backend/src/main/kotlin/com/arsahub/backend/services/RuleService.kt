@@ -8,6 +8,7 @@ import com.arsahub.backend.dtos.request.UnlockAchievementAction
 import com.arsahub.backend.models.App
 import com.arsahub.backend.models.Rule
 import com.arsahub.backend.models.RuleRepeatability
+import com.arsahub.backend.models.Trigger
 import com.arsahub.backend.repositories.RuleRepository
 import org.springframework.stereotype.Service
 
@@ -25,13 +26,19 @@ class RuleService(
         app: App,
         request: RuleCreateRequest,
     ): Rule {
-        val trigger = triggerService.getTriggerOrThrow(request.trigger.key, app)
+        val trigger =
+            runCatching {
+                triggerService.getTriggerOrThrow(request.trigger.key, app)
+            }.getOrElse {
+                triggerService.getBuiltInTriggerOrThrow(request.trigger.key)
+            }
 
         // validate action definition
         val parsedAction = parseActionDefinition(request.action)
 
         // validate repeatability
         val ruleRepeatability = RuleRepeatability.valueOf(request.repeatability)
+        validateRepeatabilityForBuiltInTrigger(ruleRepeatability, trigger)
 
         triggerService.validateParamsAgainstTriggerFields(request.conditions, trigger.fields)
 
@@ -62,6 +69,18 @@ class RuleService(
         }
 
         return ruleRepository.save(rule)
+    }
+
+    class RuleRepeatabilityMustBeOncePerUserException :
+        IllegalArgumentException("Repeatability must be once_per_user for this trigger")
+
+    private fun validateRepeatabilityForBuiltInTrigger(
+        repeatability: RuleRepeatability,
+        trigger: Trigger,
+    ) {
+        if (trigger.key!! == "points_reached" && RuleRepeatability.ONCE_PER_USER != repeatability.key) {
+            throw RuleRepeatabilityMustBeOncePerUserException()
+        }
     }
 
     private fun parseActionDefinition(actionDefinition: ActionDefinition): Action {

@@ -23,16 +23,18 @@ class TriggerService(
     private val logger = KotlinLogging.logger {}
 
     fun getTriggers(app: App): List<Trigger> {
-        return getTriggersWithBuiltin(app)
+        return triggerRepository.findAllByAppId(app.id!!)
     }
-
-    fun getTriggersWithBuiltin(app: App) = triggerRepository.findAllByAppIdOrAppIdIsNull(app.id!!)
 
     fun getTriggerOrThrow(
         key: String,
         app: App,
     ): Trigger {
         return triggerRepository.findByKeyAndApp(key, app) ?: throw TriggerNotFoundException(key)
+    }
+
+    fun getBuiltInTriggerOrThrow(key: String): Trigger {
+        return triggerRepository.findByKey(key) ?: throw TriggerNotFoundException(key)
     }
 
     fun createTrigger(
