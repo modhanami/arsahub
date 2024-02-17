@@ -99,8 +99,9 @@ class AppController(
     @GetMapping("/triggers")
     fun getTriggers(
         @CurrentApp app: App,
+        @RequestParam(name = "with-built-in", required = false, defaultValue = "false") withBuiltIn: Boolean,
     ): List<TriggerResponse> {
-        return triggerService.getTriggers(app).map { TriggerResponse.fromEntity(it) }
+        return triggerService.getTriggers(app, withBuiltIn).map { TriggerResponse.fromEntity(it) }
     }
 
     @Operation(

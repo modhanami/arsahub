@@ -42,7 +42,25 @@ class RuleEngine(
 
         triggerService.validateParamsAgainstTriggerFields(request.params, trigger.fields)
 
-        val matchingRules = getMatchingRules(trigger)
+        val matchingRules = getMatchingRules(app, trigger)
+        val actionResults = processMatchingRules(matchingRules, appUser, request.params, afterAction)
+
+        handleForwardChain(app, appUser, actionResults, afterAction)
+
+        /*
+         TODO: Currently, the trigger log is committed as a whole with other operations.
+               Could possibly let Kafka handle this in the future and separate ingestion from processing.
+         */
+    }
+
+    private fun processMatchingRules(
+        matchingRules: List<Rule>,
+        appUser: AppUser,
+        params: Map<String, Any>?,
+        afterAction: (ActionResult) -> Unit?,
+    ): List<ActionResult> {
+        val actionResults = mutableListOf<ActionResult>()
+
         for (rule in matchingRules) {
             logger.debug { "Checking rule ${rule.title} (${rule.id})" }
 
@@ -50,7 +68,7 @@ class RuleEngine(
                 // check repeatability
                 !validateRepeatability(rule, appUser) ||
                 // check the params against the rule conditions, if any
-                !validateConditions(rule, request.params)
+                !validateConditions(rule, appUser, params)
             ) {
                 //  not repeatable or conditions don't match
                 continue
@@ -58,14 +76,33 @@ class RuleEngine(
 
             // handle action
             val actionResult = activateRule(rule, appUser)
+            actionResults.add(actionResult)
 
             afterAction(actionResult)
         }
 
-        /*
-         TODO: Currently, the trigger log is committed as a whole with other operations.
-               Could possibly let Kafka handle this in the future and separate ingestion from processing.
-         */
+        return actionResults
+    }
+
+    private fun handleForwardChain(
+        app: App,
+        appUser: AppUser,
+        actionResults: List<ActionResult>,
+        afterAction: (ActionResult) -> Unit?,
+    ) {
+        logger.info { "Handling forward chain" }
+        val needToTriggerPointsReachedTrigger = actionResults.any { it is ActionResult.PointsUpdate }
+        logger.debug { "Need to trigger points_reached trigger: $needToTriggerPointsReachedTrigger" }
+        if (!needToTriggerPointsReachedTrigger) {
+            return
+        }
+
+        val pointsReachedTrigger = triggerService.getBuiltInTriggerOrThrow("points_reached")
+        val matchingRules =
+            getMatchingRules(app, pointsReachedTrigger)
+
+        logger.debug { "Found ${matchingRules.size} matching rules for points_reached trigger" }
+        processMatchingRules(matchingRules, appUser, emptyMap(), afterAction)
     }
 
     private fun logTrigger(
@@ -131,6 +168,7 @@ class RuleEngine(
 
     private fun validateConditions(
         rule: Rule,
+        appUser: AppUser,
         params: Map<String, Any>?,
     ): Boolean {
         if (rule.conditions != null) {
@@ -139,7 +177,25 @@ class RuleEngine(
                 conditions.all { condition ->
                     val paramValue = params?.get(condition.key)
                     val conditionValue = condition.value
-                    val matches = paramValue == conditionValue // TODO: support more operators
+
+                    // TODO: forward-chain: This is a quick work around, utilizing conditions to check against appUser,
+                    //  which is different from normal flow, that checks trigger params.
+                    //  Ideally, we should have a separate trigger config field for this?
+                    val isPointsReached = rule.trigger!!.key == "points_reached"
+
+                    val matches =
+                        if (isPointsReached) {
+                            val pointsThreshold = conditionValue as? Int
+                            val appUserPoints = appUser.points
+                            logger.warn {
+                                "Workaround for points_reached: Checking points: " +
+                                    "appUserPoints=$appUserPoints, pointsThreshold=$pointsThreshold"
+                            }
+                            pointsThreshold != null && appUserPoints != null && appUserPoints >= pointsThreshold
+                        } else {
+                            // TODO: support more operators
+                            paramValue == conditionValue
+                        }
 
                     if (matches) {
                         logger.debug { "Condition ${condition.key} matches" }
@@ -159,7 +215,10 @@ class RuleEngine(
         return true
     }
 
-    private fun getMatchingRules(trigger: Trigger): List<Rule> {
-        return ruleRepository.findAllByTrigger_Key(trigger.key!!)
+    private fun getMatchingRules(
+        app: App,
+        trigger: Trigger,
+    ): List<Rule> {
+        return ruleRepository.findAllByAppAndTrigger_Key(app, trigger.key!!)
     }
 }

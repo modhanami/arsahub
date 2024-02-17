@@ -151,9 +151,18 @@ export function makeAppAuthHeaderWithToken(apiToken: string): {
   };
 }
 
-export async function fetchTriggers(currentApp: AppResponse) {
+export type FetchTriggersOptions = {
+  withBuiltIn?: boolean;
+};
+
+export async function fetchTriggers(
+  currentApp: AppResponse,
+  options: FetchTriggersOptions = {},
+) {
   const { data } = await instance.get<TriggerResponse[]>(
-    `${API_URL}/apps/triggers`,
+    `${API_URL}/apps/triggers${
+      options.withBuiltIn ? "?with-built-in=true" : ""
+    }`,
     {
       headers: {
         ...makeAppAuthHeader(currentApp),

@@ -32,6 +32,7 @@ import com.arsahub.backend.repositories.AppUserRepository
 import com.arsahub.backend.repositories.RewardRepository
 import com.arsahub.backend.repositories.RuleRepository
 import com.arsahub.backend.repositories.TransactionRepository
+import com.arsahub.backend.repositories.TriggerRepository
 import com.arsahub.backend.repositories.UserRepository
 import com.arsahub.backend.services.AppService
 import com.arsahub.backend.services.AuthService
@@ -46,7 +47,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.springframework.beans.factory.annotation.Autowired
@@ -78,6 +78,9 @@ import java.util.*
 @AutoConfigureMockMvc
 @Transactional
 class AppControllerTest() {
+    @Autowired
+    private lateinit var triggerRepository: TriggerRepository
+
     @Autowired
     private lateinit var appInvitationStatusRepository: AppInvitationStatusRepository
 
@@ -1995,11 +1998,162 @@ class AppControllerTest() {
         )
     }
 
-    // TODO: Implement forward-chaining and support new triggers, e.g., when a user reaches 100 points, etc.
+    // Builtin triggers
+    // - Points reached
     @Test
-    @Disabled
-    fun testForwardChainingRuleAtoRuleB() {
+    fun `create rule with points_reached trigger - success`() {
+        val pointsReachedTriggerKey = "points_reached"
+
+        // Act & Assert HTTP
+        mockMvc.performWithAppAuth(
+            post("/api/apps/rules")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "title": "When user reaches 100 points then add 50 points",
+                      "trigger": {
+                        "key": "$pointsReachedTriggerKey"
+                      },
+                      "action": {
+                        "key": "add_points",
+                        "params": {
+                          "points": 50
+                        }
+                      },
+                      "conditions": {
+                        "points": 100
+                      },
+                      "repeatability": "once_per_user"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isCreated)
+
+        // Assert DB
+        val rules = ruleRepository.findAll()
+        assertEquals(1, rules.size)
+        val rule = rules[0]
+        assertEquals(pointsReachedTriggerKey, rule.trigger!!.key)
+        assertEquals("When user reaches 100 points then add 50 points", rule.title)
+        assertEquals("add_points", rule.action)
+        assertEquals(50, rule.actionPoints)
+        assertEquals(100, rule.conditions!!["points"])
+        assertEquals("once_per_user", rule.repeatability)
     }
+
+    @Test
+    fun `create rule with points_reached trigger - failed - repeatability not once_per_user`() {
+        val pointsReachedTriggerKey = "points_reached"
+
+        // Act & Assert HTTP
+        mockMvc.performWithAppAuth(
+            post("/api/apps/rules")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "title": "When user reaches 100 points then add 50 points",
+                      "trigger": {
+                        "key": "$pointsReachedTriggerKey"
+                      },
+                      "action": {
+                        "key": "add_points",
+                        "params": {
+                          "points": 50
+                        }
+                      },
+                      "conditions": {
+                        "points": 100
+                      },
+                      "repeatability": "unlimited"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.message").value("Repeatability must be once_per_user for this trigger"))
+    }
+
+    @Test
+    fun `points_reached trigger - success - user reaches points`() {
+        // Arrange
+        val user = createAppUser(authSetup.app)
+
+        val allTriggers = triggerRepository.findAll()
+        for (trigger in allTriggers) {
+            println("Trigger: ${trigger.key}")
+        }
+        val pointsReachedTrigger = getPointsReachedTrigger()
+        val emptyTrigger =
+            createTrigger(authSetup.app) {
+                title = "Empty trigger"
+                key = "empty"
+            }
+
+        fun sendEmptyTrigger() =
+            mockMvc.performWithAppAuth(
+                post("/api/apps/trigger")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        """
+                        {
+                            "key": "${emptyTrigger.key}",
+                            "params": {},
+                            "userId": "${user.userId}"
+                            }
+                        """.trimIndent(),
+                    ),
+            )
+                .andExpect(status().isOk)
+
+        val ruleAdd60PointsWhenEmptyTriggerFired =
+            createRule(authSetup.app) {
+                title = "When empty trigger fired then add 60 points"
+                trigger = emptyTrigger
+                action {
+                    addPoints(60)
+                }
+                repeatability = UnlimitedRuleRepeatability
+            }
+
+        val ruleAdd50PointsWhen100PointsReached =
+            createRule(authSetup.app) {
+                title = "When user reaches 100 points then add 50 points"
+                trigger = pointsReachedTrigger
+                action {
+                    addPoints(50)
+                }
+                conditions {
+                    eq("points", 100)
+                }
+                repeatability = OncePerUserRuleRepeatability
+            }
+
+        // Act & Assert - 1st round of empty trigger
+        sendEmptyTrigger()
+
+        // Assert DB - user has 60 points
+        val userAfterEmptyTriggerFired = appUserRepository.findById(user.id!!)
+        assertEquals(60, userAfterEmptyTriggerFired.get().points)
+
+        // Act & Assert - 2nd round of empty trigger
+        sendEmptyTrigger()
+
+        // Assert DB - user has 170 points (+ 60 + 50 from points_reached trigger)
+        val userAfterEmptyTriggerFiredAgain = appUserRepository.findById(user.id!!)
+        assertEquals(170, userAfterEmptyTriggerFiredAgain.get().points)
+
+        // Act & Assert - 2nd round of empty trigger
+        sendEmptyTrigger()
+
+        // Assert DB - user has 230 (+ 60) points without points_reached trigger being fired again
+        val userAfterEmptyTriggerFiredAgainAgain = appUserRepository.findById(user.id!!)
+        assertEquals(230, userAfterEmptyTriggerFiredAgainAgain.get().points)
+    }
+
+    private fun getPointsReachedTrigger() = triggerRepository.findByKey("points_reached")!!
 
     companion object {
         @Container

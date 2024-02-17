@@ -132,7 +132,7 @@ export default function Page() {
   const form = useForm<FormData>({
     resolver: zodResolver(FormSchema),
   });
-  const { data: triggers } = useTriggers();
+  const { data: triggers } = useTriggers({ withBuiltIn: true });
   const { data: achievements } = useAchievements({
     enabled: form.watch("action.key") === "unlock_achievement",
   });
@@ -158,6 +158,34 @@ export default function Page() {
   React.useEffect(() => {
     console.log("conditions", conditions);
   }, [conditions]);
+
+  const isPointsReachedTrigger = selectedTriggerKey === "points_reached";
+  React.useEffect(() => {
+    // if select points_reached, force repeatability as once_per_user
+    // TODO: handle built-in triggers more gracefully and maybe migrate to useFieldArray for conditions
+    if (isPointsReachedTrigger) {
+      console.log("Force once_per_user");
+      form.setValue("repeatability", "once_per_user");
+      // set to having one condition of 'points' is 'is' 'value'
+      setConditions([
+        {
+          uuid: uuidv4(),
+          field: "points",
+          operator: "is",
+          value: "",
+          fieldDefinition: {
+            key: "points",
+            label: "Points",
+            type: "integer",
+          },
+          inputType: "number",
+          inputProps: { step: 1 },
+        },
+      ]);
+    }
+  }, [isPointsReachedTrigger]);
+
+  const isRepeatabilityDisabled = isPointsReachedTrigger;
 
   function addCondition() {
     setConditions((prev) => [
@@ -396,7 +424,9 @@ export default function Page() {
               <Button
                 onClick={addCondition}
                 disabled={
-                  !selectedTrigger || selectedTrigger.fields?.length === 0
+                  !selectedTrigger ||
+                  selectedTrigger.fields?.length === 0 ||
+                  isPointsReachedTrigger
                 }
                 type="button"
               >
@@ -577,7 +607,11 @@ export default function Page() {
                 <FormItem>
                   <FormLabel>Repeatability</FormLabel>
                   <FormControl>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled={isRepeatabilityDisabled}
+                    >
                       <SelectTrigger>
                         <SelectValue
                           className="flex items-center justify-between w-full"

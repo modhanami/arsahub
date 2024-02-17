@@ -16,6 +16,7 @@ import {
   fetchRewards,
   fetchRules,
   fetchTriggers,
+  FetchTriggersOptions,
   sendTrigger,
   setAchievementImage,
   setRewardImage,
@@ -112,12 +113,12 @@ export function useSetAchievementImage() {
   });
 }
 
-export function useTriggers() {
+export function useTriggers(options: FetchTriggersOptions = {}) {
   const { currentApp } = useCurrentApp();
 
   return useQuery({
     queryKey: ["triggers"],
-    queryFn: () => currentApp && fetchTriggers(currentApp),
+    queryFn: () => currentApp && fetchTriggers(currentApp, options),
     enabled: !!currentApp,
   });
 }
