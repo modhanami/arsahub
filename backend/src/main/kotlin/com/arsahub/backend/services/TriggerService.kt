@@ -158,7 +158,7 @@ class TriggerService(
         currentApp: App,
         trigger: Trigger,
     ) {
-        if (trigger.app != currentApp) {
+        if (trigger.app!!.id != currentApp.id) {
             throw TriggerNotFoundException()
         }
     }

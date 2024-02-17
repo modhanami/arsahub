@@ -6,6 +6,7 @@ import {
   createReward,
   createRule,
   createTrigger,
+  deleteTrigger,
   fetchAchievements,
   fetchAppByAPIKey,
   fetchAppUser,
@@ -134,6 +135,22 @@ export function useCreateTrigger() {
     mutationKey: ["triggers"],
     mutationFn: (newTrigger: TriggerCreateRequest) =>
       createTrigger(currentApp, newTrigger),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["triggers"] });
+    },
+  });
+}
+
+export function useDeleteTrigger() {
+  const { currentApp } = useCurrentApp();
+  const queryClient = useQueryClient();
+  if (!currentApp) {
+    throw new Error("No current app");
+  }
+
+  return useMutation({
+    mutationFn: (triggerId: number) =>
+      currentApp && deleteTrigger(currentApp, triggerId),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["triggers"] });
     },

@@ -188,6 +188,17 @@ export async function createTrigger(
   return data;
 }
 
+export async function deleteTrigger(
+  currentApp: AppResponse,
+  triggerId: number,
+) {
+  await instance.delete<void>(`${API_URL}/apps/triggers/${triggerId}`, {
+    headers: {
+      ...makeAppAuthHeader(currentApp),
+    },
+  });
+}
+
 export async function sendTrigger(
   currentApp: AppResponse,
   trigger: TriggerSendRequest,
