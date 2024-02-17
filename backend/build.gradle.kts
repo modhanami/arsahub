@@ -126,7 +126,17 @@ allOpen {
 
 jib {
     to {
-        image = "modhanami/arsahub-backend"
+        image =
+            if (project.hasProperty("prod")) {
+                "modhanami/arsahub-backend:latest"
+            } else {
+                "modhanami/arsahub-backend:dev"
+            }
+        container {
+            if (!project.hasProperty("prod")) {
+                jvmFlags = listOf("-Dspring.profiles.active=dev")
+            }
+        }
         setCredHelper("wincred")
     }
 }

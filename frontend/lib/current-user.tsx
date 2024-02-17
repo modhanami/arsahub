@@ -11,7 +11,7 @@ interface CurrentUserContextProps {
   isLoading: boolean;
   startLoginFlow: (args: { returnTo: string }) => void;
   startRegistrationFlow: (args: { returnTo: string }) => void;
-  startLogoutFlow: (args: { returnTo: string }) => void;
+  startLogoutFlow: () => void;
 }
 
 const CurrentUserContext = createContext<CurrentUserContextProps | undefined>(
@@ -33,12 +33,15 @@ export function CurrentUserProvider({
       supabase.auth.onAuthStateChange(async (event, session) => {
         console.log(event, session);
         setSession(session);
+
         if (
-          event === "INITIAL_SESSION" ||
-          event === "SIGNED_IN" ||
-          event === "USER_UPDATED"
+          session !== null &&
+          user === null &&
+          (event === "INITIAL_SESSION" ||
+            event === "SIGNED_IN" ||
+            event === "USER_UPDATED")
         ) {
-          const internalUser = await syncSupabaseIdentity();
+          const internalUser = await syncSupabaseIdentity({ session });
           setUser({
             internalUserId: internalUser.internalUserId,
             externalUserId: internalUser.externalUserId,
@@ -46,6 +49,10 @@ export function CurrentUserProvider({
             email: internalUser.email,
             name: internalUser.name,
           });
+        }
+
+        if (event === "SIGNED_OUT") {
+          setUser(null);
         }
       });
     }
@@ -56,22 +63,25 @@ export function CurrentUserProvider({
   }, []);
 
   async function startLoginFlow({ returnTo }: { returnTo: string }) {
+    console.log("startLoginFlow", user, session, returnTo);
+    const returnToWithoutHash = returnTo.split("#")[0];
     if (user) {
       console.warn("User is already logged in");
       return;
     }
 
-    supabase.auth.signInWithOAuth({
+    await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: returnTo,
+        redirectTo: returnToWithoutHash,
       },
     });
   }
 
   function startRegistrationFlow({ returnTo }: { returnTo: string }) {}
 
-  async function startLogoutFlow({ returnTo }: { returnTo: string }) {
+  async function startLogoutFlow() {
+    console.log("startLogoutFlow", user, session);
     await supabase.auth.signOut();
   }
 
