@@ -8,6 +8,7 @@ import com.arsahub.backend.models.Trigger
 import com.arsahub.backend.models.TriggerField
 import com.arsahub.backend.models.TriggerFieldType
 import com.arsahub.backend.repositories.TriggerRepository
+import com.arsahub.backend.utils.KeyUtils
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 
@@ -47,13 +48,21 @@ class TriggerService(
     ): Trigger {
         logger.debug {
             "Received trigger create request for app ${app.title} (${app.id}): " +
-                "Name = ${request.title}, Key = ${request.key}"
+                "Name = ${request.title}"
+        }
+
+        val autoKey = KeyUtils.generateKeyFromTitle(request.title!!) ?: throw IllegalArgumentException("Invalid title")
+        logger.debug { "Generated key: $autoKey" }
+        if (autoKey.isBlank()) {
+            logger.error { "Generated key is empty" }
+            throw IllegalArgumentException("Invalid title")
         }
 
         // validate uniqueness of key in app
-        val existingTrigger = triggerRepository.findByKeyAndApp(request.key!!, app)
+        val existingTrigger = triggerRepository.findByKeyAndApp(autoKey, app)
         if (existingTrigger != null) {
-            throw TriggerConflictException(request.key)
+            logger.error { "Trigger with key $autoKey already exists" }
+            throw TriggerConflictException(autoKey)
         }
 
         // validate field definitions
@@ -69,7 +78,7 @@ class TriggerService(
             Trigger(
                 title = request.title,
                 description = request.description,
-                key = request.key,
+                key = autoKey,
                 app = app,
             )
         val triggerFields =

@@ -1,7 +1,7 @@
 /* tslint:disable */
 /* eslint-disable */
 
-// Generated using typescript-generator version 3.2.1263 on 2024-02-12 14:15:15.
+// Generated using typescript-generator version 3.2.1263 on 2024-02-17 21:15:03.
 
 export interface AchievementCreateRequest {
   title: string | null;
@@ -73,7 +73,6 @@ export interface RuleCreateRequestKt {}
 export interface TriggerCreateRequest {
   fields: FieldDefinition[] | null;
   title: string | null;
-  key: string | null;
   description: string | null;
 }
 

@@ -125,14 +125,15 @@ export default function Page() {
   async function onSubmit(values: FormData) {
     const generatedKey = generateKeyFromTitle(values.title);
     if (!generatedKey) {
-      return; // TODO: handle error
+      form.setError("title", {
+        message: "Invalid title",
+      });
     }
 
     mutation.mutate(
       {
         title: values.title,
         description: values.description || "",
-        key: generatedKey,
         fields: values.fields.map((field) => ({
           key: field.key,
           type: field.type.toLowerCase(),

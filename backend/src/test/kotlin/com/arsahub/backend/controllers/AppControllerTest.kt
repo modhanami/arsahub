@@ -365,7 +365,6 @@ class AppControllerTest() {
                 authSetup.app,
                 TriggerCreateRequest(
                     title = "Workshop Completed",
-                    key = "workshop_completed",
                     fields =
                         listOf(
                             FieldDefinition(
@@ -478,7 +477,6 @@ class AppControllerTest() {
                 authSetup.app,
                 TriggerCreateRequest(
                     title = "Workshop Completed",
-                    key = "workshop_completed",
                     fields =
                         listOf(
                             FieldDefinition(
@@ -590,7 +588,6 @@ class AppControllerTest() {
                 authSetup.app,
                 TriggerCreateRequest(
                     title = "Workshop Completed",
-                    key = "workshop_completed",
                     fields =
                         listOf(
                             FieldDefinition(
@@ -725,7 +722,6 @@ class AppControllerTest() {
             app,
             TriggerCreateRequest(
                 title = builder.title!!,
-                key = builder.key!!,
                 fields =
                     builder.fields.map { field ->
                         FieldDefinition(
@@ -2151,6 +2147,30 @@ class AppControllerTest() {
         // Assert DB - user has 230 (+ 60) points without points_reached trigger being fired again
         val userAfterEmptyTriggerFiredAgainAgain = appUserRepository.findById(user.id!!)
         assertEquals(230, userAfterEmptyTriggerFiredAgainAgain.get().points)
+    }
+
+    @Test
+    fun `create trigger - success`() {
+        // Act & Assert HTTP
+        mockMvc.performWithAppAuth(
+            post("/api/apps/triggers")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "title": "Workshop completed"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isCreated)
+
+        // Assert DB
+        val triggers = triggerRepository.findAll()
+        val trigger = triggers.first { it.title == "Workshop completed" }
+        assertEquals("Workshop completed", trigger.title)
+        assertEquals("workshop_completed", trigger.key)
+        assertEquals(authSetup.app.id, trigger.app?.id)
     }
 
     private fun getPointsReachedTrigger() = triggerRepository.findByKey("points_reached")!!

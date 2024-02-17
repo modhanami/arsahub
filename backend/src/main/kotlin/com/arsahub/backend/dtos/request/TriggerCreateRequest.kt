@@ -11,15 +11,11 @@ import jakarta.validation.constraints.Size
 
 class TriggerCreateRequest(
     title: String?,
-    key: String?,
     description: String? = null,
     val fields: List<FieldDefinition>? = null,
 ) {
     @ValidTitle
     val title: String? = title.trimmed()
-
-    @ValidKey
-    val key: String? = key.trimmed()
 
     @ValidDescription
     val description: String? = description.trimmed()
