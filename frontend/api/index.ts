@@ -26,6 +26,7 @@ import {
   UserResponseWithAccessToken,
 } from "@/types";
 import { supabase } from "@/lib/supabase";
+import { Session } from "@supabase/supabase-js";
 
 export const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
@@ -375,9 +376,16 @@ async function getSupabaseAccessToken(): Promise<string> {
   return accessToken;
 }
 
-export async function syncSupabaseIdentity() {
+export async function syncSupabaseIdentity({
+  session,
+}: { session?: Session } = {}) {
   console.log("syncSupabaseIdentity");
-  const accessToken = await getSupabaseAccessToken();
+  let accessToken = "";
+  if (session) {
+    accessToken = session.access_token;
+  } else {
+    accessToken = await getSupabaseAccessToken();
+  }
   const { data } = await instance.post<UserResponse>(
     `${API_URL}/auth/sync/supabase`,
     null,
