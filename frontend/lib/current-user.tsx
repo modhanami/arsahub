@@ -64,7 +64,6 @@ export function CurrentUserProvider({
 
   async function startLoginFlow({ returnTo }: { returnTo: string }) {
     console.log("startLoginFlow", user, session, returnTo);
-    const returnToWithoutHash = returnTo.split("#")[0];
     if (user) {
       console.warn("User is already logged in");
       return;
@@ -73,7 +72,7 @@ export function CurrentUserProvider({
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: returnToWithoutHash,
+        redirectTo: returnTo,
       },
     });
   }

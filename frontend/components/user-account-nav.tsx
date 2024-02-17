@@ -10,6 +10,7 @@ import {
 import { UserAvatar } from "@/components/user-avatar";
 import { Button } from "./ui/button";
 import { useCurrentUser } from "@/lib/current-user";
+import { getReturnTo } from "@/lib/utils";
 
 export function UserAccountNav() {
   const { currentUser, isLoading, startLoginFlow, startLogoutFlow } =
@@ -20,7 +21,11 @@ export function UserAccountNav() {
       <Button
         variant="outline"
         className="text-sm"
-        onClick={() => startLoginFlow({ returnTo: window.location.href })}
+        onClick={() =>
+          startLoginFlow({
+            returnTo: getReturnTo(window.location.pathname),
+          })
+        }
       >
         Login
       </Button>
@@ -46,14 +51,7 @@ export function UserAccountNav() {
           </div>
         </div>
         <DropdownMenuSeparator />
-        <DropdownMenuItem
-          className="cursor-pointer"
-          onClick={() =>
-            startLogoutFlow({
-              returnTo: window.location.href,
-            })
-          }
-        >
+        <DropdownMenuItem className="cursor-pointer" onClick={startLogoutFlow}>
           Logout
         </DropdownMenuItem>
       </DropdownMenuContent>
