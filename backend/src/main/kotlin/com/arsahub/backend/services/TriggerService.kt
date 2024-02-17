@@ -12,8 +12,8 @@ import com.arsahub.backend.utils.KeyUtils
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 
-class TriggerConflictException(triggerKey: String) :
-    ConflictException("Trigger with key $triggerKey already exists. Try another title that gives a unique key.")
+class TriggerConflictException :
+    ConflictException("Trigger with the same title already exists")
 
 class TriggerNotFoundException(triggerKey: String) : NotFoundException("Trigger with key $triggerKey not found")
 
@@ -62,7 +62,7 @@ class TriggerService(
         val existingTrigger = triggerRepository.findByKeyAndApp(autoKey, app)
         if (existingTrigger != null) {
             logger.error { "Trigger with key $autoKey already exists" }
-            throw TriggerConflictException(autoKey)
+            throw TriggerConflictException()
         }
 
         // validate field definitions

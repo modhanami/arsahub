@@ -2173,6 +2173,78 @@ class AppControllerTest() {
         assertEquals(authSetup.app.id, trigger.app?.id)
     }
 
+    @Test
+    fun `create triggers with same title in two different apps - success`() {
+        // Arrange
+        val otherApp = setupAuth(userRepository, appRepository).app
+
+        // Act & Assert HTTP
+        mockMvc.performWithAppAuth(
+            post("/api/apps/triggers")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "title": "Workshop completed"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isCreated)
+
+        mockMvc.performWithAppAuth(
+            post("/api/apps/triggers")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "title": "Workshop completed"
+                    }
+                    """.trimIndent(),
+                ),
+            app = otherApp,
+        )
+            .andExpect(status().isCreated)
+
+        // Assert DB
+        val triggers = triggerRepository.findAll()
+        val app1Trigger = triggers.first { it.app?.id == authSetup.app.id }
+        assertNotNull(app1Trigger)
+        val app2Trigger = triggers.first { it.app?.id == otherApp.id }
+        assertNotNull(app2Trigger)
+    }
+
+    @Test
+    fun `create triggers with same title in the same app - failed`() {
+        // Act & Assert HTTP
+        mockMvc.performWithAppAuth(
+            post("/api/apps/triggers")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "title": "Workshop   completed  "
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isCreated)
+
+        mockMvc.performWithAppAuth(
+            post("/api/apps/triggers")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "title": "Workshop completed"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isConflict)
+            .andExpect(jsonPath("$.message").value("Trigger with the same title already exists"))
+    }
+
     private fun getPointsReachedTrigger() = triggerRepository.findByKey("points_reached")!!
 
     companion object {
