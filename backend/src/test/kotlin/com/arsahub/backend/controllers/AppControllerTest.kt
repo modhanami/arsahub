@@ -7,6 +7,7 @@ import com.arsahub.backend.controllers.utils.AuthTestUtils.performWithUserAuth
 import com.arsahub.backend.controllers.utils.AuthTestUtils.setGlobalAuthSetup
 import com.arsahub.backend.controllers.utils.AuthTestUtils.setGlobalSecretKey
 import com.arsahub.backend.controllers.utils.AuthTestUtils.setupAuth
+import com.arsahub.backend.dtos.request.AchievementCreateRequest
 import com.arsahub.backend.dtos.request.Action
 import com.arsahub.backend.dtos.request.ActionDefinition
 import com.arsahub.backend.dtos.request.AppUserCreateRequest
@@ -28,12 +29,14 @@ import com.arsahub.backend.repositories.AchievementRepository
 import com.arsahub.backend.repositories.AppInvitationRepository
 import com.arsahub.backend.repositories.AppInvitationStatusRepository
 import com.arsahub.backend.repositories.AppRepository
+import com.arsahub.backend.repositories.AppUserAchievementRepository
 import com.arsahub.backend.repositories.AppUserRepository
 import com.arsahub.backend.repositories.RewardRepository
 import com.arsahub.backend.repositories.RuleRepository
 import com.arsahub.backend.repositories.TransactionRepository
 import com.arsahub.backend.repositories.TriggerRepository
 import com.arsahub.backend.repositories.UserRepository
+import com.arsahub.backend.services.AchievementService
 import com.arsahub.backend.services.AppService
 import com.arsahub.backend.services.AuthService
 import com.arsahub.backend.services.RuleService
@@ -80,6 +83,12 @@ import java.util.*
 @AutoConfigureMockMvc
 @Transactional
 class AppControllerTest() {
+    @Autowired
+    private lateinit var appUserAchievementRepository: AppUserAchievementRepository
+
+    @Autowired
+    private lateinit var achievementService: AchievementService
+
     @Autowired
     private lateinit var triggerRepository: TriggerRepository
 
@@ -2254,8 +2263,6 @@ class AppControllerTest() {
     fun `delete trigger - success`() {
         // Arrange
         val trigger = createWorkshopCompletedTrigger(authSetup.app)
-        val triggerFromDB = triggerRepository.findById(trigger.id!!).get()
-        assertNotNull(triggerFromDB)
 
         // Act & Assert HTTP
         mockMvc.performWithAppAuth(
@@ -2288,6 +2295,10 @@ class AppControllerTest() {
         )
             .andExpect(status().isConflict)
             .andExpect(jsonPath("$.message").value("Trigger is used by one or more rules"))
+
+        // Assert DB
+        val triggers = triggerRepository.findById(subjectTrigger.id!!)
+        assertTrue(triggers.isPresent)
     }
 
     @Test
@@ -2303,6 +2314,113 @@ class AppControllerTest() {
         )
             .andExpect(status().isNotFound)
             .andExpect(jsonPath("$.message").value("Trigger not found"))
+
+        // Assert DB
+        val triggers = triggerRepository.findById(trigger.id!!)
+        assertTrue(triggers.isPresent)
+    }
+
+    // Delete achievement: Only when no rules are using it and no users have it
+    @Test
+    fun `delete achievement - success`() {
+        // Arrange
+        val achievement =
+            achievementService.createAchievement(authSetup.app, AchievementCreateRequest("Workshop completed"))
+        val achievementFromDB = achievementRepository.findById(achievement.achievementId!!)
+        assertTrue(achievementFromDB.isPresent)
+
+        // Act & Assert HTTP
+        mockMvc.performWithAppAuth(
+            delete("/api/apps/achievements/${achievement.achievementId}"),
+        )
+            .andExpect(status().isNoContent)
+
+        // Assert DB
+        val achievements = achievementRepository.findById(achievement.achievementId!!)
+        assertTrue(achievements.isEmpty)
+    }
+
+    @Test
+    fun `delete achievement - failed - rules are using it`() {
+        // Arrange
+        val subjectAchievement =
+            achievementService.createAchievement(authSetup.app, AchievementCreateRequest("Workshop completed"))
+
+        val rule =
+            createRule(authSetup.app) {
+                title = "When workshop completed then add 100 points"
+                trigger = createWorkshopCompletedTrigger(authSetup.app)
+                action {
+                    unlockAchievement(subjectAchievement.achievementId!!)
+                }
+                repeatability = UnlimitedRuleRepeatability
+            }
+
+        // Act & Assert HTTP
+        mockMvc.performWithAppAuth(
+            delete("/api/apps/achievements/${subjectAchievement.achievementId}"),
+        )
+            .andExpect(status().isConflict)
+            .andExpect(jsonPath("$.message").value("Achievement is used in rules or unlocked by users"))
+
+        // Assert DB
+        val achievements = achievementRepository.findById(subjectAchievement.achievementId!!)
+        assertTrue(achievements.isPresent)
+    }
+
+    @Test
+    fun `delete achievement - failed - users have it`() {
+        // Arrange
+        val subjectAchievement =
+            achievementService.createAchievement(authSetup.app, AchievementCreateRequest("Workshop completed"))
+
+        val rule =
+            createRule(authSetup.app) {
+                title = "When workshop completed then add 100 points"
+                trigger = createWorkshopCompletedTrigger(authSetup.app)
+                action {
+                    unlockAchievement(subjectAchievement.achievementId!!)
+                }
+                repeatability = UnlimitedRuleRepeatability
+            }
+
+        val user = createAppUser(authSetup.app)
+
+        // trigger to activate the rule
+        mockMvc.performWithAppAuth(
+            post("/api/apps/trigger")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "key": "workshop_completed",
+                        "userId": "${user.userId}"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+
+        val appUserAchievementAfterTrigger =
+            appUserAchievementRepository.findAll()
+                .first { it.achievement!!.achievementId == subjectAchievement.achievementId }
+        assertNotNull(appUserAchievementAfterTrigger)
+
+        // Act & Assert HTTP
+        mockMvc.performWithAppAuth(
+            delete("/api/apps/achievements/${subjectAchievement.achievementId}"),
+        )
+            .andExpect(status().isConflict)
+            .andExpect(jsonPath("$.message").value("Achievement is used in rules or unlocked by users"))
+
+        // Assert DB
+        val achievements = achievementRepository.findById(subjectAchievement.achievementId!!)
+        assertTrue(achievements.isPresent)
+
+        val appUserAchievementAfterDelete =
+            appUserAchievementRepository.findAll()
+                .first { it.achievement!!.achievementId == subjectAchievement.achievementId }
+        assertNotNull(appUserAchievementAfterDelete)
     }
 
     private fun getPointsReachedTrigger() = triggerRepository.findByKey("points_reached")!!

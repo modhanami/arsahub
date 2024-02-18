@@ -204,7 +204,10 @@ create table app_user_achievement
     app_user_id             bigint not null
         constraint fk_app_user_achievement_on_app_user
             references app_user,
-    completed_at            timestamp
+    completed_at timestamp,
+    app_id       bigint
+        constraint app_user_achievement_app_app_id_fk
+            references app
 );
 
 create table trigger_field

@@ -333,6 +333,15 @@ class AppController(
         return achievementService.listAchievements(app).map { AchievementResponse.fromEntity(it) }
     }
 
+    @DeleteMapping("/achievements/{achievementId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun deleteAchievement(
+        @CurrentApp app: App,
+        @PathVariable achievementId: Long,
+    ) {
+        achievementService.deleteAchievement(app, achievementId)
+    }
+
     @Operation(
         summary = "Get user profile for an activity",
         responses = [

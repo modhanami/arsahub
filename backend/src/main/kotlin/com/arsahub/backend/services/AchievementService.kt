@@ -7,6 +7,8 @@ import com.arsahub.backend.exceptions.NotFoundException
 import com.arsahub.backend.models.Achievement
 import com.arsahub.backend.models.App
 import com.arsahub.backend.repositories.AchievementRepository
+import com.arsahub.backend.repositories.AppUserAchievementRepository
+import com.arsahub.backend.repositories.RuleRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.stereotype.Service
@@ -19,7 +21,7 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import java.io.File
 import java.util.*
 
-class AchievementNotFoundException(id: Long) : NotFoundException("Achievement with ID $id not found")
+class AchievementNotFoundException : NotFoundException("Achievement not found")
 
 class AchievementConflictException(title: String) :
     ConflictException("Achievement with this title already exists.")
@@ -39,6 +41,8 @@ class MyServiceProperties {
 class AchievementService(
     private val achievementRepository: AchievementRepository,
     private val properties: MyServiceProperties,
+    private val ruleRepository: RuleRepository,
+    private val appUserAchievementRepository: AppUserAchievementRepository,
 ) {
     private val logger = KotlinLogging.logger {}
 
@@ -88,7 +92,7 @@ class AchievementService(
         id: Long,
         app: App,
     ): Achievement {
-        return achievementRepository.findByAchievementIdAndApp(id, app) ?: throw AchievementNotFoundException(id)
+        return achievementRepository.findByAchievementIdAndApp(id, app) ?: throw AchievementNotFoundException()
     }
 
     fun setImageForAchievement(
@@ -139,5 +143,44 @@ class AchievementService(
         achievement.imageMetadata = metadata
 
         return achievementRepository.save(achievement)
+    }
+
+    class AchievementInUseException : ConflictException("Achievement is used in rules or unlocked by users")
+
+    fun deleteAchievement(
+        app: App,
+        achievementId: Long,
+    ) {
+        val achievement = getAchievementOrThrow(achievementId, app)
+        assertCanDeleteAchievement(app, achievement)
+
+        assertAchievementNotInUse(app, achievement)
+
+        achievementRepository.delete(achievement)
+    }
+
+    private fun assertCanDeleteAchievement(
+        currentApp: App,
+        achievement: Achievement,
+    ) {
+        if (achievement.app!!.id != currentApp.id) {
+            throw AchievementNotFoundException()
+        }
+    }
+
+    private fun assertAchievementNotInUse(
+        currentApp: App,
+        achievement: Achievement,
+    ) {
+        val usedRules =
+            ruleRepository.findAllByActionAchievement_AchievementIdAndApp(achievement.achievementId!!, currentApp)
+        if (usedRules.isNotEmpty()) {
+            throw AchievementInUseException()
+        }
+
+        val unlockedAchievements = appUserAchievementRepository.findAllByAchievementAndApp(achievement, currentApp)
+        if (unlockedAchievements.isNotEmpty()) {
+            throw AchievementInUseException()
+        }
     }
 }
