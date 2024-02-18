@@ -2423,6 +2423,30 @@ class AppControllerTest() {
         assertNotNull(appUserAchievementAfterDelete)
     }
 
+    @Test
+    fun `delete achievement - failed - different app`() {
+        // Arrange
+        val otherApp = setupAuth(userRepository, appRepository).app
+        val achievement =
+            achievementService.createAchievement(authSetup.app, AchievementCreateRequest("Workshop completed"))
+
+        // Act & Assert HTTP
+        mockMvc.performWithAppAuth(
+            delete("/api/apps/achievements/${achievement.achievementId}"),
+            app = otherApp,
+        )
+            .andExpect(status().isNotFound)
+            .andExpect(jsonPath("$.message").value("Achievement not found"))
+
+        // Assert DB
+        val achievementAfterFailedDelete =
+            achievementRepository.findById(
+                achievement
+                    .achievementId!!,
+            )
+        assertTrue(achievementAfterFailedDelete.isPresent)
+    }
+
     private fun getPointsReachedTrigger() = triggerRepository.findByKey("points_reached")!!
 
     companion object {

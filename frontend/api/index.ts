@@ -106,6 +106,17 @@ export async function createAchievement(
   return data;
 }
 
+export async function deleteAchievement(
+  app: AppResponse,
+  achievementId: number,
+) {
+  await instance.delete<void>(`${API_URL}/apps/achievements/${achievementId}`, {
+    headers: {
+      ...makeAppAuthHeader(app),
+    },
+  });
+}
+
 export async function setAchievementImage(
   app: AppResponse,
   { achievementId, image }: AchievementSetImageRequestClient,

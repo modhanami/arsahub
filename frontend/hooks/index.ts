@@ -6,6 +6,7 @@ import {
   createReward,
   createRule,
   createTrigger,
+  deleteAchievement,
   deleteTrigger,
   fetchAchievements,
   fetchAppByAPIKey,
@@ -74,6 +75,22 @@ export function useCreateAchievement() {
     mutationKey: ["achievements"],
     mutationFn: (newAchievement: AchievementCreateRequest) =>
       createAchievement(currentApp, newAchievement),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["achievements"] });
+    },
+  });
+}
+
+export function useDeleteAchievement() {
+  const { currentApp } = useCurrentApp();
+  const queryClient = useQueryClient();
+  if (!currentApp) {
+    throw new Error("No current app");
+  }
+
+  return useMutation({
+    mutationFn: (achievementId: number) =>
+      currentApp && deleteAchievement(currentApp, achievementId),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["achievements"] });
     },
