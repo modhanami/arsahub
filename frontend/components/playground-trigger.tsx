@@ -147,17 +147,27 @@ export function PlaygroundTriggerForm() {
       return true;
     }
 
+    // if rule conditions are empty, the params must be empty too
+    if (!rule.conditions || Object.keys(rule.conditions).length === 0) {
+      return triggerParams.fields.length === 0;
+    }
+
     // all params must match to the rule's conditions
     return Object.entries(rule.conditions ?? {}).every(([key, value]) => {
       const triggerParam = form
         .watch("params")
         .find((param) => param.key === key);
+      const triggerField = triggerFields.find((field) => field.key === key);
 
-      if (!triggerParam) {
+      if (!triggerParam || !triggerField) {
         return false;
       }
 
-      return Number(triggerParam.value) === value;
+      if (triggerField.type === "text") {
+        return triggerParam.value.toString() === value;
+      } else if (triggerField.type === "integer") {
+        return Number(triggerParam.value) === value;
+      }
     });
   });
 
