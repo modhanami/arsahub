@@ -28,6 +28,9 @@ class RuleProgress(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "app_user_id")
     var appUser: AppUser? = null,
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "app_id")
+    var app: App? = null,
 ) : AuditedEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

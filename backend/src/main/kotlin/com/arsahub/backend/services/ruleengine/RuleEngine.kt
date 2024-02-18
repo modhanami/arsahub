@@ -43,7 +43,7 @@ class RuleEngine(
         triggerService.validateParamsAgainstTriggerFields(request.params, trigger.fields)
 
         val matchingRules = ruleService.getMatchingRules(app, trigger)
-        val actionResults = processMatchingRules(matchingRules, appUser, request.params, afterAction)
+        val actionResults = processMatchingRules(matchingRules, app, appUser, request.params, afterAction)
 
         handleForwardChain(app, appUser, actionResults, afterAction)
 
@@ -55,6 +55,7 @@ class RuleEngine(
 
     private fun processMatchingRules(
         matchingRules: List<Rule>,
+        app: App,
         appUser: AppUser,
         params: Map<String, Any>?,
         afterAction: (ActionResult) -> Unit?,
@@ -75,7 +76,7 @@ class RuleEngine(
             }
 
             // handle action
-            val actionResult = activateRule(rule, appUser)
+            val actionResult = activateRule(rule, app, appUser)
             actionResults.add(actionResult)
 
             afterAction(actionResult)
@@ -101,7 +102,7 @@ class RuleEngine(
         val matchingRules = ruleService.getMatchingRules(app, pointsReachedTrigger)
 
         logger.debug { "Found ${matchingRules.size} matching rules for points_reached trigger" }
-        processMatchingRules(matchingRules, appUser, emptyMap(), afterAction)
+        processMatchingRules(matchingRules, app, appUser, emptyMap(), afterAction)
     }
 
     private fun logTrigger(
@@ -128,23 +129,26 @@ class RuleEngine(
 
     private fun activateRule(
         rule: Rule,
+        app: App,
         appUser: AppUser,
     ): ActionResult {
         val actionResult = actionHandlerRegistry.handleAction(rule, appUser)
 
         // update rule progress
-        progressRule(rule, appUser)
+        progressRule(rule, app, appUser)
 
         return actionResult
     }
 
     private fun progressRule(
         rule: Rule,
+        app: App,
         appUser: AppUser,
     ): RuleProgress {
         val ruleProgress =
             ruleProgressRepository.findByRuleAndAppUser(rule, appUser) ?: RuleProgress(
                 rule = rule,
+                app = app,
                 appUser = appUser,
             )
         ruleProgress.activationCount = (ruleProgress.activationCount ?: 0) + 1

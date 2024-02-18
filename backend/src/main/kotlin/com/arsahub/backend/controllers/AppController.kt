@@ -282,6 +282,15 @@ class AppController(
         return ruleService.listRules(app).map { RuleResponse.fromEntity(it) }
     }
 
+    @DeleteMapping("/rules/{ruleId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun deleteRule(
+        @CurrentApp app: App,
+        @PathVariable ruleId: Long,
+    ) {
+        ruleService.deleteRule(app, ruleId)
+    }
+
     @Operation(
         summary = "Create an achievement",
         responses = [

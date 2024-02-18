@@ -2447,6 +2447,100 @@ class AppControllerTest() {
         assertTrue(achievementAfterFailedDelete.isPresent)
     }
 
+    // Delete rule: Only when not activated once
+    @Test
+    fun `delete rule - success`() {
+        // Arrange
+        val rule =
+            createRule(authSetup.app) {
+                title = "When workshop completed then add 100 points"
+                trigger = createWorkshopCompletedTrigger(authSetup.app)
+                action {
+                    addPoints(100)
+                }
+                repeatability = UnlimitedRuleRepeatability
+            }
+
+        // Act & Assert HTTP
+        mockMvc.performWithAppAuth(
+            delete("/api/apps/rules/${rule.id}"),
+        )
+            .andExpect(status().isNoContent)
+
+        // Assert DB
+        val rules = ruleRepository.findById(rule.id!!)
+        assertTrue(rules.isEmpty)
+    }
+
+    @Test
+    fun `delete rule - failed - activated once`() {
+        // Arrange
+        val rule =
+            createRule(authSetup.app) {
+                title = "When workshop completed then add 100 points"
+                trigger = createWorkshopCompletedTrigger(authSetup.app)
+                action {
+                    addPoints(100)
+                }
+                repeatability = OncePerUserRuleRepeatability
+            }
+
+        val user = createAppUser(authSetup.app)
+
+        // trigger to activate the rule
+        mockMvc.performWithAppAuth(
+            post("/api/apps/trigger")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "key": "workshop_completed",
+                        "userId": "${user.userId}"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+
+        // Act & Assert HTTP
+        mockMvc.performWithAppAuth(
+            delete("/api/apps/rules/${rule.id}"),
+        )
+            .andExpect(status().isConflict)
+            .andExpect(jsonPath("$.message").value("Rule is in use"))
+
+        // Assert DB
+        val rules = ruleRepository.findById(rule.id!!)
+        assertTrue(rules.isPresent)
+    }
+
+    @Test
+    fun `delete rule - failed - different app`() {
+        // Arrange
+        val otherApp = setupAuth(userRepository, appRepository).app
+        val rule =
+            createRule(authSetup.app) {
+                title = "When workshop completed then add 100 points"
+                trigger = createWorkshopCompletedTrigger(authSetup.app)
+                action {
+                    addPoints(100)
+                }
+                repeatability = UnlimitedRuleRepeatability
+            }
+
+        // Act & Assert HTTP
+        mockMvc.performWithAppAuth(
+            delete("/api/apps/rules/${rule.id}"),
+            app = otherApp,
+        )
+            .andExpect(status().isNotFound)
+            .andExpect(jsonPath("$.message").value("Rule not found"))
+
+        // Assert DB
+        val rules = ruleRepository.findById(rule.id!!)
+        assertTrue(rules.isPresent)
+    }
+
     private fun getPointsReachedTrigger() = triggerRepository.findByKey("points_reached")!!
 
     companion object {
