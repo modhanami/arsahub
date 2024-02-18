@@ -243,6 +243,14 @@ export async function createRule(app: AppResponse, newRule: RuleCreateRequest) {
   return data;
 }
 
+export async function deleteRule(app: AppResponse, ruleId: number) {
+  await instance.delete<void>(`${API_URL}/apps/rules/${ruleId}`, {
+    headers: {
+      ...makeAppAuthHeader(app),
+    },
+  });
+}
+
 export type UserUUID = string;
 
 export async function fetchMyApp() {

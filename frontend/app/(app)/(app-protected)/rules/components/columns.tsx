@@ -6,6 +6,29 @@ import { RuleResponse } from "@/types/generated-types";
 import dayjs from "dayjs";
 import RelativeTime from "dayjs/plugin/relativeTime";
 import { DataTableColumnHeader } from "@/app/(app)/(app-protected)/triggers/components/data-table-column-header";
+import { DataTableRowActionsProps } from "@/app/(app)/examples/tasks/components/data-table-row-actions";
+import React from "react";
+import { useDeleteRule } from "@/hooks";
+import { isApiError } from "@/api";
+import { toast } from "@/components/ui/use-toast";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { DotsHorizontalIcon } from "@radix-ui/react-icons";
+import { Icons } from "@/components/icons";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export const columns: ColumnDef<RuleResponse>[] = [
   {
@@ -115,8 +138,86 @@ export const columns: ColumnDef<RuleResponse>[] = [
       );
     },
   },
-  // {
-  //   id: "actions",
-  //   cell: ({ row }) => <DataTableRowActions row={row} />,
-  // },
+  {
+    id: "actions",
+    cell: ({ row }) => <RuleRowActions row={row} />,
+  },
 ];
+
+export function RuleRowActions({
+  row,
+}: DataTableRowActionsProps<RuleResponse>) {
+  const [showEditDialog, setShowEditDialog] = React.useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
+  const deleteRule = useDeleteRule();
+
+  async function handleDelete() {
+    try {
+      await deleteRule.mutateAsync(row.original.id!);
+    } catch (error) {
+      if (isApiError(error)) {
+        toast({
+          description:
+            "Failed to delete rule: " + error.response?.data.message ||
+            error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    setShowDeleteDialog(false);
+    toast({
+      description: `Rule '${row.original.title}' has been deleted.`,
+    });
+  }
+
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            className="flex h-8 w-8 p-0 data-[state=open]:bg-muted"
+          >
+            <DotsHorizontalIcon className="h-4 w-4" />
+            <span className="sr-only">Open menu</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-[160px]">
+          <DropdownMenuItem onSelect={() => setShowEditDialog(true)}>
+            <Icons.edit className="mr-3 h-4 w-4" />
+            Edit
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={() => setShowDeleteDialog(true)}
+            className="text-destructive"
+          >
+            <Icons.trash className="mr-3 h-4 w-4" />
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {/*<Dialog open={showEditDialog} onOpenChange={setShowEditDialog}></Dialog>*/}
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This rule &apos;
+              {row.original.title}&apos; will not be recoverable.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <Button variant="destructive" onClick={handleDelete}>
+              Delete
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
