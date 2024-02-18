@@ -1,20 +1,15 @@
+"use client";
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
-import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
-import { io, Socket } from "socket.io-client";
-import {
-  AchievementResponse,
-  AchievementUnlock,
-  PointsUpdate,
-} from "../../types/generated-types";
+import { AchievementResponse } from "../../types/generated-types";
 import { Badge } from "./badge";
-import { SOCKET_IO_URL } from "@/lib/socket";
+import { getImageUrlFromKey } from "@/lib/image";
+import { Image } from "@nextui-org/react";
 
 interface UserProfileProps {
   userId: string;
   name: string;
-  avatar: string;
   points: number;
   achievements: AchievementResponse[];
 }
@@ -22,11 +17,9 @@ interface UserProfileProps {
 export function UserProfile({
   userId,
   name,
-  avatar,
   points,
   achievements,
 }: UserProfileProps) {
-  console.log(achievements);
   const tempAvatar = `https://avatar.vercel.sh/${userId}.jpeg`;
 
   return (
@@ -40,12 +33,12 @@ export function UserProfile({
             </Avatar>
             <div className="text-center grid gap-1">
               <p className="font-bold text-lg leading-none">{name}</p>
-              {/*<p className="text-sm text-muted-foreground">{userId}</p>*/}
+              <p className="text-sm text-muted-foreground">ID: {userId}</p>
             </div>
 
             <div className="flex items-center space-x-4">
               <p className=" font-medium text-xl leading-none text-amber-200">
-                {(points || 0).toLocaleString()}
+                {points.toLocaleString()}
               </p>
               <p className="text-sm font-medium leading-none">Points</p>
             </div>
@@ -67,11 +60,15 @@ export function UserProfile({
                     key={achievement.achievementId}
                   >
                     <Image
-                      src={achievement.imageUrl || ""}
-                      width={52}
-                      height={52}
+                      src={
+                        (achievement.imageKey &&
+                          getImageUrlFromKey(achievement.imageKey)) ||
+                        ""
+                      }
+                      width={128}
+                      height={128}
                       alt={achievement.title}
-                      className="rounded-full"
+                      radius="full"
                     />
                     <div>
                       <p>{achievement.title}</p>
@@ -87,68 +84,4 @@ export function UserProfile({
       </CardContent>
     </Card>
   );
-}
-
-// user profile real-time update with Socket.io
-interface UserProfileRealTimeProps {
-  userId: string;
-}
-
-export function UserProfileRealTime({
-  ...props
-}: UserProfileRealTimeProps & UserProfileProps) {
-  const [points, setPoints] = useState(props.points);
-  const [achievements, setAchievements] = useState(props.achievements);
-
-  const socketRef = useRef<Socket | undefined>(undefined);
-  useEffect(() => {
-    const socket = io(`${SOCKET_IO_URL}/default`, {
-      forceNew: true,
-      timestampRequests: true,
-    });
-    socketRef.current = socket; // Store the connection in the ref
-
-    socket.on("connect", async () => {
-      console.log("connected");
-      const response = await socket.emitWithAck("subscribe-user", props.userId);
-      console.log("subscribe-user result", response);
-    });
-
-    // Return a clean-up function
-    return () => {
-      if (socket.connected) {
-        socket.disconnect();
-      }
-    };
-  }, [props.userId]); // Dependencies for the effect
-
-  // Set up the WebSocket message handler
-  useEffect(() => {
-    const achievementsIds = new Set(achievements.map((a) => a.achievementId)); // Separate state for the IDs is too noisy
-
-    const handler = (data: any) => {
-      console.log(`user-update: ${JSON.stringify(data)}`);
-      if (data.type === "achievement-unlock") {
-        const { achievement } = data.data as AchievementUnlock;
-        if (!achievementsIds.has(achievement.achievementId)) {
-          achievementsIds.add(achievement.achievementId);
-          setAchievements((prev) => [...prev, achievement]);
-        }
-      } else if (data.type === "points-update") {
-        const { points } = data.data as PointsUpdate;
-        setPoints(points);
-      }
-    };
-
-    // Register the handler
-    socketRef.current?.on("user-update", handler);
-
-    // Return a clean-up function
-    return () => {
-      // Remove the handler when the effect is cleaned up
-      socketRef.current?.off("user-update", handler);
-    };
-  }, [achievements]); // Dependencies for the effect
-
-  return <UserProfile {...props} points={points} achievements={achievements} />;
 }
