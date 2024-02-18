@@ -9,8 +9,8 @@ import com.arsahub.backend.models.RuleRepeatability
 import com.arsahub.backend.models.Trigger
 import com.arsahub.backend.models.TriggerLog
 import com.arsahub.backend.repositories.RuleProgressRepository
-import com.arsahub.backend.repositories.RuleRepository
 import com.arsahub.backend.repositories.TriggerLogRepository
+import com.arsahub.backend.services.RuleService
 import com.arsahub.backend.services.TriggerService
 import com.arsahub.backend.services.actionhandlers.ActionHandlerRegistry
 import com.arsahub.backend.services.actionhandlers.ActionResult
@@ -20,11 +20,11 @@ import org.springframework.transaction.annotation.Transactional
 
 @Service
 class RuleEngine(
-    private val ruleRepository: RuleRepository,
     private val actionHandlerRegistry: ActionHandlerRegistry,
     private val triggerLogRepository: TriggerLogRepository,
     private val ruleProgressRepository: RuleProgressRepository,
     private val triggerService: TriggerService,
+    private val ruleService: RuleService,
 ) {
     private val logger = KotlinLogging.logger {}
 
@@ -42,8 +42,8 @@ class RuleEngine(
 
         triggerService.validateParamsAgainstTriggerFields(request.params, trigger.fields)
 
-        val matchingRules = getMatchingRules(app, trigger)
-        val actionResults = processMatchingRules(matchingRules, appUser, request.params, afterAction)
+        val matchingRules = ruleService.getMatchingRules(app, trigger)
+        val actionResults = processMatchingRules(matchingRules, app, appUser, request.params, afterAction)
 
         handleForwardChain(app, appUser, actionResults, afterAction)
 
@@ -55,6 +55,7 @@ class RuleEngine(
 
     private fun processMatchingRules(
         matchingRules: List<Rule>,
+        app: App,
         appUser: AppUser,
         params: Map<String, Any>?,
         afterAction: (ActionResult) -> Unit?,
@@ -75,7 +76,7 @@ class RuleEngine(
             }
 
             // handle action
-            val actionResult = activateRule(rule, appUser)
+            val actionResult = activateRule(rule, app, appUser)
             actionResults.add(actionResult)
 
             afterAction(actionResult)
@@ -98,11 +99,10 @@ class RuleEngine(
         }
 
         val pointsReachedTrigger = triggerService.getBuiltInTriggerOrThrow("points_reached")
-        val matchingRules =
-            getMatchingRules(app, pointsReachedTrigger)
+        val matchingRules = ruleService.getMatchingRules(app, pointsReachedTrigger)
 
         logger.debug { "Found ${matchingRules.size} matching rules for points_reached trigger" }
-        processMatchingRules(matchingRules, appUser, emptyMap(), afterAction)
+        processMatchingRules(matchingRules, app, appUser, emptyMap(), afterAction)
     }
 
     private fun logTrigger(
@@ -129,23 +129,26 @@ class RuleEngine(
 
     private fun activateRule(
         rule: Rule,
+        app: App,
         appUser: AppUser,
     ): ActionResult {
         val actionResult = actionHandlerRegistry.handleAction(rule, appUser)
 
         // update rule progress
-        progressRule(rule, appUser)
+        progressRule(rule, app, appUser)
 
         return actionResult
     }
 
     private fun progressRule(
         rule: Rule,
+        app: App,
         appUser: AppUser,
     ): RuleProgress {
         val ruleProgress =
             ruleProgressRepository.findByRuleAndAppUser(rule, appUser) ?: RuleProgress(
                 rule = rule,
+                app = app,
                 appUser = appUser,
             )
         ruleProgress.activationCount = (ruleProgress.activationCount ?: 0) + 1
@@ -171,54 +174,46 @@ class RuleEngine(
         appUser: AppUser,
         params: Map<String, Any>?,
     ): Boolean {
-        if (rule.conditions != null) {
-            val conditions = rule.conditions!!
-            val conditionsMatch =
-                conditions.all { condition ->
-                    val paramValue = params?.get(condition.key)
-                    val conditionValue = condition.value
-
-                    // TODO: forward-chain: This is a quick work around, utilizing conditions to check against appUser,
-                    //  which is different from normal flow, that checks trigger params.
-                    //  Ideally, we should have a separate trigger config field for this?
-                    val isPointsReached = rule.trigger!!.key == "points_reached"
-
-                    val matches =
-                        if (isPointsReached) {
-                            val pointsThreshold = conditionValue as? Int
-                            val appUserPoints = appUser.points
-                            logger.warn {
-                                "Workaround for points_reached: Checking points: " +
-                                    "appUserPoints=$appUserPoints, pointsThreshold=$pointsThreshold"
-                            }
-                            pointsThreshold != null && appUserPoints != null && appUserPoints >= pointsThreshold
-                        } else {
-                            // TODO: support more operators
-                            paramValue == conditionValue
-                        }
-
-                    if (matches) {
-                        logger.debug { "Condition ${condition.key} matches" }
-                    } else {
-                        logger.debug { "Condition ${condition.key} does not match: $paramValue != $conditionValue" }
-                    }
-
-                    matches
-                }
-
-            if (!conditionsMatch) {
-                logger.debug { "Rule ${rule.title} (${rule.id}) conditions do not match" }
-                return false
-            }
+        if (rule.conditions.isNullOrEmpty()) {
+            return params.isNullOrEmpty()
         }
 
-        return true
-    }
+        val conditions = rule.conditions!!
+        val conditionsMatch =
+            conditions.all { condition ->
+                val paramValue = params?.get(condition.key)
+                val conditionValue = condition.value
 
-    private fun getMatchingRules(
-        app: App,
-        trigger: Trigger,
-    ): List<Rule> {
-        return ruleRepository.findAllByAppAndTrigger_Key(app, trigger.key!!)
+                // TODO: forward-chain: This is a quick work around, utilizing conditions to check against appUser,
+                //  which is different from normal flow, that checks trigger params.
+                //  Ideally, we should have a separate trigger config field for this?
+                val isPointsReached = rule.trigger!!.key == "points_reached"
+
+                val matches =
+                    if (isPointsReached) {
+                        val pointsThreshold = conditionValue as? Int
+                        val appUserPoints = appUser.points
+                        logger.warn {
+                            "Workaround for points_reached: Checking points: " +
+                                "appUserPoints=$appUserPoints, pointsThreshold=$pointsThreshold"
+                        }
+                        pointsThreshold != null && appUserPoints != null && appUserPoints >= pointsThreshold
+                    } else {
+                        // TODO: support more operators
+                        paramValue == conditionValue
+                    }
+
+                if (matches) {
+                    logger.debug { "Condition ${condition.key} matches" }
+                } else {
+                    logger.debug { "Condition ${condition.key} does not match: $paramValue != $conditionValue" }
+                }
+
+                matches
+            }
+
+        logger.debug { "Rule ${rule.title} (${rule.id}) conditions match: $conditionsMatch" }
+
+        return conditionsMatch
     }
 }

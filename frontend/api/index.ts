@@ -106,6 +106,17 @@ export async function createAchievement(
   return data;
 }
 
+export async function deleteAchievement(
+  app: AppResponse,
+  achievementId: number,
+) {
+  await instance.delete<void>(`${API_URL}/apps/achievements/${achievementId}`, {
+    headers: {
+      ...makeAppAuthHeader(app),
+    },
+  });
+}
+
 export async function setAchievementImage(
   app: AppResponse,
   { achievementId, image }: AchievementSetImageRequestClient,
@@ -188,6 +199,17 @@ export async function createTrigger(
   return data;
 }
 
+export async function deleteTrigger(
+  currentApp: AppResponse,
+  triggerId: number,
+) {
+  await instance.delete<void>(`${API_URL}/apps/triggers/${triggerId}`, {
+    headers: {
+      ...makeAppAuthHeader(currentApp),
+    },
+  });
+}
+
 export async function sendTrigger(
   currentApp: AppResponse,
   trigger: TriggerSendRequest,
@@ -219,6 +241,14 @@ export async function createRule(app: AppResponse, newRule: RuleCreateRequest) {
     },
   );
   return data;
+}
+
+export async function deleteRule(app: AppResponse, ruleId: number) {
+  await instance.delete<void>(`${API_URL}/apps/rules/${ruleId}`, {
+    headers: {
+      ...makeAppAuthHeader(app),
+    },
+  });
 }
 
 export type UserUUID = string;

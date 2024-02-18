@@ -3,8 +3,9 @@ import { DashboardShell } from "@/components/shell";
 import { DashboardHeader } from "@/components/header";
 import { useAchievements } from "@/hooks";
 import { AchievementCreateForm } from "@/components/create-achievement";
-import { Image } from "@nextui-org/react";
-import { getImageUrlFromKey } from "@/lib/image";
+import { DataTable } from "@/app/(app)/examples/tasks/components/data-table";
+import * as React from "react";
+import { columns } from "@/app/(app)/(app-protected)/achievements/components/columns";
 
 export default function Page() {
   const { data: achievements, isLoading, isError } = useAchievements();
@@ -20,36 +21,24 @@ export default function Page() {
       >
         <AchievementCreateForm />
       </DashboardHeader>
-      <div>
-        {achievements?.length && (
-          <div className="divide-y divide-border rounded-md border">
-            {achievements.map((achievement) => (
-              <div
-                className="flex items-center gap-4 p-4"
-                key={achievement.achievementId}
-              >
-                {achievement.imageKey && (
-                  <Image
-                    src={getImageUrlFromKey(achievement.imageKey)}
-                    width={64}
-                    height={64}
-                    alt={`achievement image ${achievement.title}`}
-                  />
-                )}
-
-                <div className="grid gap-1">
-                  {achievement.title}
-                  <div>
-                    <p className="text-sm text-muted-foreground">
-                      {achievement.description}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      <DataTable columns={columns} data={achievements || []} />
     </DashboardShell>
+
+    // <>
+    //   <div className="h-full flex-1 flex-col space-y-8 p-8">
+    //     <div className="flex items-center justify-between space-y-2">
+    //       <div>
+    //         <h2 className="text-2xl font-bold tracking-tight">Welcome back!</h2>
+    //         <p className="text-muted-foreground">
+    //           Here&apos;s a list of your tasks for this month!
+    //         </p>
+    //       </div>
+    //       <div className="flex items-center space-x-2">
+    //         <UserNav />
+    //       </div>
+    //     </div>
+    //     <DataTable columns={columns} data={achievements || []} />
+    //   </div>
+    // </>
   );
 }

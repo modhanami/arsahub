@@ -6,6 +6,9 @@ import {
   createReward,
   createRule,
   createTrigger,
+  deleteAchievement,
+  deleteRule,
+  deleteTrigger,
   fetchAchievements,
   fetchAppByAPIKey,
   fetchAppUser,
@@ -79,6 +82,22 @@ export function useCreateAchievement() {
   });
 }
 
+export function useDeleteAchievement() {
+  const { currentApp } = useCurrentApp();
+  const queryClient = useQueryClient();
+  if (!currentApp) {
+    throw new Error("No current app");
+  }
+
+  return useMutation({
+    mutationFn: (achievementId: number) =>
+      currentApp && deleteAchievement(currentApp, achievementId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["achievements"] });
+    },
+  });
+}
+
 export function useSetAchievementImage() {
   const { currentApp } = useCurrentApp();
   const queryClient = useQueryClient();
@@ -140,6 +159,22 @@ export function useCreateTrigger() {
   });
 }
 
+export function useDeleteTrigger() {
+  const { currentApp } = useCurrentApp();
+  const queryClient = useQueryClient();
+  if (!currentApp) {
+    throw new Error("No current app");
+  }
+
+  return useMutation({
+    mutationFn: (triggerId: number) =>
+      currentApp && deleteTrigger(currentApp, triggerId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["triggers"] });
+    },
+  });
+}
+
 export function useSendTrigger() {
   const { currentApp } = useCurrentApp();
   const queryClient = useQueryClient();
@@ -172,6 +207,22 @@ export function useCreateRule() {
 
   return useMutation({
     mutationFn: (newRule: RuleCreateRequest) => createRule(currentApp, newRule),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["rules"] });
+    },
+  });
+}
+
+export function useDeleteRule() {
+  const { currentApp } = useCurrentApp();
+  const queryClient = useQueryClient();
+  if (!currentApp) {
+    throw new Error("No current app");
+  }
+
+  return useMutation({
+    mutationFn: (ruleId: number) =>
+      currentApp && deleteRule(currentApp, ruleId),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["rules"] });
     },

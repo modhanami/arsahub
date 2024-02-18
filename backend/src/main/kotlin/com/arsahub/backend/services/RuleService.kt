@@ -5,21 +5,37 @@ import com.arsahub.backend.dtos.request.ActionDefinition
 import com.arsahub.backend.dtos.request.AddPointsAction
 import com.arsahub.backend.dtos.request.RuleCreateRequest
 import com.arsahub.backend.dtos.request.UnlockAchievementAction
+import com.arsahub.backend.exceptions.ConflictException
+import com.arsahub.backend.exceptions.NotFoundException
 import com.arsahub.backend.models.App
 import com.arsahub.backend.models.Rule
 import com.arsahub.backend.models.RuleRepeatability
 import com.arsahub.backend.models.Trigger
+import com.arsahub.backend.repositories.RuleProgressRepository
 import com.arsahub.backend.repositories.RuleRepository
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
+
+class RuleNotFoundException : NotFoundException("Rule not found")
+
+class RuleInUseException : ConflictException("Rule is in use")
 
 @Service
 class RuleService(
     private val achievementService: AchievementService,
     private val triggerService: TriggerService,
     private val ruleRepository: RuleRepository,
+    private val ruleProgressRepository: RuleProgressRepository,
 ) {
     fun listRules(app: App): List<Rule> {
         return ruleRepository.findAllByApp(app)
+    }
+
+    fun getMatchingRules(
+        app: App,
+        trigger: Trigger,
+    ): List<Rule> {
+        return ruleRepository.findAllByAppAndTrigger_Key(app, trigger.key!!)
     }
 
     fun createRule(
@@ -114,6 +130,37 @@ class RuleService(
             else -> {
                 throw IllegalArgumentException("Achievement ID is invalid")
             }
+        }
+    }
+
+    fun deleteRule(
+        app: App,
+        ruleId: Long,
+    ) {
+        val rule = ruleRepository.findByIdOrNull(ruleId) ?: throw RuleNotFoundException()
+        assertCanDeleteRule(app, rule)
+
+        assertRuleNotInUse(app, rule)
+
+        ruleRepository.delete(rule)
+    }
+
+    private fun assertCanDeleteRule(
+        currentApp: App,
+        rule: Rule,
+    ) {
+        if (rule.app!!.id != currentApp.id) {
+            throw RuleNotFoundException()
+        }
+    }
+
+    private fun assertRuleNotInUse(
+        currentApp: App,
+        rule: Rule,
+    ) {
+        val ruleProgresses = ruleProgressRepository.findByRuleAndApp(rule, currentApp)
+        if (ruleProgresses.isNotEmpty() && ruleProgresses.any { (it.activationCount ?: 0) > 0 }) {
+            throw RuleInUseException()
         }
     }
 }

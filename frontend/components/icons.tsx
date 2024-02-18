@@ -25,6 +25,7 @@ import {
   Medal,
   Moon,
   MoreVertical,
+  PencilIcon,
   Pizza,
   Plus,
   ScrollText,
@@ -98,4 +99,5 @@ export const Icons = {
   random: Dices,
   reward: LucideTicket,
   pointsShop: ShoppingCartIcon,
+  edit: PencilIcon,
 };

@@ -1,5 +1,6 @@
 package com.arsahub.backend.repositories
 
+import com.arsahub.backend.models.App
 import com.arsahub.backend.models.AppUser
 import com.arsahub.backend.models.Rule
 import com.arsahub.backend.models.RuleProgress
@@ -10,4 +11,9 @@ interface RuleProgressRepository : JpaRepository<RuleProgress, Long> {
         rule: Rule,
         appUser: AppUser,
     ): RuleProgress?
+
+    fun findByRuleAndApp(
+        rule: Rule,
+        app: App,
+    ): List<RuleProgress>
 }

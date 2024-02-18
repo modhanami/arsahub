@@ -25,6 +25,9 @@ class AppUserAchievement(
     var appUser: AppUser? = null,
     @Column(name = "completed_at")
     var completedAt: Instant? = null,
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "app_id")
+    var app: App? = null,
 ) {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

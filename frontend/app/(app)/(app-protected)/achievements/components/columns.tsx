@@ -1,9 +1,7 @@
 "use client";
-
+import { Image } from "@nextui-org/react";
 import { ColumnDef } from "@tanstack/react-table";
-import { TriggerResponse } from "@/types/generated-types";
-import dayjs from "dayjs";
-import RelativeTime from "dayjs/plugin/relativeTime";
+import { AchievementResponse } from "@/types/generated-types";
 import { DataTableColumnHeader } from "@/app/(app)/(app-protected)/triggers/components/data-table-column-header";
 import {
   DropdownMenu,
@@ -25,53 +23,31 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/components/ui/use-toast";
-import { useDeleteTrigger } from "@/hooks";
+import { useDeleteAchievement } from "@/hooks";
 import { isApiError } from "@/api";
 import { DataTableRowActionsProps } from "@/app/(app)/examples/tasks/components/data-table-row-actions";
+import { getImageUrlFromKey } from "@/lib/image";
 
-export const columns: ColumnDef<TriggerResponse>[] = [
-  // {
-  //   id: "select",
-  //   header: ({ table }) => (
-  //     <Checkbox
-  //       checked={
-  //         table.getIsAllPageRowsSelected() ||
-  //         (table.getIsSomePageRowsSelected() && "indeterminate")
-  //       }
-  //       onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-  //       aria-label="Select all"
-  //       className="translate-y-[2px]"
-  //     />
-  //   ),
-  //   cell: ({ row }) => (
-  //     <Checkbox
-  //       checked={row.getIsSelected()}
-  //       onCheckedChange={(value) => row.toggleSelected(!!value)}
-  //       aria-label="Select row"
-  //       className="translate-y-[2px]"
-  //     />
-  //   ),
-  //   enableSorting: false,
-  //   enableHiding: false,
-  // },
-  {
-    accessorKey: "key",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Key" />
-    ),
-    cell: ({ row }) => <div className="w-[80px]">{row.getValue("key")}</div>,
-    // enableSorting: false,
-    // enableHiding: false,
-  },
+export const columns: ColumnDef<AchievementResponse>[] = [
   {
     accessorKey: "title",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Title" />
     ),
     cell: ({ row }) => {
+      const achievement = row.original;
       return (
-        <div className="flex space-x-2">
-          <span className="max-w-[500px] truncate font-medium">
+        <div className="flex gap-4">
+          {achievement.imageKey && (
+            <Image
+              src={getImageUrlFromKey(achievement.imageKey)}
+              width={72}
+              height={72}
+              alt={`achievement image ${achievement.title}`}
+              radius="none"
+            />
+          )}
+          <span className="max-w-[400px] truncate font-medium">
             {row.getValue("title")}
           </span>
         </div>
@@ -86,52 +62,34 @@ export const columns: ColumnDef<TriggerResponse>[] = [
     cell: ({ row }) => {
       return (
         <div className="flex space-x-2">
-          <span className="max-w-[500px] truncate font-medium">
+          <span className="max-w-[400px] truncate font-medium">
             {row.getValue("description")}
           </span>
         </div>
       );
     },
   },
-
-  {
-    accessorKey: "createdAt",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Created At" />
-    ),
-    cell: ({ row }) => {
-      dayjs.extend(RelativeTime);
-      const createdAt = dayjs(row.getValue("createdAt"));
-      const formatted = createdAt.format("YYYY-MM-DD HH:mm:ss");
-      const relative = createdAt.fromNow();
-      return (
-        <div className="text-right font-medium" title={formatted}>
-          {relative}
-        </div>
-      );
-    },
-  },
   {
     id: "actions",
-    cell: ({ row }) => <TriggerRowActions row={row} />,
+    cell: ({ row }) => <AchievementRowActions row={row} />,
   },
 ];
 
-export function TriggerRowActions({
+export function AchievementRowActions({
   row,
-}: DataTableRowActionsProps<TriggerResponse>) {
+}: DataTableRowActionsProps<AchievementResponse>) {
   const [showEditDialog, setShowEditDialog] = React.useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
-  const deleteTrigger = useDeleteTrigger();
+  const deleteAchievement = useDeleteAchievement();
 
   async function handleDelete() {
     try {
-      await deleteTrigger.mutateAsync(row.original.id!);
+      await deleteAchievement.mutateAsync(row.original.achievementId!);
     } catch (error) {
       if (isApiError(error)) {
         toast({
           description:
-            "Failed to delete trigger: " + error.response?.data.message ||
+            "Failed to delete achievement: " + error.response?.data.message ||
             error.message,
           variant: "destructive",
         });
@@ -141,7 +99,7 @@ export function TriggerRowActions({
 
     setShowDeleteDialog(false);
     toast({
-      description: `Trigger '${row.original.title}' has been deleted.`,
+      description: `Achievement '${row.original.title}' has been deleted.`,
     });
   }
 
@@ -179,7 +137,7 @@ export function TriggerRowActions({
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This trigger &apos;
+              This achievement &apos;
               {row.original.title}&apos; will not be recoverable.
             </AlertDialogDescription>
           </AlertDialogHeader>
