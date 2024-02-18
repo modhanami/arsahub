@@ -11,53 +11,71 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useQueryClient } from "@tanstack/react-query";
-import io from "socket.io-client";
 import React, { useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { SOCKET_IO_URL } from "@/lib/socket";
+import { useSocket } from "@/lib/socket";
 import { useLeaderboard } from "@/hooks";
+import {
+  LeaderboardResponse,
+  LeaderboardUpdate,
+} from "@/types/generated-types";
+import { useDebounceCallback } from "usehooks-ts";
 
 export default function LeaderboardEmbedPage({ params }: ContextProps) {
   const [animationLeaderboard] = useAutoAnimate();
   const appId = Number(params.appId);
   const type = "total-points";
 
-  const queryClient = useQueryClient();
-  const { data: leaderboard, error, isLoading } = useLeaderboard(appId, type);
+  const { data, error, isLoading } = useLeaderboard(appId, type);
+  const [leaderboard, setLeaderboard] =
+    React.useState<LeaderboardResponse | null>();
+  const { socket, isConnected } = useSocket();
+
+  function onLeaderboardUpdate(updatedData: any) {
+    if (updatedData.type === "leaderboard-update")
+      console.log("leaderboard-update", updatedData);
+    const { leaderboard: newLeaderboard } =
+      updatedData.data as LeaderboardUpdate;
+    // TODO: check why newLeaderboard sometimes is undefined
+    console.log("newLeaderboard", newLeaderboard);
+    if (newLeaderboard) {
+      setLeaderboard(newLeaderboard);
+    }
+  }
+
+  const debouncedOnLeaderboardUpdate = useDebounceCallback(
+    onLeaderboardUpdate,
+    50,
+  );
 
   useEffect(() => {
-    const socket = io(`${SOCKET_IO_URL}/default`, {
-      forceNew: true,
-      timestampRequests: true,
-    });
+    if (data) {
+      setLeaderboard(data);
+    }
+  }, [data]);
 
-    socket.on("connect", async () => {
-      const response = await socket.emitWithAck("subscribe-activity", appId);
-      console.log("subscribe-activity result", response);
-    });
+  useEffect(() => {
+    if (!socket) return;
 
-    socket.on("activity-update", (updatedData: any) => {
-      if (updatedData.type === "leaderboard-update")
-        console.log(`leaderboard-update: ${JSON.stringify(updatedData)}`);
-      queryClient.setQueryData(
-        [
-          "leaderboard",
-          {
-            activityId: appId,
-            type,
-          },
-        ],
-        updatedData.data.leaderboard,
-      );
-    });
+    if (isConnected) {
+      console.log("connected");
+      socket.emitWithAck("subscribe-activity", appId).then((response: any) => {
+        console.log("subscribe-activity result", response);
+      });
+    }
+  }, [socket, isConnected, appId]);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on("activity-update", debouncedOnLeaderboardUpdate);
 
     return () => {
-      if (socket.connected) {
-        socket.disconnect();
-      }
-    }; // Disconnect when component is unmounted or leaderboard is updated
-  }, [appId, queryClient, type]);
+      socket.off("activity-update", debouncedOnLeaderboardUpdate);
+    };
+  }, [debouncedOnLeaderboardUpdate, setLeaderboard, socket]);
+
+  if (!leaderboard) return "Loading...";
 
   return (
     <div className="py-8">
@@ -81,7 +99,7 @@ export default function LeaderboardEmbedPage({ params }: ContextProps) {
               </TableRow>
             </TableHeader>
             <TableBody ref={animationLeaderboard}>
-              {leaderboard?.entries.map((entry) => (
+              {leaderboard.entries.map((entry) => (
                 <TableRow key={entry.memberName} className="border-t">
                   <TableCell className="px-6 py-4">{entry.rank}</TableCell>
                   <TableCell className="px-6 py-4">

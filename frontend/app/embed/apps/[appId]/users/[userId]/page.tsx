@@ -19,8 +19,9 @@ export default function Page({ params }: ContextProps) {
 
     if (isConnected) {
       console.log("connected");
-      const response = socket.emitWithAck("subscribe-user", userId);
-      console.log("subscribe-user result", response);
+      socket.emitWithAck("subscribe-user", userId).then((response: any) => {
+        console.log("subscribe-user result", response);
+      });
     }
   }, [socket, isConnected, userId]);
 

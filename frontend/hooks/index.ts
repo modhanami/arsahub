@@ -177,7 +177,6 @@ export function useDeleteTrigger() {
 
 export function useSendTrigger() {
   const { currentApp } = useCurrentApp();
-  const queryClient = useQueryClient();
   if (!currentApp) {
     throw new Error("No current app");
   }
