@@ -965,6 +965,128 @@ class AppControllerTest() {
     }
 
     @Test
+    fun `fires matching rules - empty rule conditions and empty trigger params`() {
+        // Arrange
+        val workShopCompletedTrigger = createWorkshopCompletedTrigger(authSetup.app)
+
+        val rule =
+            createRule(authSetup.app) {
+                trigger = workShopCompletedTrigger
+                title = "When empty trigger, add 100 points"
+                action {
+                    addPoints(100)
+                }
+                this.repeatability = UnlimitedRuleRepeatability
+            }
+
+        val user = createAppUser(authSetup.app)
+
+        // Act & Assert
+        mockMvc.performWithAppAuth(
+            post("/api/apps/trigger")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "key": "${workShopCompletedTrigger.key}",
+                        "userId": "${user.userId}"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+
+        // Assert DB
+        val userAfter = appUserRepository.findById(user.id!!)
+        assertNotNull(userAfter)
+        assertEquals(100, userAfter.get().points)
+    }
+
+    @Test
+    fun `does not fire non-matching rules - empty rule conditions but non-empty trigger params`() {
+        // Arrange
+        val workShopCompletedTrigger = createWorkshopCompletedTrigger(authSetup.app)
+
+        val rule =
+            createRule(authSetup.app) {
+                trigger = workShopCompletedTrigger
+                title = "When empty trigger, add 100 points"
+                action {
+                    addPoints(100)
+                }
+                this.repeatability = UnlimitedRuleRepeatability
+            }
+
+        val user = createAppUser(authSetup.app)
+
+        // Act & Assert
+        mockMvc.performWithAppAuth(
+            post("/api/apps/trigger")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "key": "${workShopCompletedTrigger.key}",
+                        "params": {
+                            "workshopId": 1,
+                            "source": "trust me"
+                        },
+                        "userId": "${user.userId}"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+
+        // Assert DB
+        val userAfter = appUserRepository.findById(user.id!!)
+        assertNotNull(userAfter)
+        assertEquals(0, userAfter.get().points)
+    }
+
+    @Test
+    fun `does not fire non-matching rules - non-empty rule conditions but empty trigger params`() {
+        // Arrange
+        val workShopCompletedTrigger = createWorkshopCompletedTrigger(authSetup.app)
+
+        val rule =
+            createRule(authSetup.app) {
+                trigger = workShopCompletedTrigger
+                title = "When empty trigger, add 100 points"
+                action {
+                    addPoints(100)
+                }
+                conditions {
+                    eq("workshopId", 1)
+                    eq("source", "trust me")
+                }
+                this.repeatability = UnlimitedRuleRepeatability
+            }
+
+        val user = createAppUser(authSetup.app)
+
+        // Act & Assert
+        mockMvc.performWithAppAuth(
+            post("/api/apps/trigger")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "key": "${workShopCompletedTrigger.key}",
+                        "userId": "${user.userId}"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+
+        // Assert DB
+        val userAfter = appUserRepository.findById(user.id!!)
+        assertNotNull(userAfter)
+        assertEquals(0, userAfter.get().points)
+    }
+
+    @Test
     fun `does not fire non-matching rules - for the given user ID in the app`() {
         // Arrange
         val user = createAppUser(authSetup.app)

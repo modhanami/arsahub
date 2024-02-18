@@ -174,47 +174,46 @@ class RuleEngine(
         appUser: AppUser,
         params: Map<String, Any>?,
     ): Boolean {
-        if (rule.conditions != null) {
-            val conditions = rule.conditions!!
-            val conditionsMatch =
-                conditions.all { condition ->
-                    val paramValue = params?.get(condition.key)
-                    val conditionValue = condition.value
-
-                    // TODO: forward-chain: This is a quick work around, utilizing conditions to check against appUser,
-                    //  which is different from normal flow, that checks trigger params.
-                    //  Ideally, we should have a separate trigger config field for this?
-                    val isPointsReached = rule.trigger!!.key == "points_reached"
-
-                    val matches =
-                        if (isPointsReached) {
-                            val pointsThreshold = conditionValue as? Int
-                            val appUserPoints = appUser.points
-                            logger.warn {
-                                "Workaround for points_reached: Checking points: " +
-                                    "appUserPoints=$appUserPoints, pointsThreshold=$pointsThreshold"
-                            }
-                            pointsThreshold != null && appUserPoints != null && appUserPoints >= pointsThreshold
-                        } else {
-                            // TODO: support more operators
-                            paramValue == conditionValue
-                        }
-
-                    if (matches) {
-                        logger.debug { "Condition ${condition.key} matches" }
-                    } else {
-                        logger.debug { "Condition ${condition.key} does not match: $paramValue != $conditionValue" }
-                    }
-
-                    matches
-                }
-
-            if (!conditionsMatch) {
-                logger.debug { "Rule ${rule.title} (${rule.id}) conditions do not match" }
-                return false
-            }
+        if (rule.conditions.isNullOrEmpty()) {
+            return params.isNullOrEmpty()
         }
 
-        return true
+        val conditions = rule.conditions!!
+        val conditionsMatch =
+            conditions.all { condition ->
+                val paramValue = params?.get(condition.key)
+                val conditionValue = condition.value
+
+                // TODO: forward-chain: This is a quick work around, utilizing conditions to check against appUser,
+                //  which is different from normal flow, that checks trigger params.
+                //  Ideally, we should have a separate trigger config field for this?
+                val isPointsReached = rule.trigger!!.key == "points_reached"
+
+                val matches =
+                    if (isPointsReached) {
+                        val pointsThreshold = conditionValue as? Int
+                        val appUserPoints = appUser.points
+                        logger.warn {
+                            "Workaround for points_reached: Checking points: " +
+                                "appUserPoints=$appUserPoints, pointsThreshold=$pointsThreshold"
+                        }
+                        pointsThreshold != null && appUserPoints != null && appUserPoints >= pointsThreshold
+                    } else {
+                        // TODO: support more operators
+                        paramValue == conditionValue
+                    }
+
+                if (matches) {
+                    logger.debug { "Condition ${condition.key} matches" }
+                } else {
+                    logger.debug { "Condition ${condition.key} does not match: $paramValue != $conditionValue" }
+                }
+
+                matches
+            }
+
+        logger.debug { "Rule ${rule.title} (${rule.id}) conditions match: $conditionsMatch" }
+
+        return conditionsMatch
     }
 }
