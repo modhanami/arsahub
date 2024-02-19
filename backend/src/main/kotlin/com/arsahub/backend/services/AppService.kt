@@ -27,7 +27,7 @@ import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
-class AppUserNotFoundException(userId: String) : NotFoundException("App user with ID $userId not found")
+class AppUserNotFoundException : NotFoundException("App user not found")
 
 class AppUserAlreadyExistsException : ConflictException("App user with this UID already exists")
 
@@ -58,7 +58,7 @@ class AppService(
         app: App,
         userId: String,
     ): AppUser {
-        return appUserRepository.findByAppAndUserId(app, userId) ?: throw AppUserNotFoundException(userId)
+        return appUserRepository.findByAppAndUserId(app, userId) ?: throw AppUserNotFoundException()
     }
 
     fun getAppUserOrThrow(
@@ -289,4 +289,22 @@ class AppService(
         checkNotNull(appInvitationStatusRepository.findByStatusIgnoreCase("declined")) {
             "App invitation status 'declined' not found"
         }
+
+    fun deleteAppUser(
+        app: App,
+        userId: String,
+    ) {
+        val appUser = getAppUserOrThrow(app, userId)
+        assertCanDeleteAppUserOrThrow(app, appUser)
+        appUserRepository.delete(appUser)
+    }
+
+    private fun assertCanDeleteAppUserOrThrow(
+        app: App,
+        appUser: AppUser,
+    ) {
+        if (app.owner == appUser.user) {
+            throw AppUserNotFoundException()
+        }
+    }
 }

@@ -2663,6 +2663,109 @@ class AppControllerTest() {
         assertTrue(rules.isPresent)
     }
 
+    // Delte app user: Always allowed
+    @Test
+    fun `delete app user - success`() {
+        // Arrange
+        val appUser = createAppUser(authSetup.app)
+
+        // Act & Assert HTTP
+        mockMvc.performWithAppAuth(
+            delete("/api/apps/users/${appUser.userId}"),
+        )
+            .andExpect(status().isNoContent)
+
+        // Assert DB
+        val appUsers = appUserRepository.findById(appUser.id!!)
+        assertTrue(appUsers.isEmpty)
+    }
+
+    @Test
+    fun `delete app user - with points and achievements - success`() {
+        // Arrange
+        val appUser = createAppUser(authSetup.app)
+
+        val achievement =
+            achievementService.createAchievement(authSetup.app, AchievementCreateRequest("Workshop completed"))
+
+        val workshopCompletedTrigger = createWorkshopCompletedTrigger(authSetup.app)
+
+        val rule =
+            createRule(authSetup.app) {
+                title = "When workshop completed then unlock achievement"
+                trigger = workshopCompletedTrigger
+                action {
+                    unlockAchievement(achievement.achievementId!!)
+                }
+                repeatability = OncePerUserRuleRepeatability
+            }
+
+        val rule2 =
+            createRule(authSetup.app) {
+                title = "When workshop completed then add 100 points"
+                trigger = workshopCompletedTrigger
+                action {
+                    addPoints(100)
+                }
+                repeatability = OncePerUserRuleRepeatability
+            }
+
+        // trigger to activate the rule
+        mockMvc.performWithAppAuth(
+            post("/api/apps/trigger")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "key": "workshop_completed",
+                        "userId": "${appUser.userId}"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+
+        // Preconditions
+        val appUserAchievements = appUserAchievementRepository.findAll()
+        assertEquals(1, appUserAchievements.size)
+        val appUserAchievement = appUserAchievements[0]
+        assertEquals(appUser.id, appUserAchievement.appUser?.id)
+        assertEquals(achievement.achievementId, appUserAchievement.achievement?.achievementId)
+        assertEquals(100, appUser.points)
+
+        // Act & Assert HTTP
+        mockMvc.performWithAppAuth(
+            delete("/api/apps/users/${appUser.userId}"),
+        )
+            .andExpect(status().isNoContent)
+
+        // Assert DB
+        val appUsersAfterDelete = appUserRepository.findById(appUser.id!!)
+        assertTrue(appUsersAfterDelete.isEmpty)
+
+        val appUserAchievementsAfterDelete = appUserAchievementRepository.findAll()
+        assertEquals(0, appUserAchievementsAfterDelete.size)
+    }
+
+    @Test
+    fun `delete app user - failed - different app`() {
+        // Arrange
+        val otherApp = setupAuth(userRepository, appRepository).app
+        val appUser = createAppUser(authSetup.app)
+
+        // Act & Assert HTTP
+        mockMvc.performWithAppAuth(
+            delete("/api/apps/users/${appUser.userId}"),
+            app = otherApp,
+        )
+            .andExpect(status().isNotFound)
+            .andExpect(jsonPath("$.message").value("App user not found"))
+
+        // Assert DB
+        val appUsers = appUserRepository.findById(appUser.id!!)
+        assertTrue(appUsers.isPresent)
+    }
+
     private fun getPointsReachedTrigger() = triggerRepository.findByKey("points_reached")!!
 
     companion object {
