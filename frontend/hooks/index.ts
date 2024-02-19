@@ -261,13 +261,10 @@ export function useUser(accessToken: string | null) {
   });
 }
 
-export function useAppUser(userId: string) {
-  const { currentApp } = useCurrentApp();
-
+export function useAppUser(appId: number, userId: string) {
   return useQuery({
     queryKey: ["appUser", userId],
-    queryFn: () => currentApp && fetchAppUser(currentApp, userId),
-    enabled: !!currentApp,
+    queryFn: () => fetchAppUser(appId, userId),
   });
 }
 

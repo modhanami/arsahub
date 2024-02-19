@@ -8,8 +8,9 @@ import { useSocket } from "@/lib/socket";
 import { AchievementUnlock, PointsUpdate } from "@/types/generated-types";
 
 export default function Page({ params }: ContextProps) {
+  const appId = Number(params.appId);
   const userId = params.userId;
-  const { data, error, isLoading } = useAppUser(userId);
+  const { data, error, isLoading } = useAppUser(appId, userId);
   const [points, setPoints] = useState(0);
   const [achievements, setAchievements] = useState(data?.achievements || []);
   const { socket, isConnected } = useSocket();
