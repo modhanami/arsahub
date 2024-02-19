@@ -8,6 +8,7 @@ import * as React from "react";
 import Link from "next/link";
 import { DataTable } from "@/app/(app)/examples/tasks/components/data-table";
 import { columns } from "@/app/(app)/(app-protected)/triggers/components/columns";
+import { resolveBasePath } from "@/lib/base-path";
 
 export default function Page() {
   const { data: triggers, isLoading } = useTriggers();
@@ -17,7 +18,7 @@ export default function Page() {
   return (
     <DashboardShell>
       <DashboardHeader heading="Triggers" text="Create and manage triggers.">
-        <Link href={"/triggers/new"}>
+        <Link href={resolveBasePath("/triggers/new")}>
           <Button>
             <Icons.add className="mr-2 h-4 w-4" />
             New Trigger

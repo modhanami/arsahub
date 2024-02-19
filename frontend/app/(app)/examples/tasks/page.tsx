@@ -8,6 +8,7 @@ import { columns } from "./components/columns";
 import { DataTable } from "./components/data-table";
 import { UserNav } from "./components/user-nav";
 import { taskSchema } from "./data/schema";
+import { resolveBasePath } from "@/lib/base-path";
 
 export const metadata: Metadata = {
   title: "Tasks",
@@ -32,14 +33,14 @@ export default async function TaskPage() {
     <>
       <div className="md:hidden">
         <Image
-          src="/examples/tasks-light.png"
+          src={resolveBasePath("/examples/tasks-light.png")}
           width={1280}
           height={998}
           alt="Playground"
           className="block dark:hidden"
         />
         <Image
-          src="/examples/tasks-dark.png"
+          src={resolveBasePath("/examples/tasks-dark.png")}
           width={1280}
           height={998}
           alt="Playground"

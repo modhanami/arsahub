@@ -1,6 +1,7 @@
 import { ArrowRight, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { resolveBasePath } from "@/lib/base-path";
 
 export default function Home() {
   return (
@@ -14,12 +15,12 @@ export default function Home() {
           Design, develop, and control your own Gamification strategies.
         </div>
         <div className="mt-8 mb-16">
-          <Link href="/" className="px-2">
+          <Link href={resolveBasePath("/")} className="px-2">
             <Button>
               Get Started <ArrowRight />
             </Button>
           </Link>
-          <Link href="/leaderboard" className="px-2">
+          <Link href={resolveBasePath("/leaderboard")} className="px-2">
             <Button>
               Leaderboard <Crown />
             </Button>

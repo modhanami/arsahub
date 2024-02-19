@@ -7,6 +7,7 @@ import Link from "next/link";
 import { DataTable } from "@/app/(app)/examples/tasks/components/data-table";
 import * as React from "react";
 import { columns } from "@/app/(app)/(app-protected)/rules/components/columns";
+import { resolveBasePath } from "@/lib/base-path";
 
 export default function RulesPage() {
   const { data: rules, isLoading } = useRules();
@@ -16,7 +17,7 @@ export default function RulesPage() {
   return (
     <DashboardShell>
       <DashboardHeader heading="Rules" text="Create and manage rules.">
-        <Link href={"/rules/new"}>
+        <Link href={resolveBasePath("/rules/new")}>
           <RuleCreateButton />
         </Link>
       </DashboardHeader>

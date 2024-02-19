@@ -4,6 +4,7 @@ import { useCurrentApp } from "../lib/current-app";
 import { useCurrentUser } from "../lib/current-user";
 import { toast } from "./ui/use-toast";
 import { useEffect } from "react";
+import { resolveBasePath } from "@/lib/base-path";
 
 export function UserProtectedPage({ children }: { children: React.ReactNode }) {
   const { currentUser, isLoading } = useCurrentUser();
@@ -48,7 +49,7 @@ export function AppProtectedPage({ children }: { children: React.ReactNode }) {
         title: "No App Specified",
         description: "You must specify an app API key to access this page.",
       });
-      router.push("/");
+      router.push(resolveBasePath("/"));
       return;
     }
   }, [currentApp, isLoading, router]);

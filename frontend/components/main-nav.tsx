@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { Icons } from "@/components/icons";
 import { MobileNav } from "@/components/mobile-nav";
 import { CreateAppForm } from "./create-app";
+import { resolveBasePath } from "@/lib/base-path";
 
 interface MainNavProps {
   items?: MainNavItem[];
@@ -24,7 +25,10 @@ export function MainNav({ items, children }: MainNavProps) {
     <div className="flex gap-6 md:gap-10">
       <CreateAppForm />
       {/* <AppsSwitcher /> */}
-      <Link href="/" className="hidden items-center space-x-2 md:flex">
+      <Link
+        href={resolveBasePath("/")}
+        className="hidden items-center space-x-2 md:flex"
+      >
         {/*<Icons.logo/>*/}
         <span className="text-xl">👽</span>
         <span className="hidden font-bold sm:inline-block">

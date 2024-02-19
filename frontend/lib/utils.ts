@@ -15,5 +15,5 @@ export function formatDate(input: string | number): string {
 }
 
 export function getReturnTo(path?: string) {
-  return `${window.location.origin}/${path || ""}`;
+  return `${window.location.origin}${path || ""}`;
 }

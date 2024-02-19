@@ -2,6 +2,7 @@
 
 import { ContextProps, SidebarNavItem } from "../../types";
 import BaseLayout from "@/components/base-layout";
+import { resolveBasePath } from "@/lib/base-path";
 
 type DashboardLayoutProps = {
   children?: React.ReactNode;
@@ -17,13 +18,13 @@ function createSideNavItems(): SidebarNavItem[] {
   return [
     {
       title: "Overview",
-      href: `/overview`,
+      href: resolveBasePath("/overview"),
       icon: "general",
       type: "item",
     },
     {
       title: "Secrets",
-      href: `/secrets`,
+      href: resolveBasePath(`/secrets`),
       icon: "lock",
       type: "item",
     },
@@ -38,31 +39,31 @@ function createSideNavItems(): SidebarNavItem[] {
     {
       type: "item",
       title: "Achievements",
-      href: `/achievements`,
+      href: resolveBasePath("/achievements"),
       icon: "achievement",
     },
     {
       type: "item",
       title: "Rules",
-      href: `/rules`,
+      href: resolveBasePath("/rules"),
       icon: "rule",
     },
     {
       type: "item",
       title: "Rewards",
-      href: `/rewards`,
+      href: resolveBasePath("/rewards"),
       icon: "reward",
     },
     {
       type: "item",
       title: "Points Shop",
-      href: `/shop`,
+      href: resolveBasePath("/shop"),
       icon: "pointsShop",
     },
     {
       type: "item",
       title: "Leaderboard",
-      href: `/leaderboard`,
+      href: resolveBasePath("/leaderboard"),
       icon: "leaderboard",
     },
     {
@@ -75,7 +76,7 @@ function createSideNavItems(): SidebarNavItem[] {
     },
     {
       title: "Triggers",
-      href: `/triggers`,
+      href: resolveBasePath("/triggers"),
       icon: "trigger",
       appProtected: true,
       type: "item",
@@ -83,13 +84,13 @@ function createSideNavItems(): SidebarNavItem[] {
     {
       type: "item",
       title: "Test Rules",
-      href: `/playground`,
+      href: resolveBasePath("/playground"),
       icon: "experiment",
       appProtected: true,
     },
     {
       title: "App Users",
-      href: `/users`,
+      href: resolveBasePath("/users"),
       icon: "users",
       appProtected: true,
       type: "item",

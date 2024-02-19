@@ -46,6 +46,7 @@ import { Icons } from "@/components/icons";
 import { isAlphaNumericExtended } from "@/lib/validations";
 import { InputWithCounter } from "@/components/ui/input-with-counter";
 import { TextareaWithCounter } from "@/components/ui/textarea-with-counter";
+import { resolveBasePath } from "@/lib/base-path";
 
 const operations = [{ label: "is", value: "is" }];
 const actions = [
@@ -407,7 +408,7 @@ export default function Page() {
                   </Select>
                   <FormDescription>
                     You can manage triggers in{" "}
-                    <Link href="/triggers">
+                    <Link href={resolveBasePath("/triggers")}>
                       <NextUILink size="sm" color={"primary"}>
                         Triggers
                       </NextUILink>

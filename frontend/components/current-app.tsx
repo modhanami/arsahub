@@ -5,6 +5,7 @@ import { Input } from "../components/ui/input";
 import { Button } from "./ui/button";
 import { useAppApiKey, useCurrentApp } from "../lib/current-app";
 import Link from "next/link";
+import { resolveBasePath } from "@/lib/base-path";
 
 export function CurrentAppForm() {
   const { currentApp, isLoading } = useCurrentApp();
@@ -45,7 +46,7 @@ export function CurrentAppForm() {
             />
             <Link
               href={{
-                pathname: "/secrets",
+                pathname: resolveBasePath("/secrets"),
               }}
               className="text-xs text-blue-500 hover:underline"
             >

@@ -32,6 +32,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { resolveBasePath } from "@/lib/base-path";
 
 type FormData = z.infer<typeof playgroundTriggerSchema>;
 
@@ -368,7 +369,9 @@ export function PlaygroundTriggerForm() {
         <div className="w-1/2 h-[500px]">
           {selectedUserId && (
             <iframe
-              src={`/embed/apps/${appId}/users/${selectedUserId}`}
+              src={resolveBasePath(
+                `/embed/apps/${appId}/users/${selectedUserId}`,
+              )}
               width="100%"
               height="100%"
               allowFullScreen={true}

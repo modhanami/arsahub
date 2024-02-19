@@ -1,5 +1,6 @@
 "use client";
 import { useCurrentApp } from "@/lib/current-app";
+import { resolveBasePath } from "@/lib/base-path";
 
 export default function Page() {
   const { currentApp } = useCurrentApp();
@@ -10,7 +11,7 @@ export default function Page() {
 
   return (
     <iframe
-      src={`/embed/apps/${currentApp?.id}/leaderboard`}
+      src={resolveBasePath(`/embed/apps/${currentApp?.id}/leaderboard`)}
       width="100%"
       height="100%"
       allowFullScreen={true}
