@@ -23,7 +23,7 @@ export default function Page() {
     });
   };
 
-  if (isLoading) {
+  if (isLoading || !data) {
     return <div>Loading...</div>;
   }
 
@@ -33,7 +33,8 @@ export default function Page() {
         heading="Secrets"
         text="This is a secrets page. You can grab your API key here."
       ></DashboardHeader>
-      {data?.apiKey && (
+      <div>App ID: {data.id}</div>
+      {data.apiKey && (
         <div>
           <p className="font-medium mt-4">Secret</p>
           <div className="flex items-center gap-2">
