@@ -124,7 +124,8 @@ create table rule_progress
     completed_at     timestamp with time zone,
     app_user_id      bigint
         constraint rule_progress_app_user_app_user_id_fk
-            references app_user,
+            references app_user
+            on delete cascade,
     app_id           bigint
         constraint rule_progress_app_app_id_fk
             references app
@@ -194,6 +195,7 @@ create table trigger_log
     app_user_id    bigint not null
         constraint trigger_log_app_user_app_user_id_fk
             references app_user
+            on delete cascade
 );
 
 create table app_user_achievement
@@ -206,9 +208,10 @@ create table app_user_achievement
             references achievement,
     app_user_id             bigint not null
         constraint fk_app_user_achievement_on_app_user
-            references app_user,
-    completed_at timestamp,
-    app_id       bigint
+            references app_user
+            on delete cascade,
+    completed_at            timestamp,
+    app_id                  bigint
         constraint app_user_achievement_app_app_id_fk
             references app
 );
@@ -270,10 +273,11 @@ create table reward
 
 create table transaction
 (
-    transaction_id bigserial
+    transaction_id   bigserial
         primary key,
     app_user_id      bigint                  not null
-        references app_user,
+        references app_user
+            on delete cascade,
     reward_id        bigint                  not null
         references reward,
     points_spent     integer                 not null,

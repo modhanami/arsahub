@@ -227,6 +227,15 @@ class AppController(
         return appService.listUsers(app).map { AppUserResponse.fromEntity(it) }
     }
 
+    @DeleteMapping("/users/{userId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun deleteUser(
+        @CurrentApp app: App,
+        @PathVariable userId: String,
+    ) {
+        appService.deleteAppUser(app, userId)
+    }
+
     @Operation(
         summary = "Get leaderboard",
         responses = [
