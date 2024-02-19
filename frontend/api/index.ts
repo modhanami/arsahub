@@ -337,6 +337,14 @@ export async function createAppUser(
   return data;
 }
 
+export async function deleteAppUser(app: AppResponse, userId: string) {
+  await instance.delete<void>(`${API_URL}/apps/users/${userId}`, {
+    headers: {
+      ...makeAppAuthHeader(app),
+    },
+  });
+}
+
 export async function fetchAppUser(app: AppResponse, userId: string) {
   const { data } = await instance.get<AppUserResponse>(
     `${API_URL}/apps/${app.id}/users/${userId}`,

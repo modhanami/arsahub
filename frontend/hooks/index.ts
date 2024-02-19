@@ -7,6 +7,7 @@ import {
   createRule,
   createTrigger,
   deleteAchievement,
+  deleteAppUser,
   deleteRule,
   deleteTrigger,
   fetchAchievements,
@@ -280,6 +281,22 @@ export function useCreateAppUser() {
   return useMutation({
     mutationFn: (newUser: AppUserCreateRequest) =>
       createAppUser(currentApp, newUser),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["appUsers"] });
+    },
+  });
+}
+
+export function useDeleteAppUser() {
+  const { currentApp } = useCurrentApp();
+  const queryClient = useQueryClient();
+  if (!currentApp) {
+    throw new Error("No current app");
+  }
+
+  return useMutation({
+    mutationFn: (userId: string) =>
+      currentApp && deleteAppUser(currentApp, userId),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["appUsers"] });
     },
