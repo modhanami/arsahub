@@ -8,6 +8,8 @@ services:
       POSTGRES_DB: arsahub
       POSTGRES_PASSWORD: 123456
     restart: always
+    volumes:
+      - db-data:/var/lib/postgresql/data
   #    ports:
   #      - "5433:5432"
 
@@ -37,3 +39,6 @@ services:
     depends_on:
       - backend
       - frontend
+
+volumes:
+  db-data:
