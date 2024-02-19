@@ -36,9 +36,8 @@ services:
     image: modhanami/arsahub-reverse-proxy:dev
     ports:
       - "80:80"
-    depends_on:
-      - backend
-      - frontend
+    volumes:
+      - ./reverse-proxy/ssl:/etc/nginx/ssl
 
 volumes:
   db-data:
