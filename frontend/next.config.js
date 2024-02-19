@@ -1,10 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  assetPrefix: "/or1",
   async redirects() {
     return [
       {
         source: "/",
-        destination: "/overview",
+        destination: "/or1/overview",
         permanent: false,
       },
     ];
