@@ -8,9 +8,9 @@ on:
 
 env:
   ACTIONS_RUNNER_DEBUG: true
-  
+
 jobs:
-  build:
+  build-and-push-backend:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
@@ -22,14 +22,14 @@ jobs:
           java-version: 17
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
-      - name: Verify Gradle and structure
-        working-directory: ./backend
-        run: |
-          gradle --version && ls -la
+      - name: Prepare
+        id: prepare
+        # image-tags=<CI Build Number>-<Git Commit SHA>
+        run: echo "image-tags=$(echo $GITHUB_RUN_NUMBER)-$(git rev-parse --short $GITHUB_SHA)" >> "$GITHUB_OUTPUT"
       - name: Build with Gradle
         working-directory: ./backend
         run: |
           gradle jib \
-            -Djib.to.image=ghcr.io/modhanami/arsahub/backend:dev \
+            -Djib.to.tags=${{ steps.prepare.outputs.image-tags }} \
             -Djib.to.auth.username=${{ github.actor }} \
             -Djib.to.auth.password=${{ secrets.MY_GITHUB_TOKEN }}

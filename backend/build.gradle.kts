@@ -127,10 +127,12 @@ allOpen {
 jib {
     to {
         image =
+            "ghcr.io/modhanami/arsahub/backend"
+        tags =
             if (project.hasProperty("prod")) {
-                "ghcr.io/modhanami/arsahub/backend:latest"
+                setOf("latest")
             } else {
-                "ghcr.io/modhanami/arsahub/backend:dev"
+                setOf("dev")
             }
         container {
             if (!project.hasProperty("prod")) {
