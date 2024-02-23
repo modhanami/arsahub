@@ -32,4 +32,4 @@ jobs:
           gradle jib \
             -Djib.to.image=ghcr.io/modhanami/arsahub/backend:dev \
             -Djib.to.auth.username=${{ github.actor }} \
-            -Djib.to.auth.password=${{ secrets.GITHUB_TOKEN }}
+            -Djib.to.auth.password=${{ secrets.MY_GITHUB_TOKEN }}
