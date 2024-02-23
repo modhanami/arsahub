@@ -24,6 +24,7 @@ jobs:
         run: echo "image-tags=$(echo $GITHUB_RUN_NUMBER)-$(git rev-parse --short $GITHUB_SHA)" >> "$GITHUB_OUTPUT"
 
   build-and-push-backend:
+    if: false
     permissions:
       packages: write
     runs-on: ubuntu-latest
