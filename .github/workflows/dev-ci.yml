@@ -15,13 +15,21 @@ jobs:
     outputs:
       image-tags: ${{ steps.prepare.outputs.image-tags }}
       # Example: image-tags=1-abc123,dev,latest
+      relevant-sha: ${{ steps.prepare.outputs.relevant-sha }}
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
       - name: Prepare
         id: prepare
         # <CI Build Number>-<Git Commit SHA>
-        run: echo "image-tags=$(echo $GITHUB_RUN_NUMBER)-$(git rev-parse --short $GITHUB_SHA)" >> "$GITHUB_OUTPUT"
+        run: |
+          RELEVANT_SHA=${{ github.event.pull_request.head.sha || github.sha }}
+          echo "Relevant commit SHA: $RELEVANT_SHA"
+          echo "relevant-sha=$RELEVANT_SHA" >> "$GITHUB_OUTPUT"
+          
+          IMAGE_TAGS=$GITHUB_RUN_NUMBER-$(git rev-parse --short $RELEVANT_SHA)
+          echo "image-tags=$IMAGE_TAGS" >> "$GITHUB_OUTPUT"
+          echo "Image Tags: $IMAGE_TAGS"
 
   build-and-push-backend:
     if: false
