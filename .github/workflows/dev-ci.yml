@@ -32,7 +32,6 @@ jobs:
           echo "Image Tags: $IMAGE_TAGS"
 
   build-and-push-backend:
-    if: false
     permissions:
       packages: write
     runs-on: ubuntu-latest
