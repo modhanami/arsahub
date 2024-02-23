@@ -11,6 +11,8 @@ env:
 
 jobs:
   build-and-push-backend:
+    permissions:
+      packages: write
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
@@ -32,4 +34,4 @@ jobs:
           gradle jib \
             -Djib.to.tags=${{ steps.prepare.outputs.image-tags }} \
             -Djib.to.auth.username=${{ github.actor }} \
-            -Djib.to.auth.password=${{ secrets.MY_GITHUB_TOKEN }}
+            -Djib.to.auth.password=${{ secrets.GITHUB_TOKEN }}
