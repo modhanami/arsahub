@@ -31,3 +31,5 @@ jobs:
         run: |
           gradle jib \
             -Djib.to.image=ghcr.io/modhanami/arsahub/backend:dev \
+            -Djib.to.auth.username=${{ github.actor }} \
+            -Djib.to.auth.password=${{ secrets.GITHUB_TOKEN }}
