@@ -2,8 +2,7 @@ version: "3.1"
 
 services:
   db:
-    build: ./database
-    image: modhanami/arsahub-database:dev
+    image: ghcr.io/modhanami/arsahub/database
     environment:
       POSTGRES_DB: arsahub
       POSTGRES_PASSWORD: 123456
@@ -14,7 +13,7 @@ services:
   #      - "5433:5432"
 
   backend:
-    image: modhanami/arsahub-backend:dev
+    image: ghcr.io/modhanami/arsahub/backend
     environment:
       DB_URL: jdbc:postgresql://db:5432/arsahub
       DB_USERNAME: postgres
@@ -26,14 +25,12 @@ services:
   #      - "9097:9097"
 
   frontend:
-    build: ./frontend
-    image: modhanami/arsahub-frontend:dev
+    image: ghcr.io/modhanami/arsahub/frontend
   #    ports:
   #      - "3000:3000"
 
   reverse-proxy:
-    build: ./reverse-proxy
-    image: modhanami/arsahub-reverse-proxy:dev
+    image: ghcr.io/modhanami/arsahub/reverse-proxy
     ports:
       - "80:80"
     volumes:
