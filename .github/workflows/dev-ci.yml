@@ -84,3 +84,6 @@ jobs:
           context: ./database
           push: true
           tags: ${{ steps.prepare.outputs.image-tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
