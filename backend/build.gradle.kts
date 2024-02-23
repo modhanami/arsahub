@@ -128,9 +128,9 @@ jib {
     to {
         image =
             if (project.hasProperty("prod")) {
-                "modhanami/arsahub-backend:latest"
+                "ghcr.io/modhanami/arsahub/backend:latest"
             } else {
-                "modhanami/arsahub-backend:dev"
+                "ghcr.io/modhanami/arsahub/backend:dev"
             }
         container {
             if (!project.hasProperty("prod")) {
