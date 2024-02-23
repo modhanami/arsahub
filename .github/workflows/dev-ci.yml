@@ -15,7 +15,7 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
-          build-root-directory: backend
+          build-root-directory: ./backend
       - name: Build with Gradle
         run: |
           gradle jib \
