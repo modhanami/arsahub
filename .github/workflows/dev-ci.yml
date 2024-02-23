@@ -6,6 +6,9 @@ on:
     branches:
       - main
 
+env:
+  ACTIONS_RUNNER_DEBUG: true
+  
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -16,6 +19,9 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
         with:
           build-root-directory: ./backend
+      - name: Verify Gradle and structure
+        run: |
+          gradle --version && ls -la
       - name: Build with Gradle
         run: |
           gradle jib \
