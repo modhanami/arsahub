@@ -14,7 +14,7 @@ services:
   #      - "5433:5432"
 
   backend:
-    image: modhanami/arsahub-backend:dev
+    image: ghcr.io/modhanami/arsahub/backend
     environment:
       DB_URL: jdbc:postgresql://db:5432/arsahub
       DB_USERNAME: postgres

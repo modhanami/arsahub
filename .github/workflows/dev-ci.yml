@@ -10,10 +10,23 @@ env:
   ACTIONS_RUNNER_DEBUG: true
 
 jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      image_tags: ${{ steps.prepare.outputs.image-tags }}
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+      - name: Prepare
+        id: prepare
+        # image-tags=<CI Build Number>-<Git Commit SHA>
+        run: echo "image-tags=$(echo $GITHUB_RUN_NUMBER)-$(git rev-parse --short $GITHUB_SHA)" >> "$GITHUB_OUTPUT"
+
   build-and-push-backend:
     permissions:
       packages: write
     runs-on: ubuntu-latest
+    needs: prepare
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
@@ -24,14 +37,10 @@ jobs:
           java-version: 17
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
-      - name: Prepare
-        id: prepare
-        # image-tags=<CI Build Number>-<Git Commit SHA>
-        run: echo "image-tags=$(echo $GITHUB_RUN_NUMBER)-$(git rev-parse --short $GITHUB_SHA)" >> "$GITHUB_OUTPUT"
       - name: Build with Gradle
         working-directory: ./backend
         run: |
           gradle jib \
-            -Djib.to.tags=${{ steps.prepare.outputs.image-tags }} \
+            -Djib.to.tags=${{ needs.prepare.outputs.image-tags }} \
             -Djib.to.auth.username=${{ github.actor }} \
             -Djib.to.auth.password=${{ secrets.GITHUB_TOKEN }}
