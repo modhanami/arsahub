@@ -23,12 +23,20 @@ export default function LoginPage() {
   }
 
   return (
-    <Auth
-      supabaseClient={supabase}
-      appearance={{ theme: ThemeSupa }}
-      providers={["google"]}
-      theme="dark"
-      redirectTo={redirect}
-    />
+    <div className="flex items-center justify-center h-screen">
+      <Auth
+        supabaseClient={supabase}
+        appearance={{
+          theme: ThemeSupa,
+          extend: true,
+          className: {
+            container: "sm:w-[400px] w-[80vw]",
+          },
+        }}
+        providers={["google"]}
+        theme="dark"
+        redirectTo={redirect}
+      />
+    </div>
   );
 }
