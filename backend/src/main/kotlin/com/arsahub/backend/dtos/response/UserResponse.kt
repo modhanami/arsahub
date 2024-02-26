@@ -7,7 +7,7 @@ data class UserResponse(
     val userId: Long, // TODO: remove this after backward compatibility is no longer needed
     val internalUserId: Long,
     val externalUserId: String,
-    val googleUserId: String,
+    val googleUserId: String?,
     val email: String,
     val name: String,
 ) {
@@ -17,7 +17,7 @@ data class UserResponse(
                 userId = user.userId!!,
                 internalUserId = user.userId!!,
                 externalUserId = user.externalUserId!!,
-                googleUserId = user.googleUserId!!,
+                googleUserId = user.googleUserId,
                 email = user.email!!,
                 name = user.name!!,
             )

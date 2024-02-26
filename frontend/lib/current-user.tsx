@@ -1,6 +1,5 @@
 "use strict";
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { Session } from "@supabase/supabase-js";
 import { syncSupabaseIdentity } from "@/api";
@@ -8,6 +7,7 @@ import { UserIdentity } from "@/types/generated-types";
 
 interface CurrentUserContextProps {
   currentUser: UserIdentity | null;
+  session: Session | null;
   isLoading: boolean;
   startLoginFlow: (args: { returnTo: string }) => void;
   startRegistrationFlow: (args: { returnTo: string }) => void;
@@ -23,44 +23,51 @@ export function CurrentUserProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<UserIdentity | null>(null);
   const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {
-    async function init() {
-      supabase.auth.onAuthStateChange(async (event, session) => {
-        console.log(event, session);
+    supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => {
         setSession(session);
-
-        if (
-          session !== null &&
-          user === null &&
-          (event === "INITIAL_SESSION" ||
-            event === "SIGNED_IN" ||
-            event === "USER_UPDATED")
-        ) {
-          const internalUser = await syncSupabaseIdentity({ session });
-          setUser({
-            internalUserId: internalUser.internalUserId,
-            externalUserId: internalUser.externalUserId,
-            googleUserId: internalUser.googleUserId,
-            email: internalUser.email,
-            name: internalUser.name,
-          });
-        }
-
-        if (event === "SIGNED_OUT") {
-          setUser(null);
-        }
+      })
+      .finally(() => {
+        setIsLoading(false);
       });
-    }
 
-    init().then(() => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log(event, session);
+      setSession(session);
       setIsLoading(false);
     });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
+
+  useEffect(() => {
+    async function sessionCheck() {
+      if (session !== null) {
+        const internalUser = await syncSupabaseIdentity({ session });
+        setUser({
+          internalUserId: internalUser.internalUserId,
+          externalUserId: internalUser.externalUserId,
+          googleUserId: internalUser.googleUserId,
+          email: internalUser.email,
+          name: internalUser.name,
+        });
+      } else {
+        setUser(null);
+      }
+    }
+
+    sessionCheck();
+  }, [session]);
 
   async function startLoginFlow({ returnTo }: { returnTo: string }) {
     console.log("startLoginFlow", user, session, returnTo);
@@ -88,6 +95,7 @@ export function CurrentUserProvider({
     <CurrentUserContext.Provider
       value={{
         currentUser: user,
+        session,
         isLoading,
         startLoginFlow,
         startRegistrationFlow,

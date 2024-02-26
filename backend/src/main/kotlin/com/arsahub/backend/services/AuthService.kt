@@ -1,6 +1,6 @@
 package com.arsahub.backend.services
 
-import com.arsahub.backend.dtos.supabase.SupabaseGoogleIdentity
+import com.arsahub.backend.dtos.supabase.SupabaseIdentity
 import com.arsahub.backend.models.App
 import com.arsahub.backend.models.User
 import com.arsahub.backend.repositories.AppRepository
@@ -18,7 +18,7 @@ class AuthService(
     private val logger = KotlinLogging.logger {}
 
     @Transactional
-    fun syncSupabaseGoogleIdentity(identity: SupabaseGoogleIdentity): User {
+    fun syncSupabaseIdentity(identity: SupabaseIdentity): User {
         val identityIdsMessage =
             "Supabase user ID ${identity.supabaseUserId} and Google user ID ${identity.googleUserId}"
 
@@ -42,6 +42,7 @@ class AuthService(
             newUser
         } else {
             logger.info { "User ${user.userId} found for $identityIdsMessage, updating user" }
+            user.googleUserId = identity.googleUserId
             user.email = identity.email
             user.name = identity.name
             userRepository.save(user)

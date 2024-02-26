@@ -5,9 +5,10 @@ import { useCurrentUser } from "../lib/current-user";
 import { toast } from "./ui/use-toast";
 import { useEffect } from "react";
 import { resolveBasePath } from "@/lib/base-path";
+import { getReturnTo } from "@/lib/utils";
 
 export function UserProtectedPage({ children }: { children: React.ReactNode }) {
-  const { currentUser, isLoading } = useCurrentUser();
+  const { session, isLoading } = useCurrentUser();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -17,18 +18,18 @@ export function UserProtectedPage({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    if (!currentUser) {
+    if (!session) {
       console.log("[UserProtectedPage] No currentUser, redirecting to login");
-      router.push(`/login?redirect=${pathname}`);
+      router.push(`/login?redirect=${getReturnTo(pathname)}`);
       return;
     }
-  }, [currentUser, isLoading, pathname, router]);
+  }, [isLoading, pathname, router, session]);
 
   if (isLoading) {
     return "Loading user...";
   }
 
-  if (!currentUser) {
+  if (!session) {
     return null;
   }
 

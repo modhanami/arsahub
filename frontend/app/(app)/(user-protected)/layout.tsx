@@ -1,3 +1,5 @@
+import { UserProtectedPage } from "@/components/protected-page";
+
 export default function Layout({ children }: { children: React.ReactNode }) {
-  return children;
+  return <UserProtectedPage>{children}</UserProtectedPage>;
 }
