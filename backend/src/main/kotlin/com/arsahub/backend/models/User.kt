@@ -18,7 +18,7 @@ class User(
     @Column(name = "email", nullable = false, length = Integer.MAX_VALUE)
     var email: String? = null,
     @NotNull
-    @Column(name = "google_user_id", nullable = false, length = Integer.MAX_VALUE)
+    @Column(name = "google_user_id", length = Integer.MAX_VALUE)
     var googleUserId: String? = null,
     @NotNull
     @Column(name = "name", nullable = false, length = Integer.MAX_VALUE)
