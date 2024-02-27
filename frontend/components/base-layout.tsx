@@ -18,7 +18,7 @@ export default function BaseLayout({
 }: CommonLayoutProps) {
   return (
     <div className="flex min-h-screen flex-col space-y-6">
-      <header className="sticky top-0 z-40 border-b bg-background">
+      <header className="sticky top-0 z-40 border-b bg-background mb-2">
         <div className="container flex h-16 items-center justify-between py-4">
           <MainNav />
           <div className="flex items-center gap-4">
