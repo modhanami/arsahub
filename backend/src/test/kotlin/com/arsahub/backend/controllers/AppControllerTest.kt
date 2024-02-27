@@ -64,6 +64,7 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
@@ -686,6 +687,7 @@ class AppControllerTest() {
 
     data class TriggerBuilder(
         var title: String? = null,
+        var description: String? = null,
         var key: String? = null,
         var fields: MutableList<FieldBuilder> = mutableListOf(),
     ) {
@@ -733,6 +735,7 @@ class AppControllerTest() {
             app,
             TriggerCreateRequest(
                 title = builder.title!!,
+                description = builder.description,
                 fields =
                     builder.fields.map { field ->
                         FieldDefinition(
@@ -843,6 +846,7 @@ class AppControllerTest() {
         return createTrigger(app) {
             key = "workshop_completed"
             title = "Workshop Completed"
+            description = "When a workshop is completed"
             fields {
                 integer("workshopId", "Workshop ID")
                 text("source")
@@ -2764,6 +2768,94 @@ class AppControllerTest() {
         // Assert DB
         val appUsers = appUserRepository.findById(appUser.id!!)
         assertTrue(appUsers.isPresent)
+    }
+
+    // Editing
+
+    // Edit trigger: Only title and description
+    @Test
+    fun `edit trigger - success`() {
+        // Arrange
+        val trigger = createWorkshopCompletedTrigger(authSetup.app)
+
+        // Act & Assert HTTP
+        mockMvc.performWithAppAuth(
+            patch("/api/apps/triggers/${trigger.id}")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "title": "Hoo Made This",
+                      "description": "I Made This"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.title").value("Hoo Made This"))
+            .andExpect(jsonPath("$.description").value("I Made This"))
+
+        // Assert DB
+        val triggers = triggerRepository.findById(trigger.id!!)
+        assertTrue(triggers.isPresent)
+        assertEquals("Hoo Made This", triggers.get().title)
+        assertEquals("I Made This", triggers.get().description)
+    }
+
+    @Test
+    fun `edit trigger - success - title only`() {
+        // Arrange
+        val trigger = createWorkshopCompletedTrigger(authSetup.app)
+
+        // Act & Assert HTTP
+        mockMvc.performWithAppAuth(
+            patch("/api/apps/triggers/${trigger.id}")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "title": "Hoo Made This"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.title").value("Hoo Made This"))
+            .andExpect(jsonPath("$.description").value("When a workshop is completed"))
+
+        // Assert DB
+        val triggers = triggerRepository.findById(trigger.id!!)
+        assertTrue(triggers.isPresent)
+        assertEquals("Hoo Made This", triggers.get().title)
+        assertEquals("When a workshop is completed", triggers.get().description)
+    }
+
+    @Test
+    fun `edit trigger - failed - different app`() {
+        // Arrange
+        val otherApp = setupAuth(userRepository, appRepository).app
+        val trigger = createWorkshopCompletedTrigger(authSetup.app)
+
+        // Act & Assert HTTP
+        mockMvc.performWithAppAuth(
+            patch("/api/apps/triggers/${trigger.id}")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "title": "Hoo Made This",
+                      "description": "I Made This"
+                    }
+                    """.trimIndent(),
+                ),
+            app = otherApp,
+        )
+            .andExpect(status().isNotFound)
+            .andExpect(jsonPath("$.message").value("Trigger not found"))
+
+        // Assert DB
+        val triggers = triggerRepository.findById(trigger.id!!)
+        assertTrue(triggers.isPresent)
     }
 
     private fun getPointsReachedTrigger() = triggerRepository.findByKey("points_reached")!!

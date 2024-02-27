@@ -1,6 +1,7 @@
 package com.arsahub.backend.services
 
 import com.arsahub.backend.dtos.request.TriggerCreateRequest
+import com.arsahub.backend.dtos.request.TriggerUpdateRequest
 import com.arsahub.backend.exceptions.ConflictException
 import com.arsahub.backend.exceptions.NotFoundException
 import com.arsahub.backend.models.App
@@ -182,5 +183,28 @@ class TriggerService(
         trigger: Trigger,
     ): List<Rule> {
         return ruleRepository.findAllByAppAndTrigger_Key(app, trigger.key!!)
+    }
+
+    fun updateTrigger(
+        app: App,
+        triggerId: Long,
+        request: TriggerUpdateRequest,
+    ): Trigger {
+        val trigger = triggerRepository.findByIdOrNull(triggerId) ?: throw TriggerNotFoundException()
+        assertCanUpdateTrigger(app, trigger)
+
+        request.title?.also { trigger.title = it }
+        request.description?.also { trigger.description = it }
+
+        return triggerRepository.save(trigger)
+    }
+
+    private fun assertCanUpdateTrigger(
+        app: App,
+        trigger: Trigger,
+    ) {
+        if (trigger.app!!.id != app.id) {
+            throw TriggerNotFoundException()
+        }
     }
 }

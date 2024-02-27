@@ -9,7 +9,6 @@ import jakarta.validation.constraints.Pattern
 import jakarta.validation.constraints.Size
 import kotlin.reflect.KClass
 
-@NotBlank(message = ValidationMessages.Constants.TITLE_REQUIRED)
 @Size(
     min = ValidationLengths.Constants.TITLE_MIN,
     max = ValidationLengths.Constants.TITLE_MAX,
@@ -23,6 +22,13 @@ import kotlin.reflect.KClass
 @Retention(AnnotationRetention.RUNTIME)
 @Constraint(validatedBy = [])
 annotation class ValidTitle(
+    val message: String = "",
+    val groups: Array<KClass<*>> = [],
+    val payload: Array<KClass<out Payload>> = [],
+)
+
+@NotBlank(message = ValidationMessages.Constants.TITLE_REQUIRED)
+annotation class RequiredTitle(
     val message: String = "",
     val groups: Array<KClass<*>> = [],
     val payload: Array<KClass<out Payload>> = [],
