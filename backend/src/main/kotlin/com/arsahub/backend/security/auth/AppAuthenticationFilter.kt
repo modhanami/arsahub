@@ -30,9 +30,12 @@ class AppAuthenticationFilter(
                 AntPathRequestMatcher("/api/apps/*/users/*", HttpMethod.GET.toString()), // TODO: reevaluate this
                 AntPathRequestMatcher("/api/apps/*/leaderboard", HttpMethod.GET.toString()), // TODO: reevaluate this
                 AntPathRequestMatcher("/swagger-ui/**"),
-                AntPathRequestMatcher("/v3/api-docs/**"),
+                AntPathRequestMatcher("/v3/api-docs"),
+                AntPathRequestMatcher("/v3/api-docs.yml"),
+                AntPathRequestMatcher("/v3/api-docs.yaml"),
                 AntPathRequestMatcher("/api/auth/**"),
                 AntPathRequestMatcher("/api/apps/invitations/*/*"),
+                AntPathRequestMatcher("/error"),
             )
 
         setRequestMatcher(NegatedRequestMatcher(OrRequestMatcher(matchers)))
