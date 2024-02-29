@@ -43,6 +43,13 @@ class TriggerService(
         return triggerRepository.findByKeyAndApp(key, app) ?: throw TriggerNotFoundException()
     }
 
+    fun getTriggerOrThrow(
+        triggerId: Long,
+        app: App,
+    ): Trigger {
+        return triggerRepository.findByIdAndApp(triggerId, app) ?: throw TriggerNotFoundException()
+    }
+
     fun getBuiltInTriggerOrThrow(key: String): Trigger {
         return triggerRepository.findByKey(key) ?: throw TriggerNotFoundException()
     }

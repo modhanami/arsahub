@@ -23,4 +23,9 @@ interface TriggerRepository : JpaRepository<Trigger, Long> {
     fun findAllByAppIdIsNull(): List<Trigger>
 
     fun findByKey(key: String): Trigger?
+
+    fun findByIdAndApp(
+        triggerId: Long,
+        app: App,
+    ): Trigger?
 }

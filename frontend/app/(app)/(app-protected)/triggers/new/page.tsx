@@ -35,8 +35,10 @@ import { ValidationLengths, ValidationMessages } from "@/types/generated-types";
 import { InputWithCounter } from "@/components/ui/input-with-counter";
 import { TextareaWithCounter } from "@/components/ui/textarea-with-counter";
 import { toast } from "@/components/ui/use-toast";
-
-const FieldTypeEnum = z.enum(["Text", "Integer"] as const);
+import {
+  FieldTypeEnum,
+  generateTriggerKeyFromTitle,
+} from "@/app/(app)/(app-protected)/triggers/shared";
 
 const triggerCreateSchema = z.object({
   title: z
@@ -72,19 +74,6 @@ const triggerCreateSchema = z.object({
     }),
   ),
 });
-
-export function generateTriggerKeyFromTitle(title: string): string | undefined {
-  const regex = /[a-zA-Z0-9_-]+/g;
-  const matches = title.match(regex);
-
-  if (matches) {
-    console.log("Matches", matches);
-    return matches.join("_");
-  } else {
-    console.log("No matches found");
-    return;
-  }
-}
 
 type FormData = z.infer<typeof triggerCreateSchema>;
 

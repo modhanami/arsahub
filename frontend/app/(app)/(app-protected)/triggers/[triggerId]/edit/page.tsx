@@ -10,14 +10,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
 import { isApiError, isApiValidationError } from "@/api";
-import { useUpdateTrigger } from "@/hooks";
+import { useTrigger, useUpdateTrigger } from "@/hooks";
 import { DevTool } from "@hookform/devtools";
 import { HttpStatusCode } from "axios";
 import { isAlphaNumericExtended } from "@/lib/validations";
@@ -29,7 +28,11 @@ import {
 import { InputWithCounter } from "@/components/ui/input-with-counter";
 import { TextareaWithCounter } from "@/components/ui/textarea-with-counter";
 import { toast } from "@/components/ui/use-toast";
-import { generateTriggerKeyFromTitle } from "@/app/(app)/(app-protected)/triggers/new/page";
+import {
+  generateTriggerKeyFromTitle,
+  getFieldTypeLabel,
+} from "@/app/(app)/(app-protected)/triggers/shared";
+import { Label } from "@/components/ui/label";
 
 const triggerUpdateSchema = z.object({
   title: z
@@ -55,37 +58,56 @@ export default function UpdateTriggerPage({
   params: { triggerId: string };
 }) {
   const triggerId = Number(params.triggerId);
-  // const trigger = useTrigger(triggerId);
+  const { data: trigger, isPending, isLoading, error } = useTrigger(triggerId);
+
+  if (
+    !trigger ||
+    (error &&
+      isApiError(error) &&
+      error.response?.status === HttpStatusCode.NotFound)
+  ) {
+    console.log("trigger not found", trigger, error);
+    return <div>Trigger not found</div>;
+  }
+
+  console.log("trigger", trigger);
+
+  return <UpdateTriggerForm trigger={trigger} />;
 }
 
 interface UpdateTriggerFormProps {
   trigger: TriggerResponse;
 }
 
+function getDefaultValues(trigger: TriggerResponse) {
+  return {
+    title: trigger.title ?? "",
+    description: trigger.description ?? undefined,
+  };
+}
+
 function UpdateTriggerForm({ trigger }: UpdateTriggerFormProps) {
   const form = useForm<FormData>({
     resolver: zodResolver(triggerUpdateSchema),
-    defaultValues: {
-      title: trigger.title ?? "",
-      description: trigger.description ?? undefined,
-    },
+    defaultValues: getDefaultValues(trigger),
   });
   const mutation = useUpdateTrigger();
 
   async function onSubmit(values: FormData) {
     try {
-      const data = await mutation.mutateAsync({
+      const updatedTrigger = await mutation.mutateAsync({
         triggerId: trigger.id!,
         updateRequest: {
           title: values.title ?? null,
           description: values.description ?? null,
         },
       });
-      console.log("data", data);
       toast({
-        title: "Trigger created",
-        description: "Your trigger was created successfully.",
+        title: "Trigger updated",
+        description: "Your trigger was updated successfully.",
       });
+
+      form.reset(getDefaultValues(updatedTrigger));
     } catch (error) {
       console.log("error", error);
       if (isApiValidationError(error)) {
@@ -129,9 +151,6 @@ function UpdateTriggerForm({ trigger }: UpdateTriggerFormProps) {
                       {...field}
                     />
                   </FormControl>
-                  <FormDescription>
-                    {/* This is your public display name. */}
-                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -149,9 +168,6 @@ function UpdateTriggerForm({ trigger }: UpdateTriggerFormProps) {
                       {...field}
                     />
                   </FormControl>
-                  <FormDescription>
-                    {/* This is your public display name. */}
-                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -171,73 +187,34 @@ function UpdateTriggerForm({ trigger }: UpdateTriggerFormProps) {
               />
             </FormItem>
 
-            {/*{form.watch("fields")?.map((fieldDefinition, index) => (*/}
-            {/*  <div key={index} className="flex gap-2 flex-auto">*/}
-            {/*    <FormField*/}
-            {/*      control={form.control}*/}
-            {/*      name={`fields.${index}.key`}*/}
-            {/*      render={({ field }) => (*/}
-            {/*        <FormItem className="w-3/6">*/}
-            {/*          <FormControl>*/}
-            {/*            <Input placeholder="Key" {...field} />*/}
-            {/*          </FormControl>*/}
-            {/*          {form.formState.touchedFields["fields"]?.[index]?.key &&*/}
-            {/*            form.formState.dirtyFields["fields"]?.[index]?.key && (*/}
-            {/*              <FormMessage />*/}
-            {/*            )}*/}
-            {/*        </FormItem>*/}
-            {/*      )}*/}
-            {/*    />*/}
+            <div className="flex items-center justify-between pt-4">
+              <Label>Fields</Label>
+            </div>
 
-            {/*    <FormField*/}
-            {/*      control={form.control}*/}
-            {/*      name={`fields.${index}.type`}*/}
-            {/*      render={({ field }) => (*/}
-            {/*        <FormItem>*/}
-            {/*          <FormControl>*/}
-            {/*            <Select*/}
-            {/*              onValueChange={field.onChange}*/}
-            {/*              value={field.value}*/}
-            {/*            >*/}
-            {/*              <SelectTrigger>*/}
-            {/*                <SelectValue*/}
-            {/*                  placeholder="Select a type"*/}
-            {/*                  className="w-1"*/}
-            {/*                />*/}
-            {/*              </SelectTrigger>*/}
-            {/*              <SelectContent className="w-full">*/}
-            {/*                {FieldTypeEnum.options.map((type) => (*/}
-            {/*                  <SelectItem*/}
-            {/*                    key={type}*/}
-            {/*                    value={type}*/}
-            {/*                    className="flex items-center justify-between w-full"*/}
-            {/*                  >*/}
-            {/*                    {type}*/}
-            {/*                  </SelectItem>*/}
-            {/*                ))}*/}
-            {/*              </SelectContent>*/}
-            {/*            </Select>*/}
-            {/*          </FormControl>*/}
-            {/*          <FormMessage />*/}
-            {/*        </FormItem>*/}
-            {/*      )}*/}
-            {/*    />*/}
+            {trigger.fields?.map((fieldDefinition, index) => (
+              <div key={index} className="flex gap-2 flex-auto">
+                <FormItem className="w-3/6">
+                  <FormControl>
+                    <Input value={fieldDefinition.key ?? "-"} disabled />
+                  </FormControl>
+                </FormItem>
 
-            {/*    <div className="w-1/6">*/}
-            {/*      <Button*/}
-            {/*        variant="ghost"*/}
-            {/*        onClick={() => removeField(index)}*/}
-            {/*        size="icon"*/}
-            {/*      >*/}
-            {/*        <Icons.trash className="h-4 w-4" />*/}
-            {/*      </Button>*/}
-            {/*    </div>*/}
-            {/*  </div>*/}
-            {/*))}*/}
+                <FormItem>
+                  <Input
+                    className="flex items-center justify-between w-full"
+                    disabled
+                    value={getFieldTypeLabel(fieldDefinition.type ?? "") ?? "-"}
+                  />
+                </FormItem>
+              </div>
+            ))}
 
             <div className="flex justify-between pt-2">
-              <Button type="submit" disabled={mutation.isPending}>
-                Create
+              <Button
+                type="submit"
+                disabled={mutation.isPending || !form.formState.isDirty}
+              >
+                Update
               </Button>
             </div>
           </form>

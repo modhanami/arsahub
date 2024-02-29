@@ -73,10 +73,14 @@ export function isApiValidationError(
 }
 
 export function isApiError(error: unknown): error is ApiErrorHolder<ApiError> {
-  return (
-    axios.isAxiosError(error) &&
-    (error.response?.data as ApiError).message !== undefined
-  );
+  try {
+    return (
+      axios.isAxiosError(error) &&
+      (error.response!.data as ApiError).message !== undefined
+    );
+  } catch (e) {
+    return false;
+  }
 }
 
 export async function fetchAchievements(app: AppResponse) {
@@ -175,6 +179,18 @@ export async function fetchTriggers(
     `${API_URL}/apps/triggers${
       options.withBuiltIn ? "?with-built-in=true" : ""
     }`,
+    {
+      headers: {
+        ...makeAppAuthHeader(currentApp),
+      },
+    },
+  );
+  return data;
+}
+
+export async function fetchTrigger(currentApp: AppResponse, triggerId: number) {
+  const { data } = await instance.get<TriggerResponse>(
+    `${API_URL}/apps/triggers/${triggerId}`,
     {
       headers: {
         ...makeAppAuthHeader(currentApp),

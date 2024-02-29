@@ -116,6 +116,14 @@ class AppController(
         return triggerService.getTriggers(app, withBuiltIn).map { TriggerResponse.fromEntity(it) }
     }
 
+    @GetMapping("/triggers/{triggerId}")
+    fun getTrigger(
+        @CurrentApp app: App,
+        @PathVariable triggerId: Long,
+    ): TriggerResponse {
+        return triggerService.getTriggerOrThrow(triggerId, app).let { TriggerResponse.fromEntity(it) }
+    }
+
     @DeleteMapping("/triggers/{triggerId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun deleteTrigger(

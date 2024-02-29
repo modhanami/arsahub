@@ -19,6 +19,7 @@ import {
   fetchMyApp,
   fetchRewards,
   fetchRules,
+  fetchTrigger,
   fetchTriggers,
   FetchTriggersOptions,
   sendTrigger,
@@ -141,6 +142,16 @@ export function useTriggers(options: FetchTriggersOptions = {}) {
   return useQuery({
     queryKey: ["triggers"],
     queryFn: () => currentApp && fetchTriggers(currentApp, options),
+    enabled: !!currentApp,
+  });
+}
+
+export function useTrigger(triggerId: number) {
+  const { currentApp } = useCurrentApp();
+
+  return useQuery({
+    queryKey: ["trigger", triggerId],
+    queryFn: () => currentApp && fetchTrigger(currentApp, triggerId),
     enabled: !!currentApp,
   });
 }
