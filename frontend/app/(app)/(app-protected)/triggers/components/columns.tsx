@@ -28,6 +28,7 @@ import { toast } from "@/components/ui/use-toast";
 import { useDeleteTrigger } from "@/hooks";
 import { isApiError } from "@/api";
 import { DataTableRowActionsProps } from "@/app/(app)/examples/tasks/components/data-table-row-actions";
+import Link from "next/link";
 
 export const columns: ColumnDef<TriggerResponse>[] = [
   // {
@@ -160,7 +161,7 @@ export function TriggerRowActions({
         <DropdownMenuContent align="end" className="w-[160px]">
           <DropdownMenuItem onSelect={() => setShowEditDialog(true)}>
             <Icons.edit className="mr-3 h-4 w-4" />
-            Edit
+            <Link href={`/triggers/${row.original.id}/edit`}>Edit</Link>
           </DropdownMenuItem>
           <DropdownMenuItem
             onSelect={() => setShowDeleteDialog(true)}

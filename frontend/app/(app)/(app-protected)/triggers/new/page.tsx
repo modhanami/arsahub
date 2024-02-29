@@ -73,7 +73,7 @@ const triggerCreateSchema = z.object({
   ),
 });
 
-function generateKeyFromTitle(title: string): string | undefined {
+export function generateTriggerKeyFromTitle(title: string): string | undefined {
   const regex = /[a-zA-Z0-9_-]+/g;
   const matches = title.match(regex);
 
@@ -123,7 +123,7 @@ export default function Page() {
   }
 
   async function onSubmit(values: FormData) {
-    const generatedKey = generateKeyFromTitle(values.title);
+    const generatedKey = generateTriggerKeyFromTitle(values.title);
     if (!generatedKey) {
       form.setError("title", {
         message: "Invalid title",
@@ -159,7 +159,7 @@ export default function Page() {
             // root error
             if (error.response?.status === HttpStatusCode.Conflict) {
               form.setError("title", {
-                message: "Trigger with this key already exists",
+                message: error.response.data.message,
               });
             }
           }
@@ -226,14 +226,15 @@ export default function Page() {
             <FormItem>
               <FormLabel>Auto-generated key</FormLabel>
               <p className="text-gray-500 text-sm">
-                This is the key that you will use to trigger for users in this
-                activity.
+                This is the key that you will use for sending triggers for your
+                app users. It will be auto-generated from the title.
               </p>
               <Input
                 value={
                   form.watch("title") &&
-                  generateKeyFromTitle(form.watch("title"))
+                  generateTriggerKeyFromTitle(form.watch("title"))
                 }
+                placeholder="This will be auto-generated from the title"
                 readOnly
                 disabled
               />

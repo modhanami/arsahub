@@ -24,6 +24,7 @@ import {
   sendTrigger,
   setAchievementImage,
   setRewardImage,
+  updateTrigger,
 } from "@/api";
 import {
   AchievementCreateRequest,
@@ -34,6 +35,7 @@ import {
   RuleCreateRequest,
   TriggerCreateRequest,
   TriggerSendRequest,
+  TriggerUpdateRequest,
 } from "@/types/generated-types";
 import {
   AchievementSetImageRequestClient,
@@ -154,6 +156,27 @@ export function useCreateTrigger() {
     mutationKey: ["triggers"],
     mutationFn: (newTrigger: TriggerCreateRequest) =>
       createTrigger(currentApp, newTrigger),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["triggers"] });
+    },
+  });
+}
+
+export function useUpdateTrigger() {
+  const { currentApp } = useCurrentApp();
+  const queryClient = useQueryClient();
+  if (!currentApp) {
+    throw new Error("No current app");
+  }
+
+  return useMutation({
+    mutationFn: ({
+      triggerId,
+      updateRequest,
+    }: {
+      triggerId: number;
+      updateRequest: TriggerUpdateRequest;
+    }) => currentApp && updateTrigger(currentApp, triggerId, updateRequest),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["triggers"] });
     },

@@ -15,6 +15,7 @@ import {
   TriggerCreateRequest,
   TriggerResponse,
   TriggerSendRequest,
+  TriggerUpdateRequest,
   UserResponse,
 } from "../types/generated-types";
 
@@ -190,6 +191,23 @@ export async function createTrigger(
   const { data } = await instance.post<TriggerResponse>(
     `${API_URL}/apps/triggers`,
     newTrigger,
+    {
+      headers: {
+        ...makeAppAuthHeader(currentApp),
+      },
+    },
+  );
+  return data;
+}
+
+export async function updateTrigger(
+  currentApp: AppResponse,
+  triggerId: number,
+  updateRequest: TriggerUpdateRequest,
+) {
+  const { data } = await instance.patch<TriggerResponse>(
+    `${API_URL}/apps/triggers/${triggerId}`,
+    updateRequest,
     {
       headers: {
         ...makeAppAuthHeader(currentApp),
