@@ -63,10 +63,13 @@ class TriggerService(
             throw IllegalArgumentException("Invalid title")
         }
 
-        // validate uniqueness of key in app
-        val existingTrigger = triggerRepository.findByKeyAndApp(autoKey, app)
-        if (existingTrigger != null) {
+        // validate uniqueness of key and title (case-sensitive) in app
+        if (triggerRepository.findByKeyAndApp(autoKey, app) != null) {
             logger.error { "Trigger with key $autoKey already exists" }
+            throw TriggerConflictException()
+        }
+        if (triggerRepository.findByTitleAndApp(request.title, app) != null) {
+            logger.error { "Trigger with title ${request.title} already exists" }
             throw TriggerConflictException()
         }
 

@@ -2785,21 +2785,21 @@ class AppControllerTest() {
                 .content(
                     """
                     {
-                      "title": "Hoo Made This",
-                      "description": "I Made This"
+                      "title": "Updated Title",
+                      "description": "Updated Description"
                     }
                     """.trimIndent(),
                 ),
         )
             .andExpect(status().isOk)
-            .andExpect(jsonPath("$.title").value("Hoo Made This"))
-            .andExpect(jsonPath("$.description").value("I Made This"))
+            .andExpect(jsonPath("$.title").value("Updated Title"))
+            .andExpect(jsonPath("$.description").value("Updated Description"))
 
         // Assert DB
         val triggers = triggerRepository.findById(trigger.id!!)
         assertTrue(triggers.isPresent)
-        assertEquals("Hoo Made This", triggers.get().title)
-        assertEquals("I Made This", triggers.get().description)
+        assertEquals("Updated Title", triggers.get().title)
+        assertEquals("Updated Description", triggers.get().description)
     }
 
     @Test
@@ -2814,20 +2814,48 @@ class AppControllerTest() {
                 .content(
                     """
                     {
-                      "title": "Hoo Made This"
+                      "title": "Updated Title"
                     }
                     """.trimIndent(),
                 ),
         )
             .andExpect(status().isOk)
-            .andExpect(jsonPath("$.title").value("Hoo Made This"))
+            .andExpect(jsonPath("$.title").value("Updated Title"))
             .andExpect(jsonPath("$.description").value("When a workshop is completed"))
 
         // Assert DB
         val triggers = triggerRepository.findById(trigger.id!!)
         assertTrue(triggers.isPresent)
-        assertEquals("Hoo Made This", triggers.get().title)
+        assertEquals("Updated Title", triggers.get().title)
         assertEquals("When a workshop is completed", triggers.get().description)
+    }
+
+    @Test
+    fun `edit trigger - success - description only`() {
+        // Arrange
+        val trigger = createWorkshopCompletedTrigger(authSetup.app)
+
+        // Act & Assert HTTP
+        mockMvc.performWithAppAuth(
+            patch("/api/apps/triggers/${trigger.id}")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "description": "Updated Description"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.title").value("Workshop Completed"))
+            .andExpect(jsonPath("$.description").value("Updated Description"))
+
+        // Assert DB
+        val triggers = triggerRepository.findById(trigger.id!!)
+        assertTrue(triggers.isPresent)
+        assertEquals("Workshop Completed", triggers.get().title)
+        assertEquals("Updated Description", triggers.get().description)
     }
 
     @Test
@@ -2843,8 +2871,8 @@ class AppControllerTest() {
                 .content(
                     """
                     {
-                      "title": "Hoo Made This",
-                      "description": "I Made This"
+                      "title": "Updated Title",
+                      "description": "Updated Description"
                     }
                     """.trimIndent(),
                 ),
