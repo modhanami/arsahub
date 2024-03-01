@@ -751,6 +751,7 @@ class AppControllerTest() {
     data class RuleBuilder(
         var trigger: Trigger? = null,
         var title: String? = null,
+        var description: String? = null,
         var action: ActionBuilder? = null,
         var actionPoints: Int? = null,
         var conditions: MutableList<ConditionBuilder> = mutableListOf(),
@@ -798,35 +799,12 @@ class AppControllerTest() {
         customizer: RuleBuilder.() -> Unit = {},
     ): Rule {
         val builder = RuleBuilder().apply(customizer)
-        val rule =
-            Rule(
-                title = builder.title!!,
-                trigger = builder.trigger!!,
-                action = builder.action!!.key!!,
-            )
-
-        if (builder.action!!.params != null) {
-            if (builder.action!!.key == "add_points") {
-                rule.actionPoints = builder.action!!.params!!["points"] as Int
-            }
-
-            if (builder.action!!.key == "unlock_achievement") {
-                val achievementId = builder.action!!.params!!["achievementId"] as Long
-                val achievementReference = achievementRepository.getReferenceById(achievementId)
-                rule.actionAchievement = achievementReference
-            }
-        }
-
-        // TODO: update this when support for more operators is added
-        rule.conditions = builder.conditions.associate { it.key!! to it.value!! }.toMutableMap()
-
-        rule.repeatability = builder.repeatability!!.key
 
         return ruleService.createRule(
             app,
             RuleCreateRequest(
-                title = builder.title!!,
-                description = null,
+                title = builder.title,
+                description = builder.description,
                 trigger =
                     TriggerDefinition(
                         key = builder.trigger!!.key!!,
@@ -2884,6 +2862,153 @@ class AppControllerTest() {
         // Assert DB
         val triggers = triggerRepository.findById(trigger.id!!)
         assertTrue(triggers.isPresent)
+    }
+
+    // Edit rule: Only title and description
+    @Test
+    fun `edit rule - success`() {
+        // Arrange
+        val rule =
+            createRule(authSetup.app) {
+                title = "When workshop completed then add 100 points"
+                trigger = createWorkshopCompletedTrigger(authSetup.app)
+                action {
+                    addPoints(100)
+                }
+                repeatability = UnlimitedRuleRepeatability
+            }
+
+        // Act & Assert HTTP
+        mockMvc.performWithAppAuth(
+            patch("/api/apps/rules/${rule.id}")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "title": "Updated Title",
+                      "description": "Updated Description"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.title").value("Updated Title"))
+            .andExpect(jsonPath("$.description").value("Updated Description"))
+
+        // Assert DB
+        val rules = ruleRepository.findById(rule.id!!)
+        assertTrue(rules.isPresent)
+        assertEquals("Updated Title", rules.get().title)
+        assertEquals("Updated Description", rules.get().description)
+    }
+
+    @Test
+    fun `edit rule - success - title only`() {
+        // Arrange
+        val rule =
+            createRule(authSetup.app) {
+                title = "When workshop completed then add 100 points"
+                description = "When a workshop is completed then add 100 points"
+                trigger = createWorkshopCompletedTrigger(authSetup.app)
+                action {
+                    addPoints(100)
+                }
+                repeatability = UnlimitedRuleRepeatability
+            }
+
+        // Act & Assert HTTP
+        mockMvc.performWithAppAuth(
+            patch("/api/apps/rules/${rule.id}")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "title": "Updated Title"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.title").value("Updated Title"))
+            .andExpect(jsonPath("$.description").value("When a workshop is completed then add 100 points"))
+
+        // Assert DB
+        val rules = ruleRepository.findById(rule.id!!)
+        assertTrue(rules.isPresent)
+        assertEquals("Updated Title", rules.get().title)
+        assertEquals("When a workshop is completed then add 100 points", rules.get().description)
+    }
+
+    @Test
+    fun `edit rule - success - description only`() {
+        // Arrange
+        val rule =
+            createRule(authSetup.app) {
+                title = "When workshop completed then add 100 points"
+                trigger = createWorkshopCompletedTrigger(authSetup.app)
+                action {
+                    addPoints(100)
+                }
+                repeatability = UnlimitedRuleRepeatability
+            }
+
+        // Act & Assert HTTP
+        mockMvc.performWithAppAuth(
+            patch("/api/apps/rules/${rule.id}")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "description": "Updated Description"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.title").value("When workshop completed then add 100 points"))
+            .andExpect(jsonPath("$.description").value("Updated Description"))
+
+        // Assert DB
+        val rules = ruleRepository.findById(rule.id!!)
+        assertTrue(rules.isPresent)
+        assertEquals("When workshop completed then add 100 points", rules.get().title)
+        assertEquals("Updated Description", rules.get().description)
+    }
+
+    @Test
+    fun `edit rule - failed - different app`() {
+        // Arrange
+        val otherApp = setupAuth(userRepository, appRepository).app
+        val rule =
+            createRule(authSetup.app) {
+                title = "When workshop completed then add 100 points"
+                trigger = createWorkshopCompletedTrigger(authSetup.app)
+                action {
+                    addPoints(100)
+                }
+                repeatability = UnlimitedRuleRepeatability
+            }
+
+        // Act & Assert HTTP
+        mockMvc.performWithAppAuth(
+            patch("/api/apps/rules/${rule.id}")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "title": "Updated Title",
+                      "description": "Updated Description"
+                    }
+                    """.trimIndent(),
+                ),
+            app = otherApp,
+        )
+            .andExpect(status().isNotFound)
+            .andExpect(jsonPath("$.message").value("Rule not found"))
+
+        // Assert DB
+        val rules = ruleRepository.findById(rule.id!!)
+        assertTrue(rules.isPresent)
     }
 
     private fun getPointsReachedTrigger() = triggerRepository.findByKey("points_reached")!!

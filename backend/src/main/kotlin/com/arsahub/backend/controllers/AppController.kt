@@ -7,6 +7,7 @@ import com.arsahub.backend.dtos.request.RewardCreateRequest
 import com.arsahub.backend.dtos.request.RewardRedeemRequest
 import com.arsahub.backend.dtos.request.RewardSetImageRequest
 import com.arsahub.backend.dtos.request.RuleCreateRequest
+import com.arsahub.backend.dtos.request.RuleUpdateRequest
 import com.arsahub.backend.dtos.request.TriggerCreateRequest
 import com.arsahub.backend.dtos.request.TriggerSendRequest
 import com.arsahub.backend.dtos.request.TriggerUpdateRequest
@@ -295,6 +296,15 @@ class AppController(
         return ruleService.createRule(app, request).let { RuleResponse.fromEntity(it) }
     }
 
+    @PatchMapping("/rules/{ruleId}")
+    fun updateRule(
+        @PathVariable ruleId: Long,
+        @Valid @RequestBody request: RuleUpdateRequest,
+        @CurrentApp app: App,
+    ): RuleResponse {
+        return ruleService.updateRule(app, ruleId, request).let { RuleResponse.fromEntity(it) }
+    }
+
     @Operation(
         summary = "List rules",
         responses = [
@@ -308,6 +318,14 @@ class AppController(
         @CurrentApp app: App,
     ): List<RuleResponse> {
         return ruleService.listRules(app).map { RuleResponse.fromEntity(it) }
+    }
+
+    @GetMapping("/rules/{ruleId}")
+    fun getRule(
+        @CurrentApp app: App,
+        @PathVariable ruleId: Long,
+    ): RuleResponse {
+        return ruleService.getRuleOrThrow(app, ruleId).let { RuleResponse.fromEntity(it) }
     }
 
     @DeleteMapping("/rules/{ruleId}")
