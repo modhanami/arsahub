@@ -2,6 +2,7 @@ package com.arsahub.backend.dtos.request
 
 import com.arsahub.backend.dtos.ValidationLengths
 import com.arsahub.backend.dtos.ValidationMessages
+import com.arsahub.backend.dtos.annotations.RequiredTitle
 import com.arsahub.backend.dtos.annotations.ValidDescription
 import com.arsahub.backend.dtos.annotations.ValidKey
 import com.arsahub.backend.dtos.annotations.ValidTitle
@@ -14,6 +15,7 @@ class TriggerCreateRequest(
     val fields: List<FieldDefinition>? = null,
 ) {
     @ValidTitle
+    @RequiredTitle
     val title: String? = title?.trim()
 
     @ValidDescription

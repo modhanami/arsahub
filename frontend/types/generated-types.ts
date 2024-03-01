@@ -1,10 +1,10 @@
 /* tslint:disable */
 /* eslint-disable */
 
-// Generated using typescript-generator version 3.2.1263 on 2024-02-17 21:15:03.
+// Generated using typescript-generator version 3.2.1263 on 2024-03-01 23:01:22.
 
 export interface AchievementCreateRequest {
-  title: string | null;
+  title: string;
   description: string | null;
 }
 
@@ -38,8 +38,8 @@ export interface FieldDefinition {
 }
 
 export interface KeyAndParams {
-  key: string;
   params: { [index: string]: any } | null;
+  key: string | null;
 }
 
 export interface RewardCreateRequest {
@@ -60,15 +60,20 @@ export interface RewardSetImageRequest {
 }
 
 export interface RuleCreateRequest {
-  title: string | null;
-  description: string | null;
   trigger: KeyAndParams;
   action: KeyAndParams;
   conditions: { [index: string]: any } | null;
-  repeatability: string;
+  title: string | null;
+  description: string | null;
+  repeatability: string | null;
 }
 
 export interface RuleCreateRequestKt {}
+
+export interface RuleUpdateRequest {
+  title: string | null;
+  description: string | null;
+}
 
 export interface TriggerCreateRequest {
   fields: FieldDefinition[] | null;
@@ -77,9 +82,14 @@ export interface TriggerCreateRequest {
 }
 
 export interface TriggerSendRequest {
-  key: string;
   params: { [index: string]: any } | null;
-  userId: string;
+  key: string | null;
+  userId: string | null;
+}
+
+export interface TriggerUpdateRequest {
+  title: string | null;
+  description: string | null;
 }
 
 export interface UnlockAchievementAction extends Action {
@@ -191,7 +201,7 @@ export interface UserResponse {
   userId: number;
   internalUserId: number;
   externalUserId: string;
-  googleUserId: string;
+  googleUserId: string | null;
   email: string;
   name: string;
 }
@@ -212,9 +222,9 @@ export interface PointsUpdate extends AppUpdate {
   points: number;
 }
 
-export interface SupabaseGoogleIdentity {
+export interface SupabaseIdentity {
   supabaseUserId: string;
-  googleUserId: string;
+  googleUserId: string | null;
   email: string;
   name: string;
 }
@@ -222,7 +232,7 @@ export interface SupabaseGoogleIdentity {
 export interface UserIdentity {
   internalUserId: number;
   externalUserId: string;
-  googleUserId: string;
+  googleUserId: string | null;
   email: string;
   name: string;
 }
@@ -233,8 +243,8 @@ export interface MultipartFile extends InputStreamSource {
   empty: boolean;
   resource: Resource;
   size: number;
-  contentType: string;
   originalFilename: string;
+  contentType: string;
 }
 
 export interface App
@@ -259,8 +269,8 @@ export interface Entry {
 export interface Resource extends InputStreamSource {
   open: boolean;
   file: any;
-  readable: boolean;
   url: URL;
+  readable: boolean;
   description: string;
   filename: string;
   uri: URI;

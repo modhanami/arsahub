@@ -1,6 +1,7 @@
 package com.arsahub.backend.services
 
 import com.arsahub.backend.dtos.request.TriggerCreateRequest
+import com.arsahub.backend.dtos.request.TriggerUpdateRequest
 import com.arsahub.backend.exceptions.ConflictException
 import com.arsahub.backend.exceptions.NotFoundException
 import com.arsahub.backend.models.App
@@ -42,6 +43,13 @@ class TriggerService(
         return triggerRepository.findByKeyAndApp(key, app) ?: throw TriggerNotFoundException()
     }
 
+    fun getTriggerOrThrow(
+        triggerId: Long,
+        app: App,
+    ): Trigger {
+        return triggerRepository.findByIdAndApp(triggerId, app) ?: throw TriggerNotFoundException()
+    }
+
     fun getBuiltInTriggerOrThrow(key: String): Trigger {
         return triggerRepository.findByKey(key) ?: throw TriggerNotFoundException()
     }
@@ -62,10 +70,13 @@ class TriggerService(
             throw IllegalArgumentException("Invalid title")
         }
 
-        // validate uniqueness of key in app
-        val existingTrigger = triggerRepository.findByKeyAndApp(autoKey, app)
-        if (existingTrigger != null) {
+        // validate uniqueness of key and title (case-sensitive) in app
+        if (triggerRepository.findByKeyAndApp(autoKey, app) != null) {
             logger.error { "Trigger with key $autoKey already exists" }
+            throw TriggerConflictException()
+        }
+        if (triggerRepository.findByTitleAndApp(request.title, app) != null) {
+            logger.error { "Trigger with title ${request.title} already exists" }
             throw TriggerConflictException()
         }
 
@@ -182,5 +193,28 @@ class TriggerService(
         trigger: Trigger,
     ): List<Rule> {
         return ruleRepository.findAllByAppAndTrigger_Key(app, trigger.key!!)
+    }
+
+    fun updateTrigger(
+        app: App,
+        triggerId: Long,
+        request: TriggerUpdateRequest,
+    ): Trigger {
+        val trigger = triggerRepository.findByIdOrNull(triggerId) ?: throw TriggerNotFoundException()
+        assertCanUpdateTrigger(app, trigger)
+
+        request.title?.also { trigger.title = it }
+        request.description?.also { trigger.description = it }
+
+        return triggerRepository.save(trigger)
+    }
+
+    private fun assertCanUpdateTrigger(
+        app: App,
+        trigger: Trigger,
+    ) {
+        if (trigger.app!!.id != app.id) {
+            throw TriggerNotFoundException()
+        }
     }
 }

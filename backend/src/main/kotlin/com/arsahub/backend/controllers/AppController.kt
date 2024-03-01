@@ -7,8 +7,10 @@ import com.arsahub.backend.dtos.request.RewardCreateRequest
 import com.arsahub.backend.dtos.request.RewardRedeemRequest
 import com.arsahub.backend.dtos.request.RewardSetImageRequest
 import com.arsahub.backend.dtos.request.RuleCreateRequest
+import com.arsahub.backend.dtos.request.RuleUpdateRequest
 import com.arsahub.backend.dtos.request.TriggerCreateRequest
 import com.arsahub.backend.dtos.request.TriggerSendRequest
+import com.arsahub.backend.dtos.request.TriggerUpdateRequest
 import com.arsahub.backend.dtos.response.AchievementResponse
 import com.arsahub.backend.dtos.response.ApiValidationError
 import com.arsahub.backend.dtos.response.AppResponse
@@ -43,6 +45,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -88,6 +91,15 @@ class AppController(
         return triggerService.createTrigger(app, request).let { TriggerResponse.fromEntity(it) }
     }
 
+    @PatchMapping("/triggers/{triggerId}")
+    fun updateTrigger(
+        @PathVariable triggerId: Long,
+        @Valid @RequestBody request: TriggerUpdateRequest,
+        @CurrentApp app: App,
+    ): TriggerResponse {
+        return triggerService.updateTrigger(app, triggerId, request).let { TriggerResponse.fromEntity(it) }
+    }
+
     @Operation(
         summary = "Get all triggers",
         responses = [
@@ -103,6 +115,14 @@ class AppController(
         @RequestParam(name = "with-built-in", required = false, defaultValue = "false") withBuiltIn: Boolean,
     ): List<TriggerResponse> {
         return triggerService.getTriggers(app, withBuiltIn).map { TriggerResponse.fromEntity(it) }
+    }
+
+    @GetMapping("/triggers/{triggerId}")
+    fun getTrigger(
+        @CurrentApp app: App,
+        @PathVariable triggerId: Long,
+    ): TriggerResponse {
+        return triggerService.getTriggerOrThrow(triggerId, app).let { TriggerResponse.fromEntity(it) }
     }
 
     @DeleteMapping("/triggers/{triggerId}")
@@ -276,6 +296,15 @@ class AppController(
         return ruleService.createRule(app, request).let { RuleResponse.fromEntity(it) }
     }
 
+    @PatchMapping("/rules/{ruleId}")
+    fun updateRule(
+        @PathVariable ruleId: Long,
+        @Valid @RequestBody request: RuleUpdateRequest,
+        @CurrentApp app: App,
+    ): RuleResponse {
+        return ruleService.updateRule(app, ruleId, request).let { RuleResponse.fromEntity(it) }
+    }
+
     @Operation(
         summary = "List rules",
         responses = [
@@ -289,6 +318,14 @@ class AppController(
         @CurrentApp app: App,
     ): List<RuleResponse> {
         return ruleService.listRules(app).map { RuleResponse.fromEntity(it) }
+    }
+
+    @GetMapping("/rules/{ruleId}")
+    fun getRule(
+        @CurrentApp app: App,
+        @PathVariable ruleId: Long,
+    ): RuleResponse {
+        return ruleService.getRuleOrThrow(app, ruleId).let { RuleResponse.fromEntity(it) }
     }
 
     @DeleteMapping("/rules/{ruleId}")

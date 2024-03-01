@@ -1,9 +1,9 @@
 package com.arsahub.backend.controllers
 
 import com.arsahub.backend.dtos.response.UserResponse
-import com.arsahub.backend.dtos.supabase.SupabaseGoogleIdentity
+import com.arsahub.backend.dtos.supabase.SupabaseIdentity
 import com.arsahub.backend.services.AuthService
-import com.arsahub.backend.services.SupabaseGoogleIdentityPrincipal
+import com.arsahub.backend.services.SupabaseIdentityPrincipal
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
@@ -17,8 +17,8 @@ class AuthController(
     // TODO: evaluate if this should be replaced with a webhook
     @PostMapping("/sync/supabase")
     fun syncSupabase(
-        @SupabaseGoogleIdentityPrincipal identity: SupabaseGoogleIdentity,
+        @SupabaseIdentityPrincipal identity: SupabaseIdentity,
     ): UserResponse {
-        return authService.syncSupabaseGoogleIdentity(identity).let { UserResponse.fromEntity(it) }
+        return authService.syncSupabaseIdentity(identity).let { UserResponse.fromEntity(it) }
     }
 }

@@ -4,6 +4,7 @@ import com.arsahub.backend.dtos.request.Action
 import com.arsahub.backend.dtos.request.ActionDefinition
 import com.arsahub.backend.dtos.request.AddPointsAction
 import com.arsahub.backend.dtos.request.RuleCreateRequest
+import com.arsahub.backend.dtos.request.RuleUpdateRequest
 import com.arsahub.backend.dtos.request.UnlockAchievementAction
 import com.arsahub.backend.exceptions.ConflictException
 import com.arsahub.backend.exceptions.NotFoundException
@@ -87,6 +88,19 @@ class RuleService(
         return ruleRepository.save(rule)
     }
 
+    fun updateRule(
+        app: App,
+        ruleId: Long,
+        request: RuleUpdateRequest,
+    ): Rule {
+        val rule = ruleRepository.findByIdAndApp(ruleId, app) ?: throw RuleNotFoundException()
+
+        request.title?.also { rule.title = it }
+        request.description?.also { rule.description = it }
+
+        return ruleRepository.save(rule)
+    }
+
     class RuleRepeatabilityMustBeOncePerUserException :
         IllegalArgumentException("Repeatability must be once_per_user for this trigger")
 
@@ -162,5 +176,12 @@ class RuleService(
         if (ruleProgresses.isNotEmpty() && ruleProgresses.any { (it.activationCount ?: 0) > 0 }) {
             throw RuleInUseException()
         }
+    }
+
+    fun getRuleOrThrow(
+        app: App,
+        ruleId: Long,
+    ): Rule {
+        return ruleRepository.findByIdAndApp(ruleId, app) ?: throw RuleNotFoundException()
     }
 }

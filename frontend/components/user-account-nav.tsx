@@ -11,25 +11,37 @@ import { UserAvatar } from "@/components/user-avatar";
 import { Button } from "./ui/button";
 import { useCurrentUser } from "@/lib/current-user";
 import { getReturnTo } from "@/lib/utils";
+import { usePathname, useRouter } from "next/navigation";
 
 export function UserAccountNav() {
-  const { currentUser, isLoading, startLoginFlow, startLogoutFlow } =
+  const { currentUser, session, isLoading, startLoginFlow, startLogoutFlow } =
     useCurrentUser();
+  const router = useRouter();
+  const pathname = usePathname();
 
-  if (isLoading || !currentUser) {
+  if (isLoading) {
+    return null;
+  }
+
+  if (!session) {
     return (
       <Button
         variant="outline"
         className="text-sm"
         onClick={() =>
-          startLoginFlow({
-            returnTo: getReturnTo(window.location.pathname),
-          })
+          // startLoginFlow({
+          //   returnTo: getReturnTo(window.location.pathname),
+          // })
+          router.push(`/login?redirect=${getReturnTo(pathname)}`)
         }
       >
         Login
       </Button>
     );
+  }
+
+  if (!currentUser) {
+    return null;
   }
 
   return (

@@ -19,11 +19,15 @@ import {
   fetchMyApp,
   fetchRewards,
   fetchRules,
+  fetchTrigger,
   fetchTriggers,
   FetchTriggersOptions,
+  getRule,
   sendTrigger,
   setAchievementImage,
   setRewardImage,
+  updateRule,
+  updateTrigger,
 } from "@/api";
 import {
   AchievementCreateRequest,
@@ -32,8 +36,10 @@ import {
   RewardCreateRequest,
   RewardResponse,
   RuleCreateRequest,
+  RuleUpdateRequest,
   TriggerCreateRequest,
   TriggerSendRequest,
+  TriggerUpdateRequest,
 } from "@/types/generated-types";
 import {
   AchievementSetImageRequestClient,
@@ -143,6 +149,16 @@ export function useTriggers(options: FetchTriggersOptions = {}) {
   });
 }
 
+export function useTrigger(triggerId: number) {
+  const { currentApp } = useCurrentApp();
+
+  return useQuery({
+    queryKey: ["trigger", triggerId],
+    queryFn: () => currentApp && fetchTrigger(currentApp, triggerId),
+    enabled: !!currentApp,
+  });
+}
+
 export function useCreateTrigger() {
   const { currentApp } = useCurrentApp();
   const queryClient = useQueryClient();
@@ -154,6 +170,27 @@ export function useCreateTrigger() {
     mutationKey: ["triggers"],
     mutationFn: (newTrigger: TriggerCreateRequest) =>
       createTrigger(currentApp, newTrigger),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["triggers"] });
+    },
+  });
+}
+
+export function useUpdateTrigger() {
+  const { currentApp } = useCurrentApp();
+  const queryClient = useQueryClient();
+  if (!currentApp) {
+    throw new Error("No current app");
+  }
+
+  return useMutation({
+    mutationFn: ({
+      triggerId,
+      updateRequest,
+    }: {
+      triggerId: number;
+      updateRequest: TriggerUpdateRequest;
+    }) => currentApp && updateTrigger(currentApp, triggerId, updateRequest),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["triggers"] });
     },
@@ -210,6 +247,37 @@ export function useCreateRule() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["rules"] });
     },
+  });
+}
+
+export function useUpdateRule() {
+  const { currentApp } = useCurrentApp();
+  const queryClient = useQueryClient();
+  if (!currentApp) {
+    throw new Error("No current app");
+  }
+
+  return useMutation({
+    mutationFn: ({
+      ruleId,
+      updateRequest,
+    }: {
+      ruleId: number;
+      updateRequest: RuleUpdateRequest;
+    }) => updateRule(currentApp, ruleId, updateRequest),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["rules"] });
+    },
+  });
+}
+
+export function useRule(ruleId: number) {
+  const { currentApp } = useCurrentApp();
+
+  return useQuery({
+    queryKey: ["rule", ruleId],
+    queryFn: () => currentApp && getRule(currentApp, ruleId),
+    enabled: !!currentApp,
   });
 }
 

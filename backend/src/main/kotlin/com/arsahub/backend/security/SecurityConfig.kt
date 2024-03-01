@@ -26,7 +26,10 @@ class SecurityConfig(
                 authorize("/api/apps/*/leaderboard", permitAll)
                 authorize("/api/apps/*/users/*", permitAll)
                 authorize("/swagger-ui/**", permitAll)
-                authorize("/v3/api-docs/**", permitAll)
+                authorize("/v3/api-docs", permitAll)
+                authorize("/v3/api-docs.yml", permitAll)
+                authorize("/v3/api-docs.yaml", permitAll)
+                authorize("/error", permitAll)
 
                 authorize(anyRequest, authenticated)
             }
