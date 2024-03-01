@@ -37,16 +37,30 @@ function createSideNavItems(): SidebarNavItem[] {
       title: "Gamification Elements",
     },
     {
+      title: "Triggers",
+      href: resolveBasePath("/triggers"),
+      icon: "trigger",
+      appProtected: true,
       type: "item",
-      title: "Achievements",
-      href: resolveBasePath("/achievements"),
-      icon: "achievement",
     },
     {
       type: "item",
       title: "Rules",
       href: resolveBasePath("/rules"),
       icon: "rule",
+    },
+    {
+      title: "App Users",
+      href: resolveBasePath("/users"),
+      icon: "users",
+      appProtected: true,
+      type: "item",
+    },
+    {
+      type: "item",
+      title: "Achievements",
+      href: resolveBasePath("/achievements"),
+      icon: "achievement",
     },
     {
       type: "item",
@@ -75,25 +89,11 @@ function createSideNavItems(): SidebarNavItem[] {
       title: "Playground",
     },
     {
-      title: "Triggers",
-      href: resolveBasePath("/triggers"),
-      icon: "trigger",
-      appProtected: true,
-      type: "item",
-    },
-    {
       type: "item",
       title: "Test Rules",
       href: resolveBasePath("/playground"),
       icon: "experiment",
       appProtected: true,
-    },
-    {
-      title: "App Users",
-      href: resolveBasePath("/users"),
-      icon: "users",
-      appProtected: true,
-      type: "item",
     },
   ];
 }
