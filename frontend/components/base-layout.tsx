@@ -18,7 +18,7 @@ export default function BaseLayout({
   return (
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-40 border-b border-primary/10 bg-background">
-        <div className="container flex h-16 items-center justify-between py-4">
+        <div className="flex h-16 items-center justify-between py-4 px-6">
           <MainNav />
           <div className="flex items-center gap-4">
             <UserAccountNav />
@@ -27,7 +27,8 @@ export default function BaseLayout({
         </div>
       </header>
       <div className="grid flex-1 gap-4 md:grid-cols-[240px_1fr]">
-        <aside className="hidden w-[240px] flex-col md:flex">
+        <aside className="hidden w-[240px] flex-col md:flex h-full">
+          {/*<aside className="hidden w-[240px] flex-col md:flex max-h-[calc(100vh-64px)]">*/}
           <DashboardNav items={sideNavItems}></DashboardNav>
         </aside>
         <main className="flex w-full flex-1 flex-col overflow-hidden py-12">
