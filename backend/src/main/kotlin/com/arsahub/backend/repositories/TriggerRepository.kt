@@ -10,6 +10,11 @@ interface TriggerRepository : JpaRepository<Trigger, Long> {
         app: App,
     ): Trigger?
 
+    fun findByTitleAndApp(
+        title: String,
+        app: App,
+    ): Trigger?
+
     fun findAllByAppId(appId: Long): List<Trigger>
 
     // Built-in triggers don't belong to any app
@@ -18,4 +23,9 @@ interface TriggerRepository : JpaRepository<Trigger, Long> {
     fun findAllByAppIdIsNull(): List<Trigger>
 
     fun findByKey(key: String): Trigger?
+
+    fun findByIdAndApp(
+        triggerId: Long,
+        app: App,
+    ): Trigger?
 }
