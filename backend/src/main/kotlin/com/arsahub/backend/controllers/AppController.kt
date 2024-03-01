@@ -320,6 +320,14 @@ class AppController(
         return ruleService.listRules(app).map { RuleResponse.fromEntity(it) }
     }
 
+    @GetMapping("/rules/{ruleId}")
+    fun getRule(
+        @CurrentApp app: App,
+        @PathVariable ruleId: Long,
+    ): RuleResponse {
+        return ruleService.getRuleOrThrow(app, ruleId).let { RuleResponse.fromEntity(it) }
+    }
+
     @DeleteMapping("/rules/{ruleId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun deleteRule(

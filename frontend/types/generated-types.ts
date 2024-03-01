@@ -1,7 +1,7 @@
 /* tslint:disable */
 /* eslint-disable */
 
-// Generated using typescript-generator version 3.2.1263 on 2024-02-27 21:48:45.
+// Generated using typescript-generator version 3.2.1263 on 2024-03-01 23:01:22.
 
 export interface AchievementCreateRequest {
   title: string;
@@ -69,6 +69,11 @@ export interface RuleCreateRequest {
 }
 
 export interface RuleCreateRequestKt {}
+
+export interface RuleUpdateRequest {
+  title: string | null;
+  description: string | null;
+}
 
 export interface TriggerCreateRequest {
   fields: FieldDefinition[] | null;
@@ -268,8 +273,8 @@ export interface Resource extends InputStreamSource {
   readable: boolean;
   description: string;
   filename: string;
-  contentAsByteArray: any;
   uri: URI;
+  contentAsByteArray: any;
 }
 
 export interface InputStreamSource {

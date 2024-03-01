@@ -177,4 +177,11 @@ class RuleService(
             throw RuleInUseException()
         }
     }
+
+    fun getRuleOrThrow(
+        app: App,
+        ruleId: Long,
+    ): Rule {
+        return ruleRepository.findByIdAndApp(ruleId, app) ?: throw RuleNotFoundException()
+    }
 }
