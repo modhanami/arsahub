@@ -1,13 +1,7 @@
 "use client";
 
 import { Separator } from "@/components/ui/separator";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAchievements, useCreateRule, useTriggers } from "@/hooks"; // import Link from "next/link";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -37,7 +31,6 @@ import React from "react";
 import { v4 as uuidv4 } from "uuid";
 import { Input } from "@/components/ui/input";
 import {
-  FieldDefinition,
   RuleCreateRequest,
   ValidationLengths,
   ValidationMessages,
@@ -47,6 +40,7 @@ import { isAlphaNumericExtended } from "@/lib/validations";
 import { InputWithCounter } from "@/components/ui/input-with-counter";
 import { TextareaWithCounter } from "@/components/ui/textarea-with-counter";
 import { resolveBasePath } from "@/lib/base-path";
+import { Condition } from "@/app/(app)/(app-protected)/rules/shared";
 
 const operations = [{ label: "is", value: "is" }];
 const actions = [
@@ -118,16 +112,6 @@ const FormSchema = z.object({
 });
 
 type FormData = z.infer<typeof FormSchema>;
-
-type Condition<T> = {
-  uuid: string;
-  field: string;
-  operator: string;
-  value: T;
-  fieldDefinition?: FieldDefinition;
-  inputType?: string;
-  inputProps?: any;
-};
 
 export default function Page() {
   const form = useForm<FormData>({
@@ -641,9 +625,6 @@ export default function Page() {
           </form>
         </Form>
       </CardContent>
-      <CardFooter>
-        <p>Card Footer</p>
-      </CardFooter>
     </Card>
   );
 }

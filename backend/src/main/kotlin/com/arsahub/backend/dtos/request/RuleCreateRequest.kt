@@ -1,6 +1,7 @@
 package com.arsahub.backend.dtos.request
 
 import com.arsahub.backend.dtos.ValidationMessages
+import com.arsahub.backend.dtos.annotations.RequiredTitle
 import com.arsahub.backend.dtos.annotations.ValidDescription
 import com.arsahub.backend.dtos.annotations.ValidTitle
 import jakarta.validation.constraints.NotBlank
@@ -16,6 +17,7 @@ class RuleCreateRequest(
     repeatability: String?,
 ) {
     @ValidTitle
+    @RequiredTitle
     val title = title?.trim()
 
     @ValidDescription

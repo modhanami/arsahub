@@ -29,6 +29,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { resolveBasePath } from "@/lib/base-path";
+import { useRouter } from "next/navigation";
 
 export const columns: ColumnDef<RuleResponse>[] = [
   {
@@ -150,6 +152,7 @@ export function RuleRowActions({
   const [showEditDialog, setShowEditDialog] = React.useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
   const deleteRule = useDeleteRule();
+  const router = useRouter();
 
   async function handleDelete() {
     try {
@@ -185,7 +188,11 @@ export function RuleRowActions({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-[160px]">
-          <DropdownMenuItem onSelect={() => setShowEditDialog(true)}>
+          <DropdownMenuItem
+            onSelect={() => {
+              router.push(resolveBasePath(`/rules/${row.original.id}/edit`));
+            }}
+          >
             <Icons.edit className="mr-3 h-4 w-4" />
             Edit
           </DropdownMenuItem>

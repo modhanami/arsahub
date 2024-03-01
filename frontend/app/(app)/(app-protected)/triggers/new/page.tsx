@@ -34,11 +34,13 @@ import { ValidationLengths, ValidationMessages } from "@/types/generated-types";
 import { InputWithCounter } from "@/components/ui/input-with-counter";
 import { TextareaWithCounter } from "@/components/ui/textarea-with-counter";
 import { toast } from "@/components/ui/use-toast";
+import {
+  FieldTypeEnum,
+  generateTriggerKeyFromTitle,
+} from "@/app/(app)/(app-protected)/triggers/shared";
 import { useRouter } from "next/navigation";
 import { DashboardHeader } from "@/components/header";
 import { DashboardShell } from "@/components/shell";
-
-const FieldTypeEnum = z.enum(["Text", "Integer"] as const);
 
 const triggerCreateSchema = z.object({
   title: z
@@ -74,19 +76,6 @@ const triggerCreateSchema = z.object({
     }),
   ),
 });
-
-function generateKeyFromTitle(title: string): string | undefined {
-  const regex = /[a-zA-Z0-9_-]+/g;
-  const matches = title.match(regex);
-
-  if (matches) {
-    console.log("Matches", matches);
-    return matches.join("_");
-  } else {
-    console.log("No matches found");
-    return;
-  }
-}
 
 type FormData = z.infer<typeof triggerCreateSchema>;
 
@@ -126,7 +115,7 @@ export default function Page() {
   }
 
   async function onSubmit(values: FormData) {
-    const generatedKey = generateKeyFromTitle(values.title);
+    const generatedKey = generateTriggerKeyFromTitle(values.title);
     if (!generatedKey) {
       form.setError("title", {
         message: "Invalid title",
@@ -162,7 +151,7 @@ export default function Page() {
             // root error
             if (error.response?.status === HttpStatusCode.Conflict) {
               form.setError("title", {
-                message: "Trigger with this key already exists",
+                message: error.response.data.message,
               });
             }
           }
@@ -249,20 +238,22 @@ export default function Page() {
             )}
           />
 
-          <FormItem>
-            <FormLabel>Auto-generated key</FormLabel>
-            <p className="text-gray-500 text-sm">
-              This is the key that you will use to trigger for users in this
-              activity.
-            </p>
-            <Input
-              value={
-                form.watch("title") && generateKeyFromTitle(form.watch("title"))
-              }
-              readOnly
-              disabled
-            />
-          </FormItem>
+            <FormItem>
+              <FormLabel>Auto-generated key</FormLabel>
+              <p className="text-gray-500 text-sm">
+                This is the key that you will use for sending triggers for your
+                app users. It will be auto-generated from the title.
+              </p>
+              <Input
+                value={
+                  form.watch("title") &&
+                  generateTriggerKeyFromTitle(form.watch("title"))
+                }
+                placeholder="This will be auto-generated from the title"
+                readOnly
+                disabled
+              />
+            </FormItem>
 
           <div className="flex items-center justify-between">
             <Label>Fields</Label>

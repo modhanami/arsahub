@@ -1,7 +1,7 @@
 /* tslint:disable */
 /* eslint-disable */
 
-// Generated using typescript-generator version 3.2.1263 on 2024-02-26 20:33:27.
+// Generated using typescript-generator version 3.2.1263 on 2024-03-01 23:01:22.
 
 export interface AchievementCreateRequest {
   title: string;
@@ -70,6 +70,11 @@ export interface RuleCreateRequest {
 
 export interface RuleCreateRequestKt {}
 
+export interface RuleUpdateRequest {
+  title: string | null;
+  description: string | null;
+}
+
 export interface TriggerCreateRequest {
   fields: FieldDefinition[] | null;
   title: string | null;
@@ -80,6 +85,11 @@ export interface TriggerSendRequest {
   params: { [index: string]: any } | null;
   key: string | null;
   userId: string | null;
+}
+
+export interface TriggerUpdateRequest {
+  title: string | null;
+  description: string | null;
 }
 
 export interface UnlockAchievementAction extends Action {
@@ -212,13 +222,6 @@ export interface PointsUpdate extends AppUpdate {
   points: number;
 }
 
-export interface SupabaseGoogleIdentity {
-  supabaseUserId: string;
-  googleUserId: string;
-  email: string;
-  name: string;
-}
-
 export interface SupabaseIdentity {
   supabaseUserId: string;
   googleUserId: string | null;
@@ -240,8 +243,8 @@ export interface MultipartFile extends InputStreamSource {
   empty: boolean;
   resource: Resource;
   size: number;
-  contentType: string;
   originalFilename: string;
+  contentType: string;
 }
 
 export interface App

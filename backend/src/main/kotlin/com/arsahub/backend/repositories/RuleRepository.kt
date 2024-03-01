@@ -16,4 +16,9 @@ interface RuleRepository : JpaRepository<Rule, Long> {
         achievementId: Long,
         app: App,
     ): List<Rule>
+
+    fun findByIdAndApp(
+        ruleId: Long,
+        app: App,
+    ): Rule?
 }

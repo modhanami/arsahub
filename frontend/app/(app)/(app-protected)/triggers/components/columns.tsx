@@ -28,6 +28,8 @@ import { toast } from "@/components/ui/use-toast";
 import { useDeleteTrigger } from "@/hooks";
 import { isApiError } from "@/api";
 import { DataTableRowActionsProps } from "@/app/(app)/examples/tasks/components/data-table-row-actions";
+import { resolveBasePath } from "@/lib/base-path";
+import { useRouter } from "next/navigation";
 
 export const columns: ColumnDef<TriggerResponse>[] = [
   // {
@@ -123,6 +125,7 @@ export function TriggerRowActions({
   const [showEditDialog, setShowEditDialog] = React.useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
   const deleteTrigger = useDeleteTrigger();
+  const router = useRouter();
 
   async function handleDelete() {
     try {
@@ -158,7 +161,11 @@ export function TriggerRowActions({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-[160px]">
-          <DropdownMenuItem onSelect={() => setShowEditDialog(true)}>
+          <DropdownMenuItem
+            onSelect={() => {
+              router.push(resolveBasePath(`/triggers/${row.original.id}/edit`));
+            }}
+          >
             <Icons.edit className="mr-3 h-4 w-4" />
             Edit
           </DropdownMenuItem>
