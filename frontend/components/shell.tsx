@@ -14,7 +14,7 @@ export function DashboardShell({
   return (
     <div
       className={cn(
-        "flex flex-col gap-8 mx-4",
+        "flex flex-col gap-8 mx-16 max-w-screen-2xl",
         { "flex-1 lg:max-w-2xl": props.compact },
         className,
       )}
