@@ -3,13 +3,13 @@ package com.arsahub.backend.dtos.request
 import com.arsahub.backend.dtos.annotations.ValidDescription
 import com.arsahub.backend.dtos.annotations.ValidTitle
 
-class TriggerUpdateRequest(
-    title: String? = null,
+class RuleUpdateRequest(
+    title: String?,
     description: String? = null,
 ) {
     @ValidTitle
-    val title: String? = title?.trim()
+    val title = title?.trim()
 
     @ValidDescription
-    val description: String? = description?.trim()
+    val description = description?.trim()
 }

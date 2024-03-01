@@ -28,6 +28,9 @@ annotation class ValidTitle(
 )
 
 @NotBlank(message = ValidationMessages.Constants.TITLE_REQUIRED)
+@Target(AnnotationTarget.FIELD)
+@Retention(AnnotationRetention.RUNTIME)
+@Constraint(validatedBy = [])
 annotation class RequiredTitle(
     val message: String = "",
     val groups: Array<KClass<*>> = [],
