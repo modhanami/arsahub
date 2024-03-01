@@ -52,6 +52,8 @@ val kotestVersion = "5.8.0"
 
 dependencies {
     implementation(platform("software.amazon.awssdk:bom:2.23.7"))
+    implementation(enforcedPlatform("org.projectnessie.cel:cel-bom:0.4.4"))
+    implementation("org.projectnessie.cel:cel-tools")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-security")
