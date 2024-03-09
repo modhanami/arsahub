@@ -47,6 +47,7 @@ function createSideNavItems(): SidebarNavItem[] {
       type: "item",
       title: "Rules",
       href: resolveBasePath("/rules"),
+      appProtected: true,
       icon: "rule",
     },
     {
@@ -60,24 +61,28 @@ function createSideNavItems(): SidebarNavItem[] {
       type: "item",
       title: "Achievements",
       href: resolveBasePath("/achievements"),
+      appProtected: true,
       icon: "achievement",
     },
     {
       type: "item",
       title: "Rewards",
       href: resolveBasePath("/rewards"),
+      appProtected: true,
       icon: "reward",
     },
     {
       type: "item",
       title: "Points Shop",
       href: resolveBasePath("/shop"),
+      appProtected: true,
       icon: "pointsShop",
     },
     {
       type: "item",
       title: "Leaderboard",
       href: resolveBasePath("/leaderboard"),
+      appProtected: true,
       icon: "leaderboard",
     },
     {
