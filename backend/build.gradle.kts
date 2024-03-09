@@ -52,8 +52,6 @@ val kotestVersion = "5.8.0"
 
 dependencies {
     implementation(platform("software.amazon.awssdk:bom:2.23.7"))
-    implementation(enforcedPlatform("org.projectnessie.cel:cel-bom:0.4.4"))
-    implementation("org.projectnessie.cel:cel-tools")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-security")
@@ -81,7 +79,7 @@ dependencies {
     implementation("com.jayway.jsonpath:json-path:2.8.0")
     implementation("software.amazon.awssdk:s3")
     implementation("sh.ory:ory-client:1.6.1")
-    implementation("dev.cel:cel:0.3.0")
+    implementation("dev.cel:cel:0.4.0")
     implementation("io.github.jan-tennert.supabase:gotrue-kt:2.1.3")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     runtimeOnly("org.postgresql:postgresql")

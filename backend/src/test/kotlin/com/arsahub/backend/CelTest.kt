@@ -4,17 +4,13 @@ import dev.cel.checker.CelCheckerLegacyImpl
 import dev.cel.common.CelFunctionDecl
 import dev.cel.common.CelOptions
 import dev.cel.common.CelOverloadDecl
-import dev.cel.common.internal.DefaultMessageFactory
-import dev.cel.common.internal.DynamicProto
 import dev.cel.common.types.SimpleType
-import dev.cel.common.types.TypeParamType
 import dev.cel.compiler.CelCompiler
 import dev.cel.compiler.CelCompilerImpl
 import dev.cel.parser.CelParserImpl
 import dev.cel.parser.Operator
 import dev.cel.runtime.CelRuntime
 import dev.cel.runtime.CelRuntimeLegacyImpl
-import dev.cel.runtime.RuntimeEquality
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
@@ -28,7 +24,6 @@ class CelTest {
     @ParameterizedTest(name = "{0}")
     @MethodSource("expressionProvider")
     fun testRun(
-        name: String,
         expression: String,
         expected: Boolean,
     ) {
@@ -69,11 +64,7 @@ class CelTest {
     companion object {
         val celOptions = CelOptions.current().build()
 
-        // Some shortcuts we use when building declarations.
-        var typeParamA: TypeParamType = TypeParamType.create("A")
         private const val OPERATOR_CONTAINS = "contains"
-        var dynamicProto: DynamicProto = DynamicProto.create(DefaultMessageFactory.INSTANCE)
-        var runtimeEquality: RuntimeEquality = RuntimeEquality(dynamicProto)
 
         private val celFunctionDecls =
             listOf<CelFunctionDecl>(
@@ -236,17 +227,6 @@ class CelTest {
                     String::class.javaObjectType,
                     String::startsWith,
                 ),
-//                CelRuntime.CelFunctionBinding.from(
-//                    "equals_int",
-//                    Object::class.java,
-//                    Object::class.java,
-//                    Object::equals,
-//                ),
-//                registrar.add(
-//        "equals",
-//        Object.class,
-//        Object.class,
-//        (Object x, Object y) -> runtimeEquality.objectEquals(x, y, celOptions));
             )
 
         // Construct the compilation and runtime environments.
