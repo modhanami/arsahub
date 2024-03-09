@@ -39,6 +39,8 @@ import {
   FieldTypeEnum,
   generateTriggerKeyFromTitle,
 } from "@/app/(app)/(app-protected)/triggers/shared";
+import { useSearchParams } from "next/navigation";
+import { triggerTemplates } from "@/app/(app)/(app-protected)/triggers/new/templates";
 
 const triggerCreateSchema = z.object({
   title: z
@@ -77,14 +79,31 @@ const triggerCreateSchema = z.object({
 
 type FormData = z.infer<typeof triggerCreateSchema>;
 
-export default function Page() {
+export default function Page({}) {
+  const searchParams = useSearchParams();
+
+  const templateId = searchParams.get("template");
+  console.log("templateId", templateId);
+  const template = templateId
+    ? triggerTemplates.find((t) => t.id === templateId)
+    : null;
+
+  const defaultValues = {
+    title: template?.title || "",
+    description: template?.description || "",
+    fields:
+      template?.fields?.map((field) => {
+        return {
+          key: field.key!,
+          type: field.type,
+          label: field.label || "",
+        };
+      }) || [],
+  };
+
   const form = useForm<FormData>({
     resolver: zodResolver(triggerCreateSchema),
-    defaultValues: {
-      title: "",
-      description: "",
-      fields: [],
-    },
+    defaultValues: defaultValues,
   });
   console.log(form.formState.touchedFields);
   const [isOpen, setIsOpen] = React.useState(false);
