@@ -2,7 +2,7 @@ import { FieldDefinition } from "@/types/generated-types";
 import { FieldTypeEnum } from "@/app/(app)/(app-protected)/triggers/shared";
 import * as z from "zod";
 
-interface TriggerTemplate {
+export interface TriggerTemplate {
   id: string;
   title: string;
   description?: string;
