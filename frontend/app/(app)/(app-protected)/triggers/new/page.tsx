@@ -45,6 +45,9 @@ import {
   FieldTypeEnum,
   generateTriggerKeyFromTitle,
 } from "@/app/(app)/(app-protected)/triggers/shared";
+import { useRouter } from "next/navigation";
+import { DashboardHeader } from "@/components/header";
+import { DashboardShell } from "@/components/shell";
 import { useRouter, useSearchParams } from "next/navigation";
 import { triggerTemplates } from "@/app/(app)/(app-protected)/triggers/new/templates";
 
@@ -110,6 +113,7 @@ export default function Page({}) {
   }
 
   const router = useRouter();
+
   const form = useForm<FormData>({
     resolver: zodResolver(triggerCreateSchema),
     defaultValues: getDefaultValues(),
@@ -186,159 +190,180 @@ export default function Page({}) {
   }
 
   return (
-    <div className="grid gap-12 md:grid-cols-[1fr_300px]">
-      <Card>
-        <CardHeader>
-          <CardTitle>Create trigger</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {/* <CardDescription>Deploy your new activity in one-click.</CardDescription> */}
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              {form.formState.errors.root?.serverError && (
-                <div className="bg-red-100 text-red-600 text-sm px-4 py-2 rounded-md">
-                  {form.formState.errors.root.serverError.message}
-                </div>
-              )}
-              <FormField
-                control={form.control}
-                name="title"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Title</FormLabel>
-                    <FormControl>
-                      <InputWithCounter
-                        placeholder="Title of your trigger"
-                        maxLength={ValidationLengths.TITLE_MAX_LENGTH}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      {/* This is your public display name. */}
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <TextareaWithCounter
-                        placeholder="Description of your trigger"
-                        maxLength={ValidationLengths.DESCRIPTION_MAX_LENGTH}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      {/* This is your public display name. */}
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+    <DashboardShell compact>
+      <button
+        type="button"
+        onClick={() => router.back()}
+        className="py-2 px-4 rounded-md no-underline text-foreground bg-muted/10 hover:bg-muted/40 flex items-center group text-sm"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1"
+        >
+          <polyline points="15 18 9 12 15 6" />
+        </svg>{" "}
+        Back
+      </button>
 
+      <DashboardHeader
+        heading="New Trigger"
+        text="Create a new trigger, and start triggering for users."
+        separator
+      ></DashboardHeader>
+      {/* <CardDescription>Deploy your new activity in one-click.</CardDescription> */}
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          {form.formState.errors.root?.serverError && (
+            <div className="bg-red-100 text-red-600 text-sm px-4 py-2 rounded-md">
+              {form.formState.errors.root.serverError.message}
+            </div>
+          )}
+          <FormField
+            control={form.control}
+            name="title"
+            render={({ field }) => (
               <FormItem>
-                <FormLabel>Auto-generated key</FormLabel>
-                <p className="text-gray-500 text-sm">
-                  This is the key that you will use for sending triggers for
-                  your app users. It will be auto-generated from the title.
-                </p>
-                <Input
-                  value={
-                    form.watch("title") &&
-                    generateTriggerKeyFromTitle(form.watch("title"))
-                  }
-                  placeholder="This will be auto-generated from the title"
-                  readOnly
-                  disabled
-                />
+                <FormLabel>Title</FormLabel>
+                <FormControl>
+                  <InputWithCounter
+                    placeholder="Title of your trigger"
+                    maxLength={ValidationLengths.TITLE_MAX_LENGTH}
+                    {...field}
+                  />
+                </FormControl>
+                <FormDescription>
+                  {/* This is your public display name. */}
+                </FormDescription>
+                <FormMessage />
               </FormItem>
-
-              <div className="flex items-center justify-between">
-                <Label>Fields</Label>
-                <Button variant="outline" onClick={() => addField()}>
-                  Add field
-                </Button>
-              </div>
-
-              {form.watch("fields")?.map((fieldDefinition, index) => (
-                <div key={index} className="flex gap-2 flex-auto">
-                  <FormField
-                    control={form.control}
-                    name={`fields.${index}.key`}
-                    render={({ field }) => (
-                      <FormItem className="w-3/6">
-                        <FormControl>
-                          <Input placeholder="Key" {...field} />
-                        </FormControl>
-                        {form.formState.touchedFields["fields"]?.[index]?.key &&
-                          form.formState.dirtyFields["fields"]?.[index]
-                            ?.key && <FormMessage />}
-                      </FormItem>
-                    )}
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="description"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Description</FormLabel>
+                <FormControl>
+                  <TextareaWithCounter
+                    placeholder="Description of your trigger"
+                    maxLength={ValidationLengths.DESCRIPTION_MAX_LENGTH}
+                    {...field}
                   />
+                </FormControl>
+                <FormDescription>
+                  {/* This is your public display name. */}
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-                  <FormField
-                    control={form.control}
-                    name={`fields.${index}.type`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormControl>
-                          <Select
-                            onValueChange={field.onChange}
-                            value={field.value}
-                          >
-                            <SelectTrigger>
-                              <SelectValue
-                                placeholder="Select a type"
-                                className="w-1"
-                              />
-                            </SelectTrigger>
-                            <SelectContent className="w-full">
-                              {FieldTypeEnum.options.map((type) => (
-                                <SelectItem
-                                  key={type}
-                                  value={type}
-                                  className="flex items-center justify-between w-full"
-                                >
-                                  {type}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </FormControl>
+          <FormItem>
+            <FormLabel>Auto-generated key</FormLabel>
+            <p className="text-gray-500 text-sm">
+              This is the key that you will use for sending triggers for your
+              app users. It will be auto-generated from the title.
+            </p>
+            <Input
+              value={
+                form.watch("title") &&
+                generateTriggerKeyFromTitle(form.watch("title"))
+              }
+              placeholder="This will be auto-generated from the title"
+              readOnly
+              disabled
+            />
+          </FormItem>
+
+          <div className="flex items-center justify-between">
+            <Label>Fields</Label>
+            <Button variant="outline" onClick={() => addField()}>
+              Add field
+            </Button>
+          </div>
+
+          {form.watch("fields")?.map((fieldDefinition, index) => (
+            <div key={index} className="flex gap-2 flex-auto">
+              <FormField
+                control={form.control}
+                name={`fields.${index}.key`}
+                render={({ field }) => (
+                  <FormItem className="w-3/6">
+                    <FormControl>
+                      <Input placeholder="Key" {...field} />
+                    </FormControl>
+                    {form.formState.touchedFields["fields"]?.[index]?.key &&
+                      form.formState.dirtyFields["fields"]?.[index]?.key && (
                         <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                      )}
+                  </FormItem>
+                )}
+              />
 
-                  <div className="w-1/6">
-                    <Button
-                      variant="ghost"
-                      onClick={() => removeField(index)}
-                      size="icon"
-                    >
-                      <Icons.trash className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
+              <FormField
+                control={form.control}
+                name={`fields.${index}.type`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder="Select a type"
+                            className="w-1"
+                          />
+                        </SelectTrigger>
+                        <SelectContent className="w-full">
+                          {FieldTypeEnum.options.map((type) => (
+                            <SelectItem
+                              key={type}
+                              value={type}
+                              className="flex items-center justify-between w-full"
+                            >
+                              {type}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-              <div className="flex justify-between pt-2">
-                <Button type="submit" disabled={mutation.isPending}>
-                  Create
+              <div className="w-1/6">
+                <Button
+                  variant="ghost"
+                  onClick={() => removeField(index)}
+                  size="icon"
+                >
+                  <Icons.trash className="h-4 w-4" />
                 </Button>
               </div>
-            </form>
+            </div>
+          ))}
 
-            <DevTool control={form.control} />
-          </Form>
-        </CardContent>
-      </Card>
+          <div className="flex justify-between pt-2">
+            <Button type="submit" disabled={mutation.isPending}>
+              Create
+            </Button>
+          </div>
+        </form>
+
+        <DevTool control={form.control} />
+      </Form>
 
       <Card>
         <CardHeader>
@@ -379,6 +404,6 @@ export default function Page({}) {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </DashboardShell>
   );
 }
