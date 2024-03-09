@@ -53,6 +53,7 @@ import {
   triggerTemplates,
 } from "@/app/(app)/(app-protected)/triggers/new/templates";
 import { resolveBasePath } from "@/lib/base-path";
+import { cx } from "class-variance-authority";
 
 const triggerCreateSchema = z.object({
   title: z
@@ -233,7 +234,7 @@ export default function Page({}) {
         separator
       ></DashboardHeader>
       {/* <CardDescription>Deploy your new activity in one-click.</CardDescription> */}
-      <div className="grid gap-12 grid-cols-1 lg:grid-cols-[1fr_300px] items-start place-self-start">
+      <div className="grid gap-12 grid-cols-1 lg:grid-cols-[1fr_400px] items-start place-self-start">
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
@@ -304,7 +305,11 @@ export default function Page({}) {
 
             <div className="flex items-center justify-between">
               <Label>Fields</Label>
-              <Button variant="outline" onClick={() => addField()}>
+              <Button
+                variant="outline"
+                onClick={() => addField()}
+                type="button"
+              >
                 Add field
               </Button>
             </div>
@@ -366,6 +371,7 @@ export default function Page({}) {
                     variant="ghost"
                     onClick={() => removeField(index)}
                     size="icon"
+                    type="button"
                   >
                     <Icons.trash className="h-4 w-4" />
                   </Button>
@@ -383,7 +389,7 @@ export default function Page({}) {
           <DevTool control={form.control} />
         </Form>
 
-        <Card>
+        <Card className="overflow-auto h-[500px]">
           <CardHeader>
             <CardTitle>Use Template</CardTitle>
             <CardDescription>
@@ -391,33 +397,48 @@ export default function Page({}) {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center gap-4">
-              <Select
-                onValueChange={(value) => {
-                  if (
-                    form.formState.isDirty &&
-                    !confirm(
-                      "You have unsaved changes. Are you sure you want to continue?",
-                    )
-                  ) {
-                    return;
-                  }
+            <div className="flex flex-col gap-2">
+              {triggerTemplates.map((template) => (
+                <Button
+                  variant="ghost"
+                  type="button"
+                  asChild
+                  className="w-fit h-fit"
+                  key={template.id}
+                  onClick={() => {
+                    if (
+                      form.formState.isDirty &&
+                      !confirm(
+                        "You have unsaved changes. Are you sure you want to continue?",
+                      )
+                    ) {
+                      return;
+                    }
 
-                  router.push(`?template=${value}`);
-                }}
-                value={template?.id || ""}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a template" />
-                </SelectTrigger>
-                <SelectContent>
-                  {triggerTemplates.map((template) => (
-                    <SelectItem key={template.id} value={template.id}>
-                      {template.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                    toast({
+                      title: "Template selected",
+                      description: `You have selected the "${template.title}" template.`,
+                    });
+                    router.push(`?template=${template.id}`);
+                  }}
+                >
+                  <Card
+                    className={cx(
+                      "w-full relative justify-start p-0 truncate",
+                      {
+                        "bg-primary/10": template.id === templateId,
+                      },
+                    )}
+                    title={`${template.title} - ${template.description}`}
+                  >
+                    <CardHeader className="truncate p-4">
+                      <CardTitle className="text-sm">
+                        {template.title}
+                      </CardTitle>
+                    </CardHeader>
+                  </Card>
+                </Button>
+              ))}
             </div>
           </CardContent>
         </Card>
