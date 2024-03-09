@@ -122,6 +122,14 @@ export default function Page({}) {
     );
   }
 
+  function getEmptyDefaultValues() {
+    return {
+      title: "",
+      description: "",
+      fields: [],
+    };
+  }
+
   const router = useRouter();
   const form = useForm<FormData>({
     resolver: zodResolver(triggerCreateSchema),
@@ -185,6 +193,8 @@ export default function Page({}) {
           });
           setIsOpen(false);
           router.push(resolveBasePath(`/triggers/new`));
+
+          form.reset(getEmptyDefaultValues());
         },
         onError: (error, b, c) => {
           console.log("error", error);
