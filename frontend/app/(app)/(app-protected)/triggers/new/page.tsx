@@ -2,7 +2,13 @@
 import * as React from "react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -39,6 +45,15 @@ import {
   FieldTypeEnum,
   generateTriggerKeyFromTitle,
 } from "@/app/(app)/(app-protected)/triggers/shared";
+import { DashboardHeader } from "@/components/header";
+import { DashboardShell } from "@/components/shell";
+import { useRouter, useSearchParams } from "next/navigation";
+import {
+  TriggerTemplate,
+  triggerTemplates,
+} from "@/app/(app)/(app-protected)/triggers/new/templates";
+import { resolveBasePath } from "@/lib/base-path";
+import { cx } from "class-variance-authority";
 
 const triggerCreateSchema = z.object({
   title: z
@@ -77,18 +92,58 @@ const triggerCreateSchema = z.object({
 
 type FormData = z.infer<typeof triggerCreateSchema>;
 
-export default function Page() {
-  const form = useForm<FormData>({
-    resolver: zodResolver(triggerCreateSchema),
-    defaultValues: {
+export default function Page({}) {
+  const searchParams = useSearchParams();
+
+  const templateId = searchParams.get("template");
+  console.log("templateId", templateId);
+  const template = templateId
+    ? triggerTemplates.find((t) => t.id === templateId)
+    : null;
+
+  function getDefaultValues(template: TriggerTemplate | null = null) {
+    return (
+      {
+        title: template?.title || "",
+        description: template?.description || "",
+        fields:
+          template?.fields?.map((field) => {
+            return {
+              key: field.key!,
+              type: field.type,
+              label: field.label || "",
+            };
+          }) || [],
+      } || {
+        title: "",
+        description: "",
+        fields: [],
+      }
+    );
+  }
+
+  function getEmptyDefaultValues() {
+    return {
       title: "",
       description: "",
       fields: [],
-    },
+    };
+  }
+
+  const router = useRouter();
+  const form = useForm<FormData>({
+    resolver: zodResolver(triggerCreateSchema),
+    defaultValues: getDefaultValues(template),
   });
   console.log(form.formState.touchedFields);
   const [isOpen, setIsOpen] = React.useState(false);
   const mutation = useCreateTrigger();
+
+  React.useEffect(() => {
+    if (template) {
+      form.reset(getDefaultValues(template));
+    }
+  }, [form, template]);
 
   function addField() {
     const fields = form.getValues("fields");
@@ -137,7 +192,9 @@ export default function Page() {
             description: "Your trigger was created successfully.",
           });
           setIsOpen(false);
-          form.reset();
+          router.push(resolveBasePath(`/triggers/new`));
+
+          form.reset(getEmptyDefaultValues());
         },
         onError: (error, b, c) => {
           console.log("error", error);
@@ -158,14 +215,41 @@ export default function Page() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Create trigger</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {/* <CardDescription>Deploy your new activity in one-click.</CardDescription> */}
+    <DashboardShell>
+      <button
+        type="button"
+        onClick={() => router.push(resolveBasePath(`/triggers`))}
+        className="py-2 px-4 rounded-md no-underline text-foreground bg-muted/10 hover:bg-muted/40 flex items-center group text-sm"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1"
+        >
+          <polyline points="15 18 9 12 15 6" />
+        </svg>{" "}
+        Back
+      </button>
+
+      <DashboardHeader
+        heading="New Trigger"
+        text="Create a new trigger, and start triggering for users."
+        separator
+      ></DashboardHeader>
+      {/* <CardDescription>Deploy your new activity in one-click.</CardDescription> */}
+      <div className="grid gap-12 grid-cols-1 lg:grid-cols-[1fr_400px] items-start place-self-start">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-4 max-w-2xl"
+          >
             {form.formState.errors.root?.serverError && (
               <div className="bg-red-100 text-red-600 text-sm px-4 py-2 rounded-md">
                 {form.formState.errors.root.serverError.message}
@@ -231,7 +315,11 @@ export default function Page() {
 
             <div className="flex items-center justify-between">
               <Label>Fields</Label>
-              <Button variant="outline" onClick={() => addField()}>
+              <Button
+                variant="outline"
+                onClick={() => addField()}
+                type="button"
+              >
                 Add field
               </Button>
             </div>
@@ -293,6 +381,7 @@ export default function Page() {
                     variant="ghost"
                     onClick={() => removeField(index)}
                     size="icon"
+                    type="button"
                   >
                     <Icons.trash className="h-4 w-4" />
                   </Button>
@@ -309,7 +398,61 @@ export default function Page() {
 
           <DevTool control={form.control} />
         </Form>
-      </CardContent>
-    </Card>
+
+        <Card className="overflow-auto h-[500px]">
+          <CardHeader>
+            <CardTitle>Use Template</CardTitle>
+            <CardDescription>
+              Select a trigger template to pre-fill the form.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col gap-2">
+              {triggerTemplates.map((template) => (
+                <Button
+                  variant="ghost"
+                  type="button"
+                  asChild
+                  className="w-fit h-fit"
+                  key={template.id}
+                  onClick={() => {
+                    if (
+                      form.formState.isDirty &&
+                      !confirm(
+                        "You have unsaved changes. Are you sure you want to continue?",
+                      )
+                    ) {
+                      return;
+                    }
+
+                    toast({
+                      title: "Template selected",
+                      description: `You have selected the "${template.title}" template.`,
+                    });
+                    router.push(`?template=${template.id}`);
+                  }}
+                >
+                  <Card
+                    className={cx(
+                      "w-full relative justify-start p-0 truncate",
+                      {
+                        "bg-primary/10": template.id === templateId,
+                      },
+                    )}
+                    title={`${template.title} - ${template.description}`}
+                  >
+                    <CardHeader className="truncate p-4">
+                      <CardTitle className="text-sm">
+                        {template.title}
+                      </CardTitle>
+                    </CardHeader>
+                  </Card>
+                </Button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </DashboardShell>
   );
 }

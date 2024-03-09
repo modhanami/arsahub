@@ -19,7 +19,7 @@ export function generateTriggerKeyFromTitle(title: string): string | undefined {
 
   if (matches) {
     console.log("Matches", matches);
-    return matches.join("_");
+    return matches.join("_").toLowerCase();
   } else {
     console.log("No matches found");
     return;
