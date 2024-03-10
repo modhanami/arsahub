@@ -80,6 +80,7 @@ dependencies {
     implementation("software.amazon.awssdk:s3")
     implementation("sh.ory:ory-client:1.6.1")
     implementation("dev.cel:cel:0.4.0")
+    implementation("com.google.api.grpc:proto-google-common-protos:2.36.0")
     implementation("io.github.jan-tennert.supabase:gotrue-kt:2.1.3")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     runtimeOnly("org.postgresql:postgresql")

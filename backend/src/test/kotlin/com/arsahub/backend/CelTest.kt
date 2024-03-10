@@ -1,9 +1,12 @@
+@file:Suppress("ktlint:standard:no-wildcard-imports")
+
 package com.arsahub.backend
 
 import dev.cel.checker.CelCheckerLegacyImpl
 import dev.cel.common.CelFunctionDecl
 import dev.cel.common.CelOptions
 import dev.cel.common.CelOverloadDecl
+import dev.cel.common.CelVarDecl
 import dev.cel.common.types.SimpleType
 import dev.cel.compiler.CelCompiler
 import dev.cel.compiler.CelCompilerImpl
@@ -12,6 +15,7 @@ import dev.cel.parser.Operator
 import dev.cel.runtime.CelRuntime
 import dev.cel.runtime.CelRuntimeLegacyImpl
 import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
@@ -24,18 +28,11 @@ class CelTest {
     @ParameterizedTest(name = "{0}")
     @MethodSource("expressionProvider")
     fun testRun(
+        name: String,
         expression: String,
         expected: Boolean,
     ) {
-        // Compile the expression into an Abstract Syntax Tree.
-        val validationResult = CEL_COMPILER.compile(expression)
-        if (validationResult.hasError()) {
-            println(validationResult.issueString)
-        }
-        val ast = validationResult.ast
-
-        // Plan an executable program instance.
-        val program = CEL_RUNTIME.createProgram(ast)
+        val program = getProgram(expression)
 
         // Evaluate the program with an input variable.
         try {
@@ -59,6 +56,77 @@ class CelTest {
             )
             Assertions.fail(e.message)
         }
+    }
+
+    @Test
+    fun testEvaluatingTriggerParamsAgainstTriggerFieldsDefinitionWithFields() {
+//            fun validateParamsAgainstTriggerFields(
+//        conditions: Map<String, Any>?,
+//        fields: Iterable<TriggerField>,
+//    ) {
+//        for (conditionKey in conditions?.keys ?: emptyList()) {
+//            // ensure the key and it's value are not empty
+//            require(conditionKey.isNotBlank()) { "Condition key cannot be empty" }
+//            val conditionValue = conditions?.get(conditionKey)
+//            require(conditionValue != null && conditionValue.toString().isNotBlank()) {
+//                "Condition value cannot be empty"
+//            }
+//
+//            val targetField = fields.find { it.key == conditionKey } ?: continue
+//            val targetFieldType = TriggerFieldType.fromString(targetField.type!!)
+//
+//            requireNotNull(targetFieldType) {
+//                val message = "Field ${targetField.key} has an invalid type: ${targetField.type}"
+//                logger.error { message }
+//                message
+//            }
+//
+//            when (targetFieldType) {
+//                TriggerFieldType.INTEGER ->
+//                    require(
+//                        conditionValue is Int,
+//                    ) { "Field ${targetField.key} is not an integer, got $conditionValue" }
+//
+//                TriggerFieldType.TEXT ->
+//                    require(
+//                        conditionValue is String,
+//                    ) { "Field ${targetField.key} is not a text, got $conditionValue" }
+//            }
+//        }
+//    }
+
+        val triggerParams =
+            mapOf(
+                "name" to "Jing",
+                "age" to 27L,
+            )
+
+        val program = getProgram("trigger.name == 'Jing' && trigger.age == 27")
+//        val program = getProgram("trigger.age == 27")
+//        val program = getProgram("trigger.name == 'Jing'")
+
+        val rawResult =
+            program.eval(
+                mapOf(
+                    "trigger" to triggerParams,
+                ),
+            )
+        val result = rawResult as Boolean
+        println(result)
+    }
+
+    private fun getProgram(expression: String): CelRuntime.Program {
+        // Compile the expression into an Abstract Syntax Tree.
+        val validationResult = CEL_COMPILER.compile(expression)
+        if (validationResult.hasError()) {
+            println(validationResult.issueString)
+            return Assertions.fail(validationResult.issueString)
+        }
+        val ast = validationResult.ast
+
+        // Plan an executable program instance.
+        val program = CEL_RUNTIME.createProgram(ast)
+        return program
     }
 
     companion object {
@@ -236,6 +304,30 @@ class CelTest {
                 .setOptions(celOptions)
                 .setStandardEnvironmentEnabled(false)
                 .addFunctionDeclarations(celFunctionDecls)
+//                .addVar(
+//                    "trigger",
+//                    StructType.create(
+//                        "trigger",
+//                        ImmutableSet.of(
+//                            "name",
+//                            "age",
+//                        ),
+//                    ) { fieldName ->
+//                        when (fieldName) {
+//                            "name" -> SimpleType.STRING
+//                            "age" -> SimpleType.INT
+//                            else -> SimpleType.NULL_TYPE
+//                        }.let { Optional.of(it) }
+//                    },
+//                )
+                .addVarDeclarations(
+                    listOf(
+                        CelVarDecl.newVarDeclaration(
+                            "trigger",
+                            SimpleType.DYN,
+                        ),
+                    ),
+                )
                 .build()
 
         private val CEL_RUNTIME: CelRuntime =
