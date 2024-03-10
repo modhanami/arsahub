@@ -57,6 +57,7 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
     needs: prepare
+    environment: dev
     strategy:
       matrix:
         component: [ database, frontend, reverse-proxy ]
@@ -80,6 +81,16 @@ jobs:
         run: |
           COMPONENT_IMAGE="ghcr.io/modhanami/arsahub/${{ matrix.component }}"
           echo "image-names=$(echo ${{ needs.prepare.outputs.image-tags }} | sed "s|\([^,]\+\)|$COMPONENT_IMAGE:\1|g")" >> "$GITHUB_OUTPUT"
+      # A step for frontend (only) to generate a .env file using vars from GitHub Context
+      - name: Generate .env file
+        if: matrix.component == 'frontend'
+        run: |
+          echo "NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }}" >> frontend/.env
+          echo "NEXT_PUBLIC_SOCKET_IO_URL=${{ vars.NEXT_PUBLIC_SOCKET_IO_URL }}" >> frontend/.env
+          echo "NEXT_PUBLIC_IMAGE_BASE_URL=${{ vars.NEXT_PUBLIC_IMAGE_BASE_URL }}" >> frontend/.env
+          echo "NEXT_PUBLIC_SUPABASE_URL=${{ vars.NEXT_PUBLIC_SUPABASE_URL }}" >> frontend/.env
+          echo "NEXT_PUBLIC_SUPABASE_KEY=${{ vars.NEXT_PUBLIC_SUPABASE_KEY }}" >> frontend/.env
+          cat frontend/.env
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
