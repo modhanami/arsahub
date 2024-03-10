@@ -1,0 +1,2 @@
+FROM nginx:stable-alpine AS nginx
+COPY nginx.prod.conf /etc/nginx/nginx.conf
