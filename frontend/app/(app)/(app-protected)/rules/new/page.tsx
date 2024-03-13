@@ -31,6 +31,7 @@ import { v4 as uuidv4 } from "uuid";
 import { Input } from "@/components/ui/input";
 import {
   RuleCreateRequest,
+  TriggerResponse,
   ValidationLengths,
   ValidationMessages,
 } from "@/types/generated-types";
@@ -43,8 +44,9 @@ import { Condition } from "@/app/(app)/(app-protected)/rules/shared";
 import {
   defaultOperators,
   Field,
+  FlexibleOptionList,
   formatQuery,
-  prepareRuleGroup,
+  FullOperator,
   QueryBuilder,
   RuleGroupType,
 } from "react-querybuilder";
@@ -331,7 +333,6 @@ export default function Page() {
       </CardHeader>
       <CardContent>
         {/*  Config Trigger */}
-        <MyQueryBuilder />
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
@@ -419,6 +420,8 @@ export default function Page() {
 
             {/*  Config Condition */}
             <h3 className="text-lg font-semibold">If</h3>
+            <MyQueryBuilder trigger={selectedTrigger} />
+
             <div className="flex items-center space-x-2">
               <Button
                 onClick={addCondition}
@@ -664,20 +667,15 @@ export default function Page() {
 //   ],
 // };
 
-const fields: Field[] = [
-  { name: "name", label: "Name", dataType: "text" },
-  {
-    name: "guitars",
-    label: "Guitars",
-    dataType: "integer",
-    inputType: "number",
-  },
-];
-
-const getOperators = (
+function getOperators(
   fieldName: string,
   { fieldData }: { fieldData: Field },
-) => {
+): FlexibleOptionList<FullOperator> {
+  switch (fieldName) {
+    case "points_reached":
+      return [{ name: "=", label: "equals" }];
+  }
+
   switch (fieldData.dataType) {
     case "text":
       return [
@@ -694,25 +692,31 @@ const getOperators = (
       ];
   }
   return [];
-};
+}
 
-const defaultQuery: RuleGroupType = {
-  combinator: "and",
-  rules: [
-    { field: "name", operator: "beginsWith", value: "Stev" },
-    { field: "birthday", operator: "<", value: "1970-01-01" },
-    { field: "guitars", operator: ">", value: 5 },
-    { field: "favoriteMovie", operator: "=", value: "Crossroads (1986)" },
-  ],
-};
+interface QueryBuilderProps {
+  trigger?: TriggerResponse;
+}
 
-function MyQueryBuilder() {
-  const [query, setQuery] = React.useState(prepareRuleGroup(defaultQuery));
+function MyQueryBuilder({ trigger }: QueryBuilderProps) {
+  const [query, setQuery] = React.useState<RuleGroupType>({
+    combinator: "and",
+    rules: [],
+  });
+
+  const fields: Field[] =
+    trigger?.fields?.map((field) => ({
+      name: field.key!,
+      label: field.label || field.key!,
+      dataType: field.type!,
+      inputType: field.type === "integer" ? "number" : "text",
+    })) || [];
 
   return (
     <>
       <QueryBuilderDnD dnd={{ ...ReactDnD, ...ReactDndHtml5Backend }}>
         <QueryBuilder
+          disabled={(trigger?.fields?.length ?? 0) === 0}
           fields={fields}
           query={query}
           getOperators={getOperators}
