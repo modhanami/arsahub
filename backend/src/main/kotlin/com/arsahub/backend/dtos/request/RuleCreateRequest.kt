@@ -15,6 +15,7 @@ class RuleCreateRequest(
     val action: ActionDefinition,
     val conditions: Map<String, Any>? = null,
     repeatability: String?,
+    val conditionExpression: String? = null,
 ) {
     @ValidTitle
     @RequiredTitle

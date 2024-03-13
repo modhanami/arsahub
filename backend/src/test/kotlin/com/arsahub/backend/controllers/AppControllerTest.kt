@@ -685,44 +685,48 @@ class AppControllerTest() {
 
      */
 
-    data class TriggerBuilder(
+    class TriggerBuilder(
         var title: String? = null,
         var description: String? = null,
         var key: String? = null,
-        var fields: MutableList<FieldBuilder> = mutableListOf(),
+        val fields: MutableList<Field> = mutableListOf(),
     ) {
-        fun fields(customizer: FieldBuilder.() -> Unit = {}) {
-            fields.add(FieldBuilder().apply(customizer))
-        }
-    }
-
-    data class FieldBuilder(
-        var type: String? = null,
-        var key: String? = null,
-        var label: String? = null,
-    ) {
-        private fun baseField(
-            type: String,
-            key: String,
-            label: String? = null,
-        ) {
-            this.type = type
-            this.key = key
-            this.label = label
+        fun fields(customizer: FieldsDsl.() -> Unit = {}) {
+            FieldsDsl().apply(customizer)
         }
 
-        fun integer(
-            key: String,
-            label: String? = null,
-        ) {
-            baseField("integer", key, label)
-        }
+        inner class Field(
+            var type: String? = null,
+            var key: String? = null,
+            var label: String? = null,
+        )
 
-        fun text(
-            key: String,
-            label: String? = null,
-        ) {
-            baseField("text", key, label)
+        inner class FieldsDsl {
+            private fun baseField(
+                type: String,
+                key: String,
+                label: String? = null,
+            ) {
+                Field(
+                    type = type,
+                    key = key,
+                    label = label,
+                ).also { fields.add(it) }
+            }
+
+            fun integer(
+                key: String,
+                label: String? = null,
+            ) {
+                baseField("integer", key, label)
+            }
+
+            fun text(
+                key: String,
+                label: String? = null,
+            ) {
+                baseField("text", key, label)
+            }
         }
     }
 
@@ -756,6 +760,7 @@ class AppControllerTest() {
         var actionPoints: Int? = null,
         var conditions: MutableList<ConditionBuilder> = mutableListOf(),
         var repeatability: RuleRepeatability? = null,
+        var conditionExpression: String? = null,
     ) {
         fun action(customizer: ActionBuilder.() -> Unit = {}) {
             action = ActionBuilder().apply(customizer)
@@ -816,6 +821,7 @@ class AppControllerTest() {
                     ),
                 conditions = builder.conditions.associate { it.key!! to it.value!! }.toMutableMap(),
                 repeatability = builder.repeatability!!.key,
+                conditionExpression = builder.conditionExpression,
             ),
         )
     }
@@ -2185,6 +2191,97 @@ class AppControllerTest() {
         )
             .andExpect(status().isBadRequest)
             .andExpect(jsonPath("$.message").value("Repeatability must be once_per_user for this trigger"))
+    }
+
+    @Test
+    fun `create rule with condition expression - success`() {
+        // Arrange
+        val trigger = createWorkshopCompletedTrigger(authSetup.app)
+
+        // Act & Assert
+        mockMvc.performWithAppAuth(
+            post("/api/apps/rules")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "title": "Rule",
+                      "trigger": {
+                        "key": "${trigger.key}"
+                      },
+                      "action": {
+                        "key": "add_points",
+                        "params": {
+                          "points": 100
+                        }
+                      },
+                      "conditionExpression": "workshopId == 1",
+                      "repeatability": "unlimited"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isCreated)
+
+        // Assert DB
+        val rules = ruleRepository.findAll()
+        assertEquals(1, rules.size)
+        val rule = rules[0]
+        assertEquals("Rule", rule.title)
+        assertEquals("workshopId == 1", rule.conditionExpression)
+
+        // Assert condition expression is evaluated
+        val user = createAppUser(authSetup.app)
+        mockMvc.performWithAppAuth(
+            post("/api/apps/trigger")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "key": "${trigger.key}",
+                        "params": {
+                            "workshopId": 1
+                        },
+                        "userId": "${user.userId}"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+
+        val userAfter = appUserRepository.findById(user.id!!).get()
+        assertEquals(100, userAfter.points)
+
+        // Assert condition expression is not evaluated
+        val user2 = createAppUser(authSetup.app, userId = UUID.randomUUID().toString())
+
+        mockMvc.performWithAppAuth(
+            post("/api/apps/trigger")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "key": "${trigger.key}",
+                        "params": {
+                            "workshopId": 2
+                        },
+                        "userId": "${user2.userId}"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+
+        val userAfter2 = appUserRepository.findById(user2.id!!).get()
+        assertEquals(0, userAfter2.points)
+    }
+
+    @Test
+    fun `create rule with condition expression - failed - invalid trigger field`() {
+    }
+
+    @Test
+    fun `create rule with condition expression - failed - invalid data type`() {
     }
 
     @Test

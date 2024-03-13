@@ -70,6 +70,7 @@ class RuleService(
                 triggerParams = request.trigger.params?.toMutableMap(),
                 conditions = request.conditions?.toMutableMap(),
                 repeatability = ruleRepeatability.key,
+                conditionExpression = request.conditionExpression,
             )
 
         rule.action = parsedAction.key

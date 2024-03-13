@@ -48,6 +48,8 @@ class Rule(
     @NotNull
     @Column(name = "repeatability", nullable = false, length = Integer.MAX_VALUE)
     var repeatability: String? = null,
+    @Column(name = "condition_expression", length = Integer.MAX_VALUE)
+    var conditionExpression: String? = null,
 ) : AuditedEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
