@@ -26,7 +26,6 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
 import { Link as NextUILink } from "@nextui-org/react";
-import Link from "next/link";
 import React from "react";
 import { v4 as uuidv4 } from "uuid";
 import { Input } from "@/components/ui/input";
@@ -41,6 +40,18 @@ import { InputWithCounter } from "@/components/ui/input-with-counter";
 import { TextareaWithCounter } from "@/components/ui/textarea-with-counter";
 import { resolveBasePath } from "@/lib/base-path";
 import { Condition } from "@/app/(app)/(app-protected)/rules/shared";
+import {
+  defaultOperators,
+  Field,
+  formatQuery,
+  prepareRuleGroup,
+  QueryBuilder,
+  RuleGroupType,
+} from "react-querybuilder";
+import "react-querybuilder/dist/query-builder.css";
+import { QueryBuilderDnD } from "@react-querybuilder/dnd";
+import * as ReactDnD from "react-dnd";
+import * as ReactDndHtml5Backend from "react-dnd-html5-backend";
 
 const operations = [{ label: "is", value: "is" }];
 const actions = [
@@ -320,6 +331,7 @@ export default function Page() {
       </CardHeader>
       <CardContent>
         {/*  Config Trigger */}
+        <MyQueryBuilder />
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
@@ -392,11 +404,13 @@ export default function Page() {
                   </Select>
                   <FormDescription>
                     You can manage triggers in{" "}
-                    <Link href={resolveBasePath("/triggers")}>
-                      <NextUILink size="sm" color={"primary"}>
-                        Triggers
-                      </NextUILink>
-                    </Link>
+                    <NextUILink
+                      size="sm"
+                      color={"primary"}
+                      href={resolveBasePath("/triggers")}
+                    >
+                      Triggers
+                    </NextUILink>
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -626,5 +640,92 @@ export default function Page() {
         </Form>
       </CardContent>
     </Card>
+  );
+}
+
+// const fields: Field[] = [
+//   { name: "firstName", label: "First Name" },
+//   { name: "lastName", label: "Last Name" },
+// ];
+//
+// const initialQuery: RuleGroupType = {
+//   combinator: "and",
+//   rules: [
+//     {
+//       field: "firstName",
+//       operator: "beginsWith",
+//       value: "Stev",
+//     },
+//     {
+//       field: "lastName",
+//       operator: "in",
+//       value: "Vai,Vaughan",
+//     },
+//   ],
+// };
+
+const fields: Field[] = [
+  { name: "name", label: "Name", dataType: "text" },
+  {
+    name: "guitars",
+    label: "Guitars",
+    dataType: "integer",
+    inputType: "number",
+  },
+];
+
+const getOperators = (
+  fieldName: string,
+  { fieldData }: { fieldData: Field },
+) => {
+  switch (fieldData.dataType) {
+    case "text":
+      return [
+        { name: "=", label: "equals" },
+        ...defaultOperators.filter((op) =>
+          ["contains", "beginsWith", "endsWith"].includes(op.name),
+        ),
+      ];
+    case "integer":
+      return [
+        ...defaultOperators.filter((op) =>
+          ["=", ">", ">=", "<", "<="].includes(op.name),
+        ),
+      ];
+  }
+  return [];
+};
+
+const defaultQuery: RuleGroupType = {
+  combinator: "and",
+  rules: [
+    { field: "name", operator: "beginsWith", value: "Stev" },
+    { field: "birthday", operator: "<", value: "1970-01-01" },
+    { field: "guitars", operator: ">", value: 5 },
+    { field: "favoriteMovie", operator: "=", value: "Crossroads (1986)" },
+  ],
+};
+
+function MyQueryBuilder() {
+  const [query, setQuery] = React.useState(prepareRuleGroup(defaultQuery));
+
+  return (
+    <>
+      <QueryBuilderDnD dnd={{ ...ReactDnD, ...ReactDndHtml5Backend }}>
+        <QueryBuilder
+          fields={fields}
+          query={query}
+          getOperators={getOperators}
+          onQueryChange={setQuery}
+          resetOnFieldChange={false}
+          controlClassnames={{ queryBuilder: "queryBuilder-branches" }}
+        />
+      </QueryBuilderDnD>
+      <h4>Query</h4>
+      <pre>
+        {/*<code>{formatQuery(query, "json")}</code>*/}
+        <code>{formatQuery(query, "cel")}</code>
+      </pre>
+    </>
   );
 }

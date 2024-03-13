@@ -375,6 +375,10 @@ class CelTest {
                 Arguments.of("logical_and", "27 <= 27 && 'Test'.startsWith('Te')", true),
                 Arguments.of("logical_or", "26 > 27 || 'Test'.startsWith('Te')", true),
                 Arguments.of("logical_group", "(26 > 27 || 25 > 0) || 'Test'.startsWith('Te')", true),
+                // TODO: negation
+//                Arguments.of("string: not equals", "'Test' != 'est'", true),
+//                Arguments.of("int: not equals", "27 != 28", true),
+                // TODO: nullable
             )
     }
 }
