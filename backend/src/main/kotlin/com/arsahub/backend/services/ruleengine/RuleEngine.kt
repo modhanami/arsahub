@@ -200,54 +200,6 @@ class RuleEngine(
         return true
     }
 
-//    private fun validateConditions(
-//        rule: Rule,
-//        appUser: AppUser,
-//        params: Map<String, Any>?,
-//    ): Boolean {
-//        if (rule.conditions.isNullOrEmpty()) {
-//            return params.isNullOrEmpty()
-//        }
-//
-//        val conditions = rule.conditions!!
-//        val conditionsMatch =
-//            conditions.all { condition ->
-//                val paramValue = params?.get(condition.key)
-//                val conditionValue = condition.value
-//
-//                // TODO: forward-chain: This is a quick work around, utilizing conditions to check against appUser,
-//                //  which is different from normal flow, that checks trigger params.
-//                //  Ideally, we should have a separate trigger config field for this?
-//                val isPointsReached = rule.trigger!!.key == "points_reached"
-//
-//                val matches =
-//                    if (isPointsReached) {
-//                        val pointsThreshold = conditionValue as? Int
-//                        val appUserPoints = appUser.points
-//                        logger.warn {
-//                            "Workaround for points_reached: Checking points: " +
-//                                "appUserPoints=$appUserPoints, pointsThreshold=$pointsThreshold"
-//                        }
-//                        pointsThreshold != null && appUserPoints != null && appUserPoints >= pointsThreshold
-//                    } else {
-//                        // TODO: support more operators
-//                        paramValue == conditionValue
-//                    }
-//
-//                if (matches) {
-//                    logger.debug { "Condition ${condition.key} matches" }
-//                } else {
-//                    logger.debug { "Condition ${condition.key} does not match: $paramValue != $conditionValue" }
-//                }
-//
-//                matches
-//            }
-//
-//        logger.debug { "Rule ${rule.title} (${rule.id}) conditions match: $conditionsMatch" }
-//
-//        return conditionsMatch
-//    }
-
     private fun validateConditionExpression(
         rule: Rule,
         params: Map<String, Any>?,
@@ -311,15 +263,6 @@ class RuleEngine(
     }
 
     companion object {
-        fun getProgramValidationResult(
-            expression: String,
-            varDecls: List<CelVarDecl>,
-        ): CelValidationResult {
-            // Compile the expression into an Abstract Syntax Tree.
-            val compiler = getCompiler(varDecls)
-            return compiler.compile(expression)
-        }
-
         private val celOptions: CelOptions = CelOptions.current().build()
 
         private const val OPERATOR_CONTAINS = "contains"
@@ -487,27 +430,23 @@ class RuleEngine(
                 ),
             )
 
-//        private val CEL_COMPILER: CelCompiler =
-//            CelCompilerImpl.newBuilder(CelParserImpl.newBuilder(), CelCheckerLegacyImpl.newBuilder())
-//                .setOptions(celOptions)
-//                .setStandardEnvironmentEnabled(false)
-//                .addFunctionDeclarations(celFunctionDecls)
-//                .addVarDeclarations(
-//                    listOf(
-//                        CelVarDecl.newVarDeclaration(
-//                            "trigger",
-//                            SimpleType.DYN,
-//                        ),
-//                    ),
-//                )
-//                .build()
-
+        // Construct the compilation and runtime environments.
+        // These instances are immutable and thus trivially thread-safe and amenable to caching.
         private val CEL_RUNTIME: CelRuntime =
             CelRuntimeLegacyImpl.newBuilder()
                 .setOptions(celOptions)
                 .setStandardEnvironmentEnabled(false)
                 .addFunctionBindings(celFunctionBindings)
                 .build()
+
+        fun getProgramValidationResult(
+            expression: String,
+            varDecls: List<CelVarDecl>,
+        ): CelValidationResult {
+            // Compile the expression into an Abstract Syntax Tree.
+            val compiler = getCompiler(varDecls)
+            return compiler.compile(expression)
+        }
 
         private fun getCompiler(varDecls: List<CelVarDecl>): CelCompiler {
             return CelCompilerImpl.newBuilder(CelParserImpl.newBuilder(), CelCheckerLegacyImpl.newBuilder())
@@ -518,7 +457,4 @@ class RuleEngine(
                 .build()
         }
     }
-
-    // Construct the compilation and runtime environments.
-    // These instances are immutable and thus trivially thread-safe and amenable to caching.
 }
