@@ -100,7 +100,9 @@ class RuleEngine(
                 // check repeatability
                 !validateRepeatability(rule, appUser) ||
                 // check the params against the rule conditions, if any
-                !validateConditions(rule, appUser, params)
+//                !validateConditions(rule, appUser, params) ||
+                // check the condition expression, if any
+                !validateConditionExpression(rule, params)
             ) {
                 //  not repeatable or conditions don't match
                 continue
@@ -248,9 +250,8 @@ class RuleEngine(
 //        return conditionsMatch
 //    }
 
-    private fun validateConditions(
+    private fun validateConditionExpression(
         rule: Rule,
-        appUser: AppUser,
         params: Map<String, Any>?,
     ): Boolean {
         // Refactor the above to use google/cel-java as the expression language for the conditions instead

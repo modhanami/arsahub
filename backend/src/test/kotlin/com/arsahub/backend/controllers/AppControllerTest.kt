@@ -400,11 +400,7 @@ class AppControllerTest() {
                     action = Action.ADD_POINTS,
                     actionPoints = 100,
                     app = authSetup.app,
-                    conditions =
-                        mutableMapOf(
-                            "workshopId" to 1,
-                            "source" to "trust me",
-                        ),
+                    conditionExpression = "workshopId == 1 && source == 'trust me'",
                     repeatability = RuleRepeatability.UNLIMITED,
                 ),
             )
@@ -512,11 +508,7 @@ class AppControllerTest() {
                     action = Action.ADD_POINTS,
                     actionPoints = 100,
                     app = authSetup.app,
-                    conditions =
-                        mutableMapOf(
-                            "workshopId" to 1,
-                            "source" to "trust me",
-                        ),
+                    conditionExpression = "workshopId == 1 && source == 'trust me'",
                     repeatability = RuleRepeatability.ONCE_PER_USER,
                 ),
             )
@@ -765,10 +757,6 @@ class AppControllerTest() {
         fun action(customizer: ActionBuilder.() -> Unit = {}) {
             action = ActionBuilder().apply(customizer)
         }
-
-        fun conditions(customizer: ConditionBuilder.() -> Unit = {}) {
-            conditions.add(ConditionBuilder().apply(customizer))
-        }
     }
 
     data class ActionBuilder(
@@ -819,7 +807,6 @@ class AppControllerTest() {
                         key = builder.action!!.key!!,
                         params = builder.action!!.params,
                     ),
-                conditions = builder.conditions.associate { it.key!! to it.value!! }.toMutableMap(),
                 repeatability = builder.repeatability!!.key,
                 conditionExpression = builder.conditionExpression,
             ),
@@ -853,10 +840,7 @@ class AppControllerTest() {
                 action {
                     addPoints(points)
                 }
-                conditions {
-                    eq("workshopId", workshopIdEq)
-                    eq("source", sourceEq)
-                }
+                conditionExpression = "workshopId == $workshopIdEq && source == '$sourceEq'"
                 this.repeatability = repeatability
             }.let(::WorkshopCompletedRule)
 
@@ -870,32 +854,7 @@ class AppControllerTest() {
      */
 
     @JvmInline
-    value class WorkshopCompletedRule(private val rule: Rule) {
-        fun toMatchingRequestBody(
-            appUser: AppUser,
-            objectMapper: ObjectMapper,
-        ): String {
-            val matchingParams = mutableMapOf<String, Any>()
-
-            if (rule.conditions?.containsKey("workshopId") == true) {
-                matchingParams["workshopId"] = rule.conditions!!["workshopId"]!!
-            }
-
-            if (rule.conditions?.containsKey("source") == true) {
-                matchingParams["source"] = rule.conditions!!["source"]!!
-            }
-
-            val paramsJson = objectMapper.writeValueAsString(matchingParams)
-
-            return """
-                {
-                    "key": "${rule.trigger!!.key}",
-                    "params": $paramsJson,
-                    "userId": "${appUser.userId}"
-                }
-                """.trimIndent()
-        }
-
+    value class WorkshopCompletedRule(val rule: Rule) {
         fun toNonMatchingRequestBody(
             appUser: AppUser,
             objectMapper: ObjectMapper,
@@ -937,19 +896,37 @@ class AppControllerTest() {
     fun `fires matching rules - for the given user ID in the app`() {
         // Arrange
         val user = createAppUser(authSetup.app)
-        val rule = setupWorkshopCompletedRule(authSetup.app, 1, "trust me", 100)
+        val rule = setupWorkshopCompletedRule(authSetup.app, 1, "trust me", 100).rule
 
         // Act & Assert
         mockMvc.performWithAppAuth(
             post("/api/apps/trigger")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(rule.toMatchingRequestBody(user, mapper)),
+                .content(getMatchingSendTriggerPayloadForWorkshopCompletedRule(rule, user, 1, "trust me")),
         )
             .andExpect(status().isOk)
 
         // Assert DB
         val userAfter = appUserRepository.findById(user.id!!).get()
         assertEquals(100, userAfter.points)
+    }
+
+    private fun getMatchingSendTriggerPayloadForWorkshopCompletedRule(
+        rule: Rule,
+        user: AppUser,
+        workshopId: Int,
+        source: String,
+    ): String {
+        return """
+            {
+                "key": "${rule.trigger!!.key}",
+                "params": {
+                    "workshopId": $workshopId,
+                    "source": "$source"
+                },
+                "userId": "${user.userId}"
+            }
+            """.trimIndent()
     }
 
     @Test
@@ -1044,10 +1021,7 @@ class AppControllerTest() {
                 action {
                     addPoints(100)
                 }
-                conditions {
-                    eq("workshopId", 1)
-                    eq("source", "trust me")
-                }
+                conditionExpression = "workshopId == 1 && source == 'trust me'"
                 this.repeatability = UnlimitedRuleRepeatability
             }
 
@@ -1097,7 +1071,7 @@ class AppControllerTest() {
     fun `does not fire matching rules - for other user IDs in the app`() {
         // Arrange
         val user = createAppUser(authSetup.app)
-        val rule = setupWorkshopCompletedRule(authSetup.app, 1, "trust me", 100)
+        val rule = setupWorkshopCompletedRule(authSetup.app, 1, "trust me", 100).rule
 
         val otherUser =
             createAppUser(authSetup.app, userId = UUID.randomUUID().toString())
@@ -1106,7 +1080,7 @@ class AppControllerTest() {
         mockMvc.performWithAppAuth(
             post("/api/apps/trigger")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(rule.toMatchingRequestBody(user, mapper)),
+                .content(getMatchingSendTriggerPayloadForWorkshopCompletedRule(rule, user, 1, "trust me")),
         )
             .andExpect(status().isOk)
 
@@ -1122,7 +1096,7 @@ class AppControllerTest() {
     fun `does not fire matching rules - for the given user ID in other apps`() {
         // Arrange
         val user = createAppUser(authSetup.app)
-        val rule = setupWorkshopCompletedRule(authSetup.app, 1, "trust me", 100)
+        val rule = setupWorkshopCompletedRule(authSetup.app, 1, "trust me", 100).rule
 
         val otherApp = setupAuth(userRepository, appRepository).app
         val otherUser = createAppUser(otherApp)
@@ -1131,7 +1105,7 @@ class AppControllerTest() {
         mockMvc.performWithAppAuth(
             post("/api/apps/trigger")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(rule.toMatchingRequestBody(user, mapper)),
+                .content(getMatchingSendTriggerPayloadForWorkshopCompletedRule(rule, user, 1, "trust me")),
         )
             .andExpect(status().isOk)
 
@@ -1147,7 +1121,7 @@ class AppControllerTest() {
     fun `does not fire matching rules - for other user IDs in other apps`() {
         // Arrange
         val user = createAppUser(authSetup.app)
-        val rule = setupWorkshopCompletedRule(authSetup.app, 1, "trust me", 100)
+        val rule = setupWorkshopCompletedRule(authSetup.app, 1, "trust me", 100).rule
 
         val otherApp = setupAuth(userRepository, appRepository).app
         val otherUser1 =
@@ -1158,7 +1132,7 @@ class AppControllerTest() {
         mockMvc.performWithAppAuth(
             post("/api/apps/trigger")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(rule.toMatchingRequestBody(user, mapper)),
+                .content(getMatchingSendTriggerPayloadForWorkshopCompletedRule(rule, user, 1, "trust me")),
         )
             .andExpect(status().isOk)
 
@@ -1178,14 +1152,14 @@ class AppControllerTest() {
     fun `unlimited - given rule is fired once - when rule is matched again - then rule is fired again`() {
         // Arrange
         val user = createAppUser(authSetup.app)
-        val rule = setupWorkshopCompletedRule(authSetup.app, 1, "trust me", 100)
+        val rule = setupWorkshopCompletedRule(authSetup.app, 1, "trust me", 100).rule
 
         // Act & Assert
         repeat(2) {
             mockMvc.performWithAppAuth(
                 post("/api/apps/trigger")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(rule.toMatchingRequestBody(user, mapper)),
+                    .content(getMatchingSendTriggerPayloadForWorkshopCompletedRule(rule, user, 1, "trust me")),
             )
                 .andExpect(status().isOk)
         }
@@ -1199,14 +1173,14 @@ class AppControllerTest() {
     fun `once per user - given rule is fired once - when rule is matched again - then rule is not fired again`() {
         // Arrange
         val user = createAppUser(authSetup.app)
-        val rule = setupWorkshopCompletedRule(authSetup.app, 1, "trust me", 100, OncePerUserRuleRepeatability)
+        val rule = setupWorkshopCompletedRule(authSetup.app, 1, "trust me", 100, OncePerUserRuleRepeatability).rule
 
         // Act & Assert
         repeat(2) {
             mockMvc.performWithAppAuth(
                 post("/api/apps/trigger")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(rule.toMatchingRequestBody(user, mapper)),
+                    .content(getMatchingSendTriggerPayloadForWorkshopCompletedRule(rule, user, 1, "trust me")),
             )
                 .andExpect(status().isOk)
         }
@@ -2389,9 +2363,7 @@ class AppControllerTest() {
                 action {
                     addPoints(50)
                 }
-                conditions {
-                    eq("points", 100)
-                }
+                conditionExpression = "points == 100"
                 repeatability = OncePerUserRuleRepeatability
             }
 
