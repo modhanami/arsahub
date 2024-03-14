@@ -2278,10 +2278,66 @@ class AppControllerTest() {
 
     @Test
     fun `create rule with condition expression - failed - invalid trigger field`() {
+        // Arrange
+        val trigger = createWorkshopCompletedTrigger(authSetup.app)
+
+        // Act & Assert
+        mockMvc.performWithAppAuth(
+            post("/api/apps/rules")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "title": "Rule",
+                      "trigger": {
+                        "key": "${trigger.key}"
+                      },
+                      "action": {
+                        "key": "add_points",
+                        "params": {
+                          "points": 100
+                        }
+                      },
+                      "conditionExpression": "invalidField == 1",
+                      "repeatability": "unlimited"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.message").value("Invalid fields in condition expression"))
     }
 
     @Test
     fun `create rule with condition expression - failed - invalid data type`() {
+        // Arrange
+        val trigger = createWorkshopCompletedTrigger(authSetup.app)
+
+        // Act & Assert
+        mockMvc.performWithAppAuth(
+            post("/api/apps/rules")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "title": "Rule",
+                      "trigger": {
+                        "key": "${trigger.key}"
+                      },
+                      "action": {
+                        "key": "add_points",
+                        "params": {
+                          "points": 100
+                        }
+                      },
+                      "conditionExpression": "workshopId == '1'",
+                      "repeatability": "unlimited"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.message").value("Invalid fields in condition expression"))
     }
 
     @Test

@@ -19,6 +19,7 @@ import dev.cel.checker.CelCheckerLegacyImpl
 import dev.cel.common.CelFunctionDecl
 import dev.cel.common.CelOptions
 import dev.cel.common.CelOverloadDecl
+import dev.cel.common.CelValidationResult
 import dev.cel.common.CelVarDecl
 import dev.cel.common.types.CelType
 import dev.cel.common.types.SimpleType
@@ -31,6 +32,22 @@ import dev.cel.runtime.CelRuntimeLegacyImpl
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+
+fun Iterable<TriggerField>.getCelVarDecls(): List<CelVarDecl> {
+    return map { field ->
+        val fieldName = field.key
+        val fieldType = field.getCelType()
+        CelVarDecl.newVarDeclaration(fieldName, fieldType)
+    }
+}
+
+fun TriggerField.getCelType(): CelType {
+    return when (type) {
+        "integer" -> SimpleType.INT
+        "text" -> SimpleType.STRING
+        else -> throw IllegalArgumentException("Unsupported trigger field type: $type")
+    }
+}
 
 @Service
 class RuleEngine(
@@ -231,15 +248,6 @@ class RuleEngine(
 //        return conditionsMatch
 //    }
 
-    //    extension method on Trigger to get CEL type from a trigger field name
-    private fun TriggerField.getCelType(): CelType {
-        return when (type) {
-            "integer" -> SimpleType.INT
-            "text" -> SimpleType.STRING
-            else -> throw IllegalArgumentException("Unsupported trigger field type: $type")
-        }
-    }
-
     private fun validateConditions(
         rule: Rule,
         appUser: AppUser,
@@ -264,11 +272,7 @@ class RuleEngine(
                 }
             }
         val varDecls =
-            rule.trigger?.fields?.map { field ->
-                val fieldName = field.key
-                val fieldType = field.getCelType()
-                CelVarDecl.newVarDeclaration(fieldName, fieldType)
-            } ?: emptyList()
+            rule.trigger?.fields?.getCelVarDecls() ?: emptyList()
 
         val program = getProgram(conditionExpression, varDecls)
 
@@ -279,13 +283,11 @@ class RuleEngine(
         return executionResult ?: false
     }
 
-    private fun getProgram(
+    fun getProgram(
         expression: String,
         varDecls: List<CelVarDecl>,
     ): CelRuntime.Program {
-        // Compile the expression into an Abstract Syntax Tree.
-        val compiler = getCompiler(varDecls)
-        val validationResult = compiler.compile(expression)
+        val validationResult = getProgramValidationResult(expression, varDecls)
         if (validationResult.hasError()) {
             println(validationResult.issueString)
             throw IllegalArgumentException("Invalid expression: $expression")
@@ -298,6 +300,15 @@ class RuleEngine(
     }
 
     companion object {
+        fun getProgramValidationResult(
+            expression: String,
+            varDecls: List<CelVarDecl>,
+        ): CelValidationResult {
+            // Compile the expression into an Abstract Syntax Tree.
+            val compiler = getCompiler(varDecls)
+            return compiler.compile(expression)
+        }
+
         private val celOptions: CelOptions = CelOptions.current().build()
 
         private const val OPERATOR_CONTAINS = "contains"
@@ -486,16 +497,17 @@ class RuleEngine(
                 .setStandardEnvironmentEnabled(false)
                 .addFunctionBindings(celFunctionBindings)
                 .build()
+
+        private fun getCompiler(varDecls: List<CelVarDecl>): CelCompiler {
+            return CelCompilerImpl.newBuilder(CelParserImpl.newBuilder(), CelCheckerLegacyImpl.newBuilder())
+                .setOptions(celOptions)
+                .setStandardEnvironmentEnabled(false)
+                .addFunctionDeclarations(celFunctionDecls)
+                .addVarDeclarations(varDecls)
+                .build()
+        }
     }
 
     // Construct the compilation and runtime environments.
     // These instances are immutable and thus trivially thread-safe and amenable to caching.
-    private fun getCompiler(varDecls: List<CelVarDecl>): CelCompiler {
-        return CelCompilerImpl.newBuilder(CelParserImpl.newBuilder(), CelCheckerLegacyImpl.newBuilder())
-            .setOptions(celOptions)
-            .setStandardEnvironmentEnabled(false)
-            .addFunctionDeclarations(celFunctionDecls)
-            .addVarDeclarations(varDecls)
-            .build()
-    }
 }

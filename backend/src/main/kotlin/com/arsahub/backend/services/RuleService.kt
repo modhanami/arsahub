@@ -14,6 +14,9 @@ import com.arsahub.backend.models.RuleRepeatability
 import com.arsahub.backend.models.Trigger
 import com.arsahub.backend.repositories.RuleProgressRepository
 import com.arsahub.backend.repositories.RuleRepository
+import com.arsahub.backend.services.ruleengine.RuleEngine
+import com.arsahub.backend.services.ruleengine.getCelVarDecls
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 
@@ -28,6 +31,8 @@ class RuleService(
     private val ruleRepository: RuleRepository,
     private val ruleProgressRepository: RuleProgressRepository,
 ) {
+    private val logger = KotlinLogging.logger {}
+
     fun listRules(app: App): List<Rule> {
         return ruleRepository.findAllByApp(app)
     }
@@ -56,6 +61,10 @@ class RuleService(
         // validate repeatability
         val ruleRepeatability = RuleRepeatability.valueOf(request.repeatability!!)
         validateRepeatabilityForBuiltInTrigger(ruleRepeatability, trigger)
+
+        if (request.conditionExpression != null) {
+            validateConditionExpression(trigger, request.conditionExpression)
+        }
 
         triggerService.validateParamsAgainstTriggerFields(request.conditions, trigger.fields)
 
@@ -87,6 +96,37 @@ class RuleService(
         }
 
         return ruleRepository.save(rule)
+    }
+
+    private fun validateConditionExpression(
+        trigger: Trigger,
+        conditionExpression: String,
+    ) {
+        // Convert CEL expression to a map of variable names to corresponding trigger field types,
+        // or throw an exception if the corresponding trigger field is not found
+        val varDecls = trigger.fields.getCelVarDecls()
+        val validationResult = RuleEngine.getProgramValidationResult(conditionExpression, varDecls)
+        val invalidFieldsMessage = "Invalid fields in condition expression"
+        require(!validationResult.hasError()) {
+            // TODO: distinct error messages
+            invalidFieldsMessage
+        }
+
+        val referenceNames =
+            validationResult.ast.referenceMap.values
+                .filter { it.overloadIds().isEmpty() } // only consider references to fields
+                .map { it.name() } // get the name of the reference
+                .filterNot { it.isNullOrEmpty() } // filter out empty names (e.g. a constant)
+        val triggerFieldKeys = trigger.fields.map { it.key!! }
+        val missingFields = referenceNames.filter { !triggerFieldKeys.contains(it) }
+
+        logger.info { "Reference names: $referenceNames" }
+        logger.info { "Trigger field keys: $triggerFieldKeys" }
+        logger.info { "Missing fields: $missingFields" }
+
+        require(missingFields.isEmpty()) {
+            invalidFieldsMessage
+        }
     }
 
     fun updateRule(
