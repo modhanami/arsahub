@@ -99,10 +99,8 @@ class RuleEngine(
             if (
                 // check repeatability
                 !validateRepeatability(rule, appUser) ||
-                // check the params against the rule conditions, if any
-//                !validateConditions(rule, appUser, params) ||
                 // check the condition expression, if any
-                !validateConditionExpression(rule, params)
+                !validateConditionExpression(rule, params, appUser)
             ) {
                 //  not repeatable or conditions don't match
                 continue
@@ -253,12 +251,24 @@ class RuleEngine(
     private fun validateConditionExpression(
         rule: Rule,
         params: Map<String, Any>?,
+        appUser: AppUser,
     ): Boolean {
         // Refactor the above to use google/cel-java as the expression language for the conditions instead
         val conditionExpression = rule.conditionExpression
         if (conditionExpression.isNullOrEmpty()) {
             return params.isNullOrEmpty()
         }
+
+        val isPointsReachedTrigger = rule.trigger?.key == "points_reached"
+        if (isPointsReachedTrigger) {
+            logger.info { "Workaround for points_reached: Checking points" }
+            // TODO: fix this hacky regex
+            val pointsThreshold = rule.conditionExpression?.let { "\\d+".toRegex().find(it)?.value?.toInt() }
+            logger.info { "Checking points: appUserPoints=${appUser.points}, pointsThreshold=$pointsThreshold" }
+            val appUserPoints = appUser.points
+            return pointsThreshold != null && appUserPoints != null && appUserPoints >= pointsThreshold
+        }
+
         if (params.isNullOrEmpty()) {
             return false
         }
