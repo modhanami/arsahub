@@ -25,12 +25,10 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
 import { Link as NextUILink } from "@nextui-org/react";
-import React from "react";
-import { v4 as uuidv4 } from "uuid";
+import React, { useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import {
   RuleCreateRequest,
-  TriggerResponse,
   ValidationLengths,
   ValidationMessages,
 } from "@/types/generated-types";
@@ -38,7 +36,6 @@ import { isAlphaNumericExtended } from "@/lib/validations";
 import { InputWithCounter } from "@/components/ui/input-with-counter";
 import { TextareaWithCounter } from "@/components/ui/textarea-with-counter";
 import { resolveBasePath } from "@/lib/base-path";
-import { Condition } from "@/app/(app)/(app-protected)/rules/shared";
 import {
   defaultOperators,
   Field,
@@ -55,7 +52,6 @@ import * as ReactDnD from "react-dnd";
 import * as ReactDndHtml5Backend from "react-dnd-html5-backend";
 import { customRuleProcessorCEL } from "@/app/(app)/(app-protected)/rules/new/querybuilder/customRuleProcessorCEL";
 
-const operations = [{ label: "is", value: "is" }];
 const actions = [
   {
     label: "Add points",
@@ -140,26 +136,18 @@ export default function Page() {
   }, [triggers, selectedTriggerKey]);
   const createRule = useCreateRule();
 
-  const [conditions, setConditions] = React.useState<Condition<any>[]>([]);
+  const [query, setQuery] = React.useState<RuleGroupType>({
+    combinator: "and",
+    rules: [],
+  });
   const [conditionExpression, setConditionExpression] =
     React.useState<string>("");
-  const [conditionErrors, setConditionErrors] = React.useState<
-    Record<string, string>
-  >({}); // UUID -> error message
+
   // TODO: disallow duplicate operators for a given field
   // TODO: disable field selection when no operators are available
 
-  React.useEffect(() => {
-    if (selectedTrigger) {
-      setConditions([]);
-    }
-  }, [selectedTrigger]);
-
-  React.useEffect(() => {
-    console.log("conditions", conditions);
-  }, [conditions]);
-
   const isPointsReachedTrigger = selectedTriggerKey === "points_reached";
+
   React.useEffect(() => {
     // if select points_reached, force repeatability as once_per_user
     // TODO: handle built-in triggers more gracefully and maybe migrate to useFieldArray for conditions
@@ -167,86 +155,39 @@ export default function Page() {
       console.log("Force once_per_user");
       form.setValue("repeatability", "once_per_user");
       // set to having one condition of 'points' is 'is' 'value'
-      setConditions([
-        {
-          uuid: uuidv4(),
-          field: "points",
-          operator: "is",
-          value: "",
-          fieldDefinition: {
-            key: "points",
-            label: "Points",
-            type: "integer",
+      setQuery({
+        combinator: "and",
+        rules: [
+          {
+            field: "points",
+            operator: "=",
+            value: "",
           },
-          inputType: "number",
-          inputProps: { step: 1 },
-        },
-      ]);
+        ],
+      });
+    } else {
+      setQuery({ combinator: "and", rules: [] });
     }
-  }, [isPointsReachedTrigger]);
+  }, [selectedTrigger]);
 
   const isRepeatabilityDisabled = isPointsReachedTrigger;
 
-  function addCondition() {
-    setConditions((prev) => [
-      ...prev,
-      {
-        uuid: uuidv4(),
-        field: "",
-        operator: "",
-        value: "",
-      },
-    ]);
-  }
-
-  function removeCondition(uuid: string) {
-    setConditions((prev) =>
-      prev.filter((condition) => condition.uuid !== uuid),
+  const fields: Field[] = useMemo(() => {
+    return (
+      selectedTrigger?.fields?.map((field) => ({
+        name: field.key!,
+        label: field.label || field.key!,
+        dataType: field.type!,
+        inputType: field.type === "integer" ? "number" : "text",
+      })) || []
     );
-  }
+  }, [selectedTrigger]);
 
-  function setConditionField(uuid: string, field: string) {
-    const fieldDefinition = selectedTrigger?.fields?.find(
-      (f) => f.key === field,
-    )!;
-    const inputType = fieldDefinition.type === "integer" ? "number" : "text";
-    const inputProps = fieldDefinition.type === "integer" ? { step: 1 } : {};
-    setConditions((prev) =>
-      prev.map((prevCondition) =>
-        prevCondition.uuid === uuid
-          ? {
-              uuid,
-              operator: "",
-              value: "", // TODO: evaluate whether we should clear the value when the field changes
-              field,
-              fieldDefinition,
-              inputType,
-              inputProps,
-            }
-          : prevCondition,
-      ),
-    );
-  }
+  const onlyValueMode = isPointsReachedTrigger;
 
-  function setConditionOperator(uuid: string, operator: string) {
-    setConditions((prev) =>
-      prev.map((prevCondition) =>
-        prevCondition.uuid === uuid
-          ? { ...prevCondition, operator }
-          : prevCondition,
-      ),
-    );
-  }
-
-  function setConditionValue(uuid: string, value: string) {
-    setConditions((prev) =>
-      prev.map((prevCondition) =>
-        prevCondition.uuid === uuid
-          ? { ...prevCondition, value }
-          : prevCondition,
-      ),
-    );
-  }
+  const operatorFactory = isPointsReachedTrigger
+    ? () => defaultOperators.filter((op) => ["="].includes(op.name))
+    : getOperators;
 
   function onSubmit(data: FormData) {
     const payload: RuleCreateRequest = {
@@ -375,105 +316,38 @@ export default function Page() {
 
             {/*  Config Condition */}
             <h3 className="text-lg font-semibold">If</h3>
-            <MyQueryBuilder
-              trigger={selectedTrigger}
-              disabled={
-                !selectedTrigger || selectedTrigger.fields?.length === 0
-              }
-              onQueryChange={(query, fields) => {
-                setConditionExpression(
-                  getFormattedCELExpression(query, fields),
-                );
-              }}
-            />
-
-            {/*<div className="flex items-center space-x-2">*/}
-            {/*  <Button*/}
-            {/*    onClick={addCondition}*/}
-            {/*    disabled={*/}
-            {/*      !selectedTrigger ||*/}
-            {/*      selectedTrigger.fields?.length === 0 ||*/}
-            {/*      isPointsReachedTrigger*/}
-            {/*    }*/}
-            {/*    type="button"*/}
-            {/*  >*/}
-            {/*    Add condition*/}
-            {/*  </Button>*/}
-            {/*  <Separator />*/}
-            {/*</div>*/}
-            {/*<div className="space-y-4">*/}
-            {/*  {conditions.map((condition) => (*/}
-            {/*    <div*/}
-            {/*      key={condition.uuid}*/}
-            {/*      className="flex items-center space-x-2"*/}
-            {/*    >*/}
-            {/*      <Select*/}
-            {/*        value={condition.field}*/}
-            {/*        onValueChange={(value) =>*/}
-            {/*          setConditionField(condition.uuid, value)*/}
-            {/*        }*/}
-            {/*      >*/}
-            {/*        <SelectTrigger>*/}
-            {/*          <SelectValue placeholder="Select a field" />*/}
-            {/*        </SelectTrigger>*/}
-            {/*        <SelectContent>*/}
-            {/*          {selectedTrigger?.fields?.map((field) => {*/}
-            {/*            return (*/}
-            {/*              <SelectItem*/}
-            {/*                key={field.key}*/}
-            {/*                value={field.key!!}*/}
-            {/*                className="flex items-center justify-between w-full"*/}
-            {/*              >*/}
-            {/*                {field.label || field.key}*/}
-            {/*              </SelectItem>*/}
-            {/*            );*/}
-            {/*          })}*/}
-            {/*        </SelectContent>*/}
-            {/*      </Select>*/}
-
-            {/*      <Select*/}
-            {/*        onValueChange={(value) =>*/}
-            {/*          setConditionOperator(condition.uuid, value)*/}
-            {/*        }*/}
-            {/*        value={condition.operator}*/}
-            {/*      >*/}
-            {/*        <SelectTrigger>*/}
-            {/*          <SelectValue placeholder="Select an operator" />*/}
-            {/*        </SelectTrigger>*/}
-            {/*        <SelectContent>*/}
-            {/*          {operations.map((operation) => (*/}
-            {/*            <SelectItem*/}
-            {/*              key={operation.value}*/}
-            {/*              value={operation.value}*/}
-            {/*              className="flex items-center justify-between w-full"*/}
-            {/*            >*/}
-            {/*              {operation.label}*/}
-            {/*            </SelectItem>*/}
-            {/*          ))}*/}
-            {/*        </SelectContent>*/}
-            {/*      </Select>*/}
-
-            {/*      <Input*/}
-            {/*        value={condition.value}*/}
-            {/*        onChange={(e) =>*/}
-            {/*          setConditionValue(condition.uuid, e.target.value)*/}
-            {/*        }*/}
-            {/*        type={condition.inputType}*/}
-            {/*        {...condition.inputProps}*/}
-            {/*      />*/}
-
-            {/*      <Button*/}
-            {/*        variant="ghost"*/}
-            {/*        size="icon"*/}
-            {/*        onClick={() => removeCondition(condition.uuid)}*/}
-            {/*      >*/}
-            {/*        <Icons.trash className="h-4 w-4" />*/}
-            {/*      </Button>*/}
-
-            {/*      <FormMessage>{conditionErrors[condition.uuid]}</FormMessage>*/}
-            {/*    </div>*/}
-            {/*  ))}*/}
-            {/*</div>*/}
+            <QueryBuilderDnD dnd={{ ...ReactDnD, ...ReactDndHtml5Backend }}>
+              <QueryBuilder
+                disabled={
+                  !selectedTrigger || selectedTrigger.fields?.length === 0
+                }
+                fields={fields}
+                query={query}
+                getOperators={operatorFactory}
+                onQueryChange={setQuery}
+                resetOnFieldChange={false}
+                controlElements={
+                  onlyValueMode
+                    ? {
+                        addRuleAction: () => null,
+                        addGroupAction: () => null,
+                        combinatorSelector: () => null,
+                        removeRuleAction: () => null,
+                        removeGroupAction: () => null,
+                      }
+                    : undefined
+                }
+                controlClassnames={
+                  onlyValueMode
+                    ? undefined
+                    : { queryBuilder: "queryBuilder-branches" }
+                }
+              />
+            </QueryBuilderDnD>
+            <h4>Query</h4>
+            <pre>
+              <code>{getFormattedCELExpression(query, fields)}</code>
+            </pre>
 
             {/*  Config Action */}
             <h3 className="text-lg font-semibold">Then</h3>
@@ -654,12 +528,6 @@ function getOperators(
   return [];
 }
 
-interface QueryBuilderProps {
-  trigger?: TriggerResponse;
-  disabled?: boolean;
-  onQueryChange: (query: RuleGroupType, fields: Field[]) => void;
-}
-
 function getFormattedCELExpression(
   query: RuleGroupType<RuleType, string>,
   fields: Field[],
@@ -670,87 +538,4 @@ function getFormattedCELExpression(
     parseNumbers: true,
     ruleProcessor: customRuleProcessorCEL,
   });
-}
-
-function MyQueryBuilder({
-  trigger,
-  disabled,
-  onQueryChange,
-}: QueryBuilderProps) {
-  const [query, _setQuery] = React.useState<RuleGroupType>({
-    combinator: "and",
-    rules: [],
-  });
-
-  const fields: Field[] =
-    trigger?.fields?.map((field) => ({
-      name: field.key!,
-      label: field.label || field.key!,
-      dataType: field.type!,
-      inputType: field.type === "integer" ? "number" : "text",
-    })) || [];
-
-  function setQuery(newQuery: RuleGroupType) {
-    _setQuery(newQuery);
-    onQueryChange(newQuery, fields);
-  }
-  // when trigger is points_reached, fix query to have one condition of 'points' is 'is' 'value'
-  React.useEffect(() => {
-    if (trigger?.key === "points_reached") {
-      setQuery({
-        combinator: "and",
-        rules: [
-          {
-            field: "points",
-            operator: "=",
-            value: "",
-          },
-        ],
-      });
-    } else {
-      setQuery({ combinator: "and", rules: [] });
-    }
-  }, [trigger?.key]);
-
-  const isPointsReachedTrigger = trigger?.key === "points_reached";
-  const onlyValueMode = isPointsReachedTrigger;
-
-  const operatorFactory = isPointsReachedTrigger
-    ? () => defaultOperators.filter((op) => ["="].includes(op.name))
-    : getOperators;
-
-  return (
-    <>
-      <QueryBuilderDnD dnd={{ ...ReactDnD, ...ReactDndHtml5Backend }}>
-        <QueryBuilder
-          disabled={disabled}
-          fields={fields}
-          query={query}
-          getOperators={operatorFactory}
-          onQueryChange={setQuery}
-          resetOnFieldChange={false}
-          controlElements={
-            onlyValueMode
-              ? {
-                  addRuleAction: () => null,
-                  addGroupAction: () => null,
-                  combinatorSelector: () => null,
-                  removeRuleAction: () => null,
-                  removeGroupAction: () => null,
-                }
-              : undefined
-          }
-          controlClassnames={
-            onlyValueMode
-              ? undefined
-              : { queryBuilder: "queryBuilder-branches" }
-          }
-        />
-      </QueryBuilderDnD>
-      <h4>Query</h4>
-      <pre>
-        <code>{getFormattedCELExpression(query, fields)}</code>
-      </pre>
-    </>
-  );
 }
