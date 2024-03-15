@@ -24,7 +24,6 @@ export const customRuleProcessorCEL: RuleProcessor = (
 ) => {
   const { field, operator, value, valueSource } = rule;
   const { escapeQuotes, parseNumbers, fieldData } = options;
-  console.log("rule", rule, "options", options);
   const valueIsField = valueSource === "field";
   const operatorTL = operator.replace(/^=$/, "==");
   const useBareValue =
