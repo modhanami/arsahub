@@ -148,28 +148,6 @@ export default function Page() {
 
   const isPointsReachedTrigger = selectedTriggerKey === "points_reached";
 
-  React.useEffect(() => {
-    // if select points_reached, force repeatability as once_per_user
-    // TODO: handle built-in triggers more gracefully and maybe migrate to useFieldArray for conditions
-    if (isPointsReachedTrigger) {
-      console.log("Force once_per_user");
-      form.setValue("repeatability", "once_per_user");
-      // set to having one condition of 'points' is 'is' 'value'
-      setQuery({
-        combinator: "and",
-        rules: [
-          {
-            field: "points",
-            operator: "=",
-            value: "",
-          },
-        ],
-      });
-    } else {
-      setQuery({ combinator: "and", rules: [] });
-    }
-  }, [selectedTrigger]);
-
   const isRepeatabilityDisabled = isPointsReachedTrigger;
 
   const fields: Field[] = useMemo(() => {
@@ -181,6 +159,29 @@ export default function Page() {
         inputType: field.type === "integer" ? "number" : "text",
       })) || []
     );
+  }, [selectedTrigger]);
+
+  React.useEffect(() => {
+    // if select points_reached, force repeatability as once_per_user
+    // TODO: handle built-in triggers more gracefully and maybe migrate to useFieldArray for conditions
+    if (isPointsReachedTrigger) {
+      console.log("Force once_per_user");
+      form.setValue("repeatability", "once_per_user");
+      // set to having one condition of 'points' is 'is' 'value'
+      // TODO: fix blurring of input when setting query
+      // setQuery({
+      //   combinator: "and",
+      //   rules: [
+      //     {
+      //       field: fields[0].name,
+      //       operator: "is",
+      //       value: 1,
+      //     },
+      //   ],
+      // });
+    } else {
+      setQuery({ combinator: "and", rules: [] });
+    }
   }, [selectedTrigger]);
 
   const onlyValueMode = isPointsReachedTrigger;
@@ -219,8 +220,8 @@ export default function Page() {
     return <div>Loading...</div>;
   }
 
-  console.log("selectedTrigger", selectedTrigger);
-
+  const rulesModificationDisabled =
+    isPointsReachedTrigger && query.rules.length === 1;
   return (
     <Card>
       <CardHeader>
@@ -327,7 +328,7 @@ export default function Page() {
                 onQueryChange={setQuery}
                 resetOnFieldChange={false}
                 controlElements={
-                  onlyValueMode
+                  rulesModificationDisabled
                     ? {
                         addRuleAction: () => null,
                         addGroupAction: () => null,
@@ -335,10 +336,17 @@ export default function Page() {
                         removeRuleAction: () => null,
                         removeGroupAction: () => null,
                       }
-                    : undefined
+                    : isPointsReachedTrigger
+                      ? {
+                          addGroupAction: () => null,
+                          combinatorSelector: () => null,
+                          removeRuleAction: () => null,
+                          removeGroupAction: () => null,
+                        }
+                      : undefined
                 }
                 controlClassnames={
-                  onlyValueMode
+                  rulesModificationDisabled
                     ? undefined
                     : { queryBuilder: "queryBuilder-branches" }
                 }
