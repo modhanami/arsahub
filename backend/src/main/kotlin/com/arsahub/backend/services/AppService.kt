@@ -31,6 +31,8 @@ class AppUserNotFoundException : NotFoundException("App user not found")
 
 class AppUserAlreadyExistsException : ConflictException("App user with this UID already exists")
 
+class SomeUsersAlreadyExistException : ConflictException("Some users already exist")
+
 class AppNotFoundException(appId: Long) : NotFoundException("App with ID $appId not found")
 
 class AppNotFoundForUserException : NotFoundException("App not found for this user")
@@ -90,6 +92,28 @@ class AppService(
             )
         appUserRepository.save(newAppUser)
         return newAppUser
+    }
+
+    @Transactional
+    fun addUsers(
+        app: App,
+        requests: List<AppUserCreateRequest>,
+    ): List<AppUser> {
+        val userIds = requests.map { it.uniqueId }
+        val existingUsers = appUserRepository.findByAppAndUserIdIn(app, userIds)
+        if (existingUsers.isNotEmpty()) {
+            throw SomeUsersAlreadyExistException()
+        }
+        val newAppUsers =
+            requests.map { request ->
+                AppUser(
+                    userId = request.uniqueId,
+                    displayName = request.displayName,
+                    app = app,
+                    points = 0,
+                )
+            }
+        return appUserRepository.saveAll(newAppUsers)
     }
 
     fun listUsers(app: App): List<AppUser> {
