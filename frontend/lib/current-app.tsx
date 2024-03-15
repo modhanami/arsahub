@@ -10,7 +10,12 @@ export function useCurrentApp(): {
   isLoading: boolean;
   clearCurrentApp: () => void;
 } {
-  const { apiKey, clearApiKey, isLoading: isAppApiKeyLoading } = useAppApiKey();
+  const {
+    apiKey,
+    clearApiKey,
+    updateApiKey,
+    isLoading: isAppApiKeyLoading,
+  } = useAppApiKey();
   const queryClient = useQueryClient();
   const { data: currentApp, isLoading, error } = useAppByAPIKey(apiKey);
 

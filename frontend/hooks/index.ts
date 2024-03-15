@@ -40,13 +40,13 @@ import {
   TriggerCreateRequest,
   TriggerSendRequest,
   TriggerUpdateRequest,
+  UserIdentity,
 } from "@/types/generated-types";
 import {
   AchievementSetImageRequestClient,
   RewardSetImageRequestClient,
   UserResponseWithAccessToken,
 } from "@/types";
-import { useCurrentUser } from "@/lib/current-user";
 
 export function useAppUsers() {
   const { currentApp } = useCurrentApp();
@@ -304,12 +304,10 @@ export function useLeaderboard(appId: number, type: string) {
   });
 }
 
-export function useOwnedApp() {
-  const { currentUser } = useCurrentUser();
+export function useOwnedApp(user?: UserIdentity | null) {
   return useQuery({
-    queryKey: ["app"],
+    queryKey: ["app", user?.internalUserId],
     queryFn: fetchMyApp,
-    enabled: !!currentUser,
   });
 }
 
