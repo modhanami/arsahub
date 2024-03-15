@@ -1,7 +1,7 @@
 /* tslint:disable */
 /* eslint-disable */
 
-// Generated using typescript-generator version 3.2.1263 on 2024-03-01 23:01:22.
+// Generated using typescript-generator version 3.2.1263 on 2024-03-15 21:27:59.
 
 export interface AchievementCreateRequest {
   title: string;
@@ -63,6 +63,7 @@ export interface RuleCreateRequest {
   trigger: KeyAndParams;
   action: KeyAndParams;
   conditions: { [index: string]: any } | null;
+  conditionExpression: string | null;
   title: string | null;
   description: string | null;
   repeatability: string | null;
@@ -243,8 +244,8 @@ export interface MultipartFile extends InputStreamSource {
   empty: boolean;
   resource: Resource;
   size: number;
-  originalFilename: string;
   contentType: string;
+  originalFilename: string;
 }
 
 export interface App

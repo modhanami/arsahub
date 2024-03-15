@@ -47,6 +47,7 @@ import {
   FullOperator,
   QueryBuilder,
   RuleGroupType,
+  RuleType,
 } from "react-querybuilder";
 import "react-querybuilder/dist/query-builder.css";
 import { QueryBuilderDnD } from "@react-querybuilder/dnd";
@@ -140,6 +141,8 @@ export default function Page() {
   const createRule = useCreateRule();
 
   const [conditions, setConditions] = React.useState<Condition<any>[]>([]);
+  const [conditionExpression, setConditionExpression] =
+    React.useState<string>("");
   const [conditionErrors, setConditionErrors] = React.useState<
     Record<string, string>
   >({}); // UUID -> error message
@@ -246,54 +249,6 @@ export default function Page() {
   }
 
   function onSubmit(data: FormData) {
-    const currentConditionErrors = { ...conditionErrors };
-    for (const condition of conditions) {
-      try {
-        console.log("condition", condition);
-        currentConditionErrors[condition.uuid] = "";
-
-        if (condition.field === "") {
-          currentConditionErrors[condition.uuid] = "Please select a field";
-        } else if (condition.operator === "") {
-          currentConditionErrors[condition.uuid] = "Please select an operator";
-        } else if (condition.value.trim() === "") {
-          currentConditionErrors[condition.uuid] = "Please enter a value";
-        }
-
-        if (condition.fieldDefinition?.type === "integer") {
-          condition.value = parseInt(condition.value.trim());
-        }
-      } catch (e) {
-        console.error(e);
-        currentConditionErrors[condition.uuid] = "Please enter a valid value";
-
-        toast({
-          title: "Error",
-          description: "FIXME: error message",
-          variant: "destructive",
-        });
-
-        return;
-      }
-    }
-
-    if (
-      !conditions.every(
-        (condition) => currentConditionErrors[condition.uuid] === "",
-      )
-    ) {
-      setConditionErrors(currentConditionErrors);
-      return;
-    }
-
-    const finalConditions = conditions.reduce(
-      (acc, condition) => {
-        acc[condition.field] = condition.value;
-        return acc;
-      },
-      {} as Record<string, any>,
-    );
-
     const payload: RuleCreateRequest = {
       ...data,
       trigger: {
@@ -302,7 +257,8 @@ export default function Page() {
       },
       title: data.title.trim(),
       description: data.description?.trim() || null,
-      conditions: finalConditions,
+      conditionExpression: conditionExpression,
+      conditions: null,
     };
 
     createRule.mutate(payload);
@@ -424,6 +380,11 @@ export default function Page() {
               disabled={
                 !selectedTrigger || selectedTrigger.fields?.length === 0
               }
+              onQueryChange={(query, fields) => {
+                setConditionExpression(
+                  getFormattedCELExpression(query, fields),
+                );
+              }}
             />
 
             {/*<div className="flex items-center space-x-2">*/}
@@ -696,10 +657,27 @@ function getOperators(
 interface QueryBuilderProps {
   trigger?: TriggerResponse;
   disabled?: boolean;
+  onQueryChange: (query: RuleGroupType, fields: Field[]) => void;
 }
 
-function MyQueryBuilder({ trigger, disabled }: QueryBuilderProps) {
-  const [query, setQuery] = React.useState<RuleGroupType>({
+function getFormattedCELExpression(
+  query: RuleGroupType<RuleType, string>,
+  fields: Field[],
+) {
+  return formatQuery(query, {
+    format: "cel",
+    fields,
+    parseNumbers: true,
+    ruleProcessor: customRuleProcessorCEL,
+  });
+}
+
+function MyQueryBuilder({
+  trigger,
+  disabled,
+  onQueryChange,
+}: QueryBuilderProps) {
+  const [query, _setQuery] = React.useState<RuleGroupType>({
     combinator: "and",
     rules: [],
   });
@@ -712,6 +690,10 @@ function MyQueryBuilder({ trigger, disabled }: QueryBuilderProps) {
       inputType: field.type === "integer" ? "number" : "text",
     })) || [];
 
+  function setQuery(newQuery: RuleGroupType) {
+    _setQuery(newQuery);
+    onQueryChange(newQuery, fields);
+  }
   // when trigger is points_reached, fix query to have one condition of 'points' is 'is' 'value'
   React.useEffect(() => {
     if (trigger?.key === "points_reached") {
@@ -755,7 +737,6 @@ function MyQueryBuilder({ trigger, disabled }: QueryBuilderProps) {
                   combinatorSelector: () => null,
                   removeRuleAction: () => null,
                   removeGroupAction: () => null,
-                  // operatorSelector: () => null,
                 }
               : undefined
           }
@@ -768,14 +749,7 @@ function MyQueryBuilder({ trigger, disabled }: QueryBuilderProps) {
       </QueryBuilderDnD>
       <h4>Query</h4>
       <pre>
-        <code>
-          {formatQuery(query, {
-            format: "cel",
-            fields,
-            parseNumbers: true,
-            ruleProcessor: customRuleProcessorCEL,
-          })}
-        </code>
+        <code>{getFormattedCELExpression(query, fields)}</code>
       </pre>
     </>
   );
