@@ -1,6 +1,5 @@
 "use client";
 
-import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAchievements, useCreateRule, useTriggers } from "@/hooks"; // import Link from "next/link";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -35,7 +34,6 @@ import {
   ValidationLengths,
   ValidationMessages,
 } from "@/types/generated-types";
-import { Icons } from "@/components/icons";
 import { isAlphaNumericExtended } from "@/lib/validations";
 import { InputWithCounter } from "@/components/ui/input-with-counter";
 import { TextareaWithCounter } from "@/components/ui/textarea-with-counter";
@@ -421,95 +419,100 @@ export default function Page() {
 
             {/*  Config Condition */}
             <h3 className="text-lg font-semibold">If</h3>
-            <MyQueryBuilder trigger={selectedTrigger} />
+            <MyQueryBuilder
+              trigger={selectedTrigger}
+              disabled={
+                !selectedTrigger || selectedTrigger.fields?.length === 0
+              }
+            />
 
-            <div className="flex items-center space-x-2">
-              <Button
-                onClick={addCondition}
-                disabled={
-                  !selectedTrigger ||
-                  selectedTrigger.fields?.length === 0 ||
-                  isPointsReachedTrigger
-                }
-                type="button"
-              >
-                Add condition
-              </Button>
-              <Separator />
-            </div>
-            <div className="space-y-4">
-              {conditions.map((condition) => (
-                <div
-                  key={condition.uuid}
-                  className="flex items-center space-x-2"
-                >
-                  <Select
-                    value={condition.field}
-                    onValueChange={(value) =>
-                      setConditionField(condition.uuid, value)
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a field" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {selectedTrigger?.fields?.map((field) => {
-                        return (
-                          <SelectItem
-                            key={field.key}
-                            value={field.key!!}
-                            className="flex items-center justify-between w-full"
-                          >
-                            {field.label || field.key}
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
+            {/*<div className="flex items-center space-x-2">*/}
+            {/*  <Button*/}
+            {/*    onClick={addCondition}*/}
+            {/*    disabled={*/}
+            {/*      !selectedTrigger ||*/}
+            {/*      selectedTrigger.fields?.length === 0 ||*/}
+            {/*      isPointsReachedTrigger*/}
+            {/*    }*/}
+            {/*    type="button"*/}
+            {/*  >*/}
+            {/*    Add condition*/}
+            {/*  </Button>*/}
+            {/*  <Separator />*/}
+            {/*</div>*/}
+            {/*<div className="space-y-4">*/}
+            {/*  {conditions.map((condition) => (*/}
+            {/*    <div*/}
+            {/*      key={condition.uuid}*/}
+            {/*      className="flex items-center space-x-2"*/}
+            {/*    >*/}
+            {/*      <Select*/}
+            {/*        value={condition.field}*/}
+            {/*        onValueChange={(value) =>*/}
+            {/*          setConditionField(condition.uuid, value)*/}
+            {/*        }*/}
+            {/*      >*/}
+            {/*        <SelectTrigger>*/}
+            {/*          <SelectValue placeholder="Select a field" />*/}
+            {/*        </SelectTrigger>*/}
+            {/*        <SelectContent>*/}
+            {/*          {selectedTrigger?.fields?.map((field) => {*/}
+            {/*            return (*/}
+            {/*              <SelectItem*/}
+            {/*                key={field.key}*/}
+            {/*                value={field.key!!}*/}
+            {/*                className="flex items-center justify-between w-full"*/}
+            {/*              >*/}
+            {/*                {field.label || field.key}*/}
+            {/*              </SelectItem>*/}
+            {/*            );*/}
+            {/*          })}*/}
+            {/*        </SelectContent>*/}
+            {/*      </Select>*/}
 
-                  <Select
-                    onValueChange={(value) =>
-                      setConditionOperator(condition.uuid, value)
-                    }
-                    value={condition.operator}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select an operator" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {operations.map((operation) => (
-                        <SelectItem
-                          key={operation.value}
-                          value={operation.value}
-                          className="flex items-center justify-between w-full"
-                        >
-                          {operation.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+            {/*      <Select*/}
+            {/*        onValueChange={(value) =>*/}
+            {/*          setConditionOperator(condition.uuid, value)*/}
+            {/*        }*/}
+            {/*        value={condition.operator}*/}
+            {/*      >*/}
+            {/*        <SelectTrigger>*/}
+            {/*          <SelectValue placeholder="Select an operator" />*/}
+            {/*        </SelectTrigger>*/}
+            {/*        <SelectContent>*/}
+            {/*          {operations.map((operation) => (*/}
+            {/*            <SelectItem*/}
+            {/*              key={operation.value}*/}
+            {/*              value={operation.value}*/}
+            {/*              className="flex items-center justify-between w-full"*/}
+            {/*            >*/}
+            {/*              {operation.label}*/}
+            {/*            </SelectItem>*/}
+            {/*          ))}*/}
+            {/*        </SelectContent>*/}
+            {/*      </Select>*/}
 
-                  <Input
-                    value={condition.value}
-                    onChange={(e) =>
-                      setConditionValue(condition.uuid, e.target.value)
-                    }
-                    type={condition.inputType}
-                    {...condition.inputProps}
-                  />
+            {/*      <Input*/}
+            {/*        value={condition.value}*/}
+            {/*        onChange={(e) =>*/}
+            {/*          setConditionValue(condition.uuid, e.target.value)*/}
+            {/*        }*/}
+            {/*        type={condition.inputType}*/}
+            {/*        {...condition.inputProps}*/}
+            {/*      />*/}
 
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeCondition(condition.uuid)}
-                  >
-                    <Icons.trash className="h-4 w-4" />
-                  </Button>
+            {/*      <Button*/}
+            {/*        variant="ghost"*/}
+            {/*        size="icon"*/}
+            {/*        onClick={() => removeCondition(condition.uuid)}*/}
+            {/*      >*/}
+            {/*        <Icons.trash className="h-4 w-4" />*/}
+            {/*      </Button>*/}
 
-                  <FormMessage>{conditionErrors[condition.uuid]}</FormMessage>
-                </div>
-              ))}
-            </div>
+            {/*      <FormMessage>{conditionErrors[condition.uuid]}</FormMessage>*/}
+            {/*    </div>*/}
+            {/*  ))}*/}
+            {/*</div>*/}
 
             {/*  Config Action */}
             <h3 className="text-lg font-semibold">Then</h3>
@@ -672,11 +675,6 @@ function getOperators(
   fieldName: string,
   { fieldData }: { fieldData: Field },
 ): FlexibleOptionList<FullOperator> {
-  switch (fieldName) {
-    case "points_reached":
-      return [{ name: "=", label: "equals" }];
-  }
-
   switch (fieldData.dataType) {
     case "text":
       return [
@@ -697,9 +695,10 @@ function getOperators(
 
 interface QueryBuilderProps {
   trigger?: TriggerResponse;
+  disabled?: boolean;
 }
 
-function MyQueryBuilder({ trigger }: QueryBuilderProps) {
+function MyQueryBuilder({ trigger, disabled }: QueryBuilderProps) {
   const [query, setQuery] = React.useState<RuleGroupType>({
     combinator: "and",
     rules: [],
@@ -713,17 +712,58 @@ function MyQueryBuilder({ trigger }: QueryBuilderProps) {
       inputType: field.type === "integer" ? "number" : "text",
     })) || [];
 
+  // when trigger is points_reached, fix query to have one condition of 'points' is 'is' 'value'
+  React.useEffect(() => {
+    if (trigger?.key === "points_reached") {
+      setQuery({
+        combinator: "and",
+        rules: [
+          {
+            field: "points",
+            operator: "=",
+            value: "",
+          },
+        ],
+      });
+    } else {
+      setQuery({ combinator: "and", rules: [] });
+    }
+  }, [trigger?.key]);
+
+  const isPointsReachedTrigger = trigger?.key === "points_reached";
+  const onlyValueMode = isPointsReachedTrigger;
+
+  const operatorFactory = isPointsReachedTrigger
+    ? () => defaultOperators.filter((op) => ["="].includes(op.name))
+    : getOperators;
+
   return (
     <>
       <QueryBuilderDnD dnd={{ ...ReactDnD, ...ReactDndHtml5Backend }}>
         <QueryBuilder
-          disabled={(trigger?.fields?.length ?? 0) === 0}
+          disabled={disabled}
           fields={fields}
           query={query}
-          getOperators={getOperators}
+          getOperators={operatorFactory}
           onQueryChange={setQuery}
           resetOnFieldChange={false}
-          controlClassnames={{ queryBuilder: "queryBuilder-branches" }}
+          controlElements={
+            onlyValueMode
+              ? {
+                  addRuleAction: () => null,
+                  addGroupAction: () => null,
+                  combinatorSelector: () => null,
+                  removeRuleAction: () => null,
+                  removeGroupAction: () => null,
+                  // operatorSelector: () => null,
+                }
+              : undefined
+          }
+          controlClassnames={
+            onlyValueMode
+              ? undefined
+              : { queryBuilder: "queryBuilder-branches" }
+          }
         />
       </QueryBuilderDnD>
       <h4>Query</h4>
