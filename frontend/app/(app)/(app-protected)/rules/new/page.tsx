@@ -54,6 +54,7 @@ import "react-querybuilder/dist/query-builder.css";
 import { QueryBuilderDnD } from "@react-querybuilder/dnd";
 import * as ReactDnD from "react-dnd";
 import * as ReactDndHtml5Backend from "react-dnd-html5-backend";
+import { customRuleProcessorCEL } from "@/app/(app)/(app-protected)/rules/new/querybuilder/customRuleProcessorCEL";
 
 const operations = [{ label: "is", value: "is" }];
 const actions = [
@@ -727,8 +728,14 @@ function MyQueryBuilder({ trigger }: QueryBuilderProps) {
       </QueryBuilderDnD>
       <h4>Query</h4>
       <pre>
-        {/*<code>{formatQuery(query, "json")}</code>*/}
-        <code>{formatQuery(query, "cel")}</code>
+        <code>
+          {formatQuery(query, {
+            format: "cel",
+            fields,
+            parseNumbers: true,
+            ruleProcessor: customRuleProcessorCEL,
+          })}
+        </code>
       </pre>
     </>
   );
