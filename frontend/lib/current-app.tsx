@@ -26,7 +26,6 @@ export function useCurrentApp(): {
   }, [clearApiKey, error]);
 
   const clearCurrentApp = () => {
-    // TODO: clear from queryClient?
     queryClient.removeQueries({ queryKey: ["app"] });
     clearApiKey();
   };

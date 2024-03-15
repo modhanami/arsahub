@@ -4,17 +4,20 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NextUIProvider } from "@nextui-org/react";
 import { CurrentUserProvider } from "@/lib/current-user";
 import { useRouter } from "next/navigation";
+import { AppApiKeyProvider } from "@/lib/current-app";
 
 const queryClient = new QueryClient();
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   return (
-    <NextUIProvider navigate={router.push}>
-      <QueryClientProvider client={queryClient}>
-        <CurrentUserProvider>{children}</CurrentUserProvider>
-        <ReactQueryDevtools initialIsOpen={false} />
-      </QueryClientProvider>
-    </NextUIProvider>
+    <AppApiKeyProvider>
+      <NextUIProvider navigate={router.push}>
+        <QueryClientProvider client={queryClient}>
+          <CurrentUserProvider>{children}</CurrentUserProvider>
+          <ReactQueryDevtools initialIsOpen={false} />
+        </QueryClientProvider>
+      </NextUIProvider>
+    </AppApiKeyProvider>
   );
 }
