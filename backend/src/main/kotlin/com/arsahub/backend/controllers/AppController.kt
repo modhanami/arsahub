@@ -231,6 +231,15 @@ class AppController(
         return appService.addUser(app, request).let { AppUserResponse.fromEntity(it) }
     }
 
+    @PostMapping("/users/bulk")
+    @ResponseStatus(HttpStatus.CREATED)
+    fun addUsersIntoApp(
+        @Valid @RequestBody request: List<AppUserCreateRequest>,
+        @CurrentApp app: App,
+    ): List<AppUserResponse> {
+        return appService.addUsers(app, request).map { AppUserResponse.fromEntity(it) }
+    }
+
     @Operation(
         summary = "List users",
         responses = [

@@ -221,6 +221,103 @@ class AppControllerTest() {
     }
 
     @Test
+    fun `creates app users - success`() {
+        // Arrange
+        val jsonBody =
+            """
+            [
+                {
+                    "uniqueId": "00000000-0000-0000-0000-000000000001",
+                    "displayName": "User1"
+                },
+                {
+                    "uniqueId": "00000000-0000-0000-0000-000000000002",
+                    "displayName": "User2"
+                }
+            ]
+            """.trimIndent()
+        val otherApp = setupAuth(userRepository, appRepository).app
+        val use1InOtherApp =
+            AppUser(
+                userId = UUID.fromString("00000000-0000-0000-0000-000000000001").toString(),
+                displayName = "User1",
+                app = otherApp,
+                points = 1000,
+            )
+        appUserRepository.save(use1InOtherApp)
+
+        // Act & Assert
+        mockMvc.performWithAppAuth(
+            post("/api/apps/users/bulk")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonBody),
+        )
+            .andExpect(status().isCreated)
+            .andExpect(jsonPath("$.length()").value(2))
+            .andExpect(jsonPath("$[0].userId").value("00000000-0000-0000-0000-000000000001"))
+            .andExpect(jsonPath("$[0].displayName").value("User1"))
+            .andExpect(jsonPath("$[0].points").value(0))
+            .andExpect(jsonPath("$[1].userId").value("00000000-0000-0000-0000-000000000002"))
+            .andExpect(jsonPath("$[1].displayName").value("User2"))
+            .andExpect(jsonPath("$[1].points").value(0))
+
+        // Assert DB
+        val appUsers = appUserRepository.findAllByApp(authSetup.app)
+        assertEquals(2, appUsers.size)
+        val appUser1 = appUsers.find { it.userId == "00000000-0000-0000-0000-000000000001" }
+        assertNotNull(appUser1)
+        assertEquals("User1", appUser1!!.displayName)
+        assertEquals(0, appUser1.points)
+        val appUser2 = appUsers.find { it.userId == "00000000-0000-0000-0000-000000000002" }
+        assertNotNull(appUser2)
+        assertEquals("User2", appUser2!!.displayName)
+        assertEquals(0, appUser2.points)
+    }
+
+    @Test
+    fun `creates app users - failed - some users already exist`() {
+        // Arrange
+        val appUser1 =
+            AppUser(
+                userId = UUID.fromString("00000000-0000-0000-0000-000000000001").toString(),
+                displayName = "User1",
+                app = authSetup.app,
+                points = 1000,
+            )
+        appUserRepository.save(appUser1)
+
+        val jsonBody =
+            """
+            [
+                {
+                    "uniqueId": "00000000-0000-0000-0000-000000000001",
+                    "displayName": "User1"
+                },
+                {
+                    "uniqueId": "00000000-0000-0000-0000-000000000002",
+                    "displayName": "User2"
+                }
+            ]
+            """.trimIndent()
+
+        // Act & Assert
+        mockMvc.performWithAppAuth(
+            post("/api/apps/users/bulk")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonBody),
+        )
+            .andExpect(status().isConflict)
+            .andExpect(jsonPath("$.message").value("Some users already exist"))
+
+        // Assert DB
+        val appUsers = appUserRepository.findAllByApp(authSetup.app)
+        assertEquals(1, appUsers.size)
+        val appUser = appUsers[0]
+        assertEquals("User1", appUser.displayName)
+        assertEquals(1000, appUser.points)
+    }
+
+    @Test
     fun `creates a trigger with 201`() {
         // Arrange
         val jsonBody =
