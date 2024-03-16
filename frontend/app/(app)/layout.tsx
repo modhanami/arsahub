@@ -86,6 +86,13 @@ function createSideNavItems(): SidebarNavItem[] {
       icon: "leaderboard",
     },
     {
+      type: "item",
+      title: "Webhooks",
+      href: resolveBasePath("/webhooks"),
+      appProtected: true,
+      icon: "webhook",
+    },
+    {
       type: "divider",
     },
 

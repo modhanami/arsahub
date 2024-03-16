@@ -4,7 +4,9 @@ import com.arsahub.backend.SocketIOService
 import com.arsahub.backend.controllers.AppController
 import com.arsahub.backend.dtos.request.AppUserCreateRequest
 import com.arsahub.backend.dtos.request.TriggerSendRequest
+import com.arsahub.backend.dtos.request.WebhookCreateRequest
 import com.arsahub.backend.dtos.response.AchievementResponse
+import com.arsahub.backend.dtos.response.WebhookPayload
 import com.arsahub.backend.dtos.socketio.AchievementUnlock
 import com.arsahub.backend.dtos.socketio.LeaderboardUpdate
 import com.arsahub.backend.dtos.socketio.PointsUpdate
@@ -158,13 +160,6 @@ class AppService(
             publishWebhookEvents(app, appUser, actionResult)
         }
     }
-
-    data class WebhookPayload(
-        val id: UUID,
-        val event: String,
-        val appUserId: String,
-        val payload: Map<String, Any>,
-    )
 
     private fun publishWebhookEvents(
         app: App,
@@ -424,7 +419,7 @@ class AppService(
 
     fun createWebhook(
         app: App,
-        request: AppController.WebhookCreateRequest,
+        request: WebhookCreateRequest,
     ): Webhook {
         // TODO: validate URL, and check if it's reachable?
         // TODO: multiple webhooks per app
@@ -446,11 +441,15 @@ class AppService(
     fun updateWebhook(
         app: App,
         webhookId: Long,
-        request: AppController.WebhookCreateRequest,
+        request: WebhookCreateRequest,
     ): Webhook {
         val webhook = webhookRepository.findByAppAndId(app, webhookId) ?: throw NotFoundException("Webhook not found")
         logger.debug { "Updating webhook for app ${app.title}: ${webhook.url} -> ${request.url}" }
         webhook.url = request.url
         return webhookRepository.save(webhook)
+    }
+
+    fun listWebhooks(app: App): List<Webhook> {
+        return webhookRepository.findByApp(app)
     }
 }

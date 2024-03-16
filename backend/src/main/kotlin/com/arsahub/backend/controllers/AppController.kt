@@ -11,6 +11,7 @@ import com.arsahub.backend.dtos.request.RuleUpdateRequest
 import com.arsahub.backend.dtos.request.TriggerCreateRequest
 import com.arsahub.backend.dtos.request.TriggerSendRequest
 import com.arsahub.backend.dtos.request.TriggerUpdateRequest
+import com.arsahub.backend.dtos.request.WebhookCreateRequest
 import com.arsahub.backend.dtos.response.AchievementResponse
 import com.arsahub.backend.dtos.response.ApiValidationError
 import com.arsahub.backend.dtos.response.AppResponse
@@ -20,9 +21,9 @@ import com.arsahub.backend.dtos.response.RewardResponse
 import com.arsahub.backend.dtos.response.RuleResponse
 import com.arsahub.backend.dtos.response.TransactionResponse
 import com.arsahub.backend.dtos.response.TriggerResponse
+import com.arsahub.backend.dtos.response.WebhookResponse
 import com.arsahub.backend.dtos.supabase.UserIdentity
 import com.arsahub.backend.models.App
-import com.arsahub.backend.models.Webhook
 import com.arsahub.backend.security.auth.CurrentApp
 import com.arsahub.backend.services.AchievementService
 import com.arsahub.backend.services.AppService
@@ -526,26 +527,6 @@ class AppController(
         appService.declineInvitation(invitationId, identity)
     }
 
-    // setup webhook
-    class WebhookCreateRequest(
-        @NotEmpty
-        val url: String,
-    )
-
-    class WebhookResponse(
-        val id: Long,
-        val url: String,
-    ) {
-        companion object {
-            fun fromEntity(entity: Webhook): WebhookResponse {
-                return WebhookResponse(
-                    id = entity.id!!,
-                    url = entity.url!!,
-                )
-            }
-        }
-    }
-
     @PostMapping("/webhooks")
     @ResponseStatus(HttpStatus.CREATED)
     fun createWebhook(
@@ -563,5 +544,12 @@ class AppController(
         @Valid @RequestBody request: WebhookCreateRequest,
     ): WebhookResponse {
         return appService.updateWebhook(app, webhookId, request).let { WebhookResponse.fromEntity(it) }
+    }
+
+    @GetMapping("/webhooks")
+    fun listWebhooks(
+        @CurrentApp app: App,
+    ): List<WebhookResponse> {
+        return appService.listWebhooks(app).map { WebhookResponse.fromEntity(it) }
     }
 }
