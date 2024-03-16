@@ -1056,7 +1056,18 @@ class AppControllerTest() {
                     .withBody("Well received"),
             ),
         )
-        authSetup.app.webhook = "http://localhost:" + wireMockServer.port() + "/webhook"
+        mockMvc.performWithAppAuth(
+            post("/api/apps/webhooks")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "url": "http://localhost:${wireMockServer.port()}/webhook"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isCreated)
 
         // Act & Assert
         mockMvc.performWithAppAuth(
@@ -3198,24 +3209,6 @@ class AppControllerTest() {
             RestClient
                 .builder()
                 .baseUrl("http://localhost:" + wireMockServer.port())
-                .build()
-        val response = restClient.get().uri("/resource").retrieve().body<String>()
-        assertEquals("Hello World!", response)
-    }
-
-    @Test
-    fun testWebhook() {
-        stubFor(
-            WireMock.get(urlEqualTo("/resource")).willReturn(
-                aResponse()
-                    .withHeader("Content-Type", "text/plain").withBody("Hello World!"),
-            ),
-        )
-        val app = setupAuth(userRepository, appRepository).app
-        app.webhook = "http://localhost:" + wireMockServer.port()
-        val restClient =
-            RestClient
-                .builder()
                 .build()
         val response = restClient.get().uri("/resource").retrieve().body<String>()
         assertEquals("Hello World!", response)

@@ -10,28 +10,20 @@ import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
 import jakarta.validation.constraints.NotNull
-import jakarta.validation.constraints.Size
 
 @Entity
-@Table(name = "app")
-class App(
-    @Size(max = 255)
-    @NotNull
-    @Column(name = "title", nullable = false)
-    var title: String? = null,
-    @Size(max = 255)
-    @Column(name = "description")
-    var description: String? = null,
-    @NotNull
-    @Column(name = "api_key", nullable = false)
-    var apiKey: String? = null,
+@Table(name = "webhook", schema = "public")
+class Webhook(
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "owner_id", nullable = false)
-    var owner: User? = null,
+    @JoinColumn(name = "app_id", nullable = false)
+    var app: App? = null,
+    @NotNull
+    @Column(name = "url", nullable = false, length = Integer.MAX_VALUE)
+    var url: String? = null,
 ) : AuditedEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "app_id", nullable = false)
+    @Column(name = "webhook_id", nullable = false)
     var id: Long? = null
 }

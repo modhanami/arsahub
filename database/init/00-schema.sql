@@ -341,3 +341,16 @@ create table app_user_points_history
         primary key
 );
 
+create table webhook
+(
+    webhook_id bigserial
+        constraint webhook_pk
+        primary key,
+    app_id     bigint not null
+        constraint webhook_app_app_id_fk
+        references app,
+    url        text   not null,
+    created_at timestamp with time zone not null,
+    updated_at timestamp with time zone
+);
+
