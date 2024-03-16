@@ -45,6 +45,13 @@ import com.arsahub.backend.services.TriggerService
 import com.corundumstudio.socketio.SocketIOServer
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
+import com.github.tomakehurst.wiremock.WireMockServer
+import com.github.tomakehurst.wiremock.client.WireMock
+import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.equalToJson
+import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.stubFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import org.hamcrest.Matchers.containsInAnyOrder
 import org.hamcrest.Matchers.hasEntry
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -60,6 +67,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection
+import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock
 import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
@@ -70,6 +78,8 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.web.client.RestClient
+import org.springframework.web.client.body
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.ext.ScriptUtils
 import org.testcontainers.jdbc.JdbcDatabaseDelegate
@@ -82,9 +92,13 @@ import java.util.*
 )
 @Testcontainers
 @ActiveProfiles("dev", "test")
-@AutoConfigureMockMvc
 @Transactional
+@AutoConfigureMockMvc
+@AutoConfigureWireMock(port = 0)
 class AppControllerTest() {
+    @Autowired
+    private lateinit var wireMockServer: WireMockServer
+
     @Autowired
     private lateinit var appUserPointsHistoryRepository: AppUserPointsHistoryRepository
 
@@ -1034,6 +1048,16 @@ class AppControllerTest() {
         val user = createAppUser(authSetup.app)
         val rule = setupWorkshopCompletedRule(authSetup.app, 1, "trust me", 100)
 
+        // Arrange webhook
+        stubFor(
+            WireMock.post(urlEqualTo("/webhook")).willReturn(
+                aResponse()
+                    .withHeader("Content-Type", "text/plain")
+                    .withBody("Well received"),
+            ),
+        )
+        authSetup.app.webhook = "http://localhost:" + wireMockServer.port() + "/webhook"
+
         // Act & Assert
         mockMvc.performWithAppAuth(
             post("/api/apps/trigger")
@@ -1055,6 +1079,25 @@ class AppControllerTest() {
         assertEquals(user.userId, pointsHistory.appUser!!.userId)
         assertEquals(authSetup.app.id, pointsHistory.app!!.id)
         assertEquals(rule.rule.id, pointsHistory.fromRule!!.id)
+
+        // Assert webhook
+        wireMockServer.verify(
+            postRequestedFor(urlEqualTo("/webhook"))
+                .withRequestBody(
+                    equalToJson(
+                        """
+                        {
+                            "event": "points_updated",
+                            "appUserId": "${userAfter.userId}",
+                            "payload": {
+                                "points": 100,
+                                "pointsChange": 100
+                            }
+                        }
+                        """.trimIndent(),
+                    ),
+                ),
+        )
     }
 
     @Test
@@ -3140,6 +3183,42 @@ class AppControllerTest() {
         // Assert DB
         val rules = ruleRepository.findById(rule.id!!)
         assertTrue(rules.isPresent)
+    }
+
+    @Test
+    fun testWireMock() {
+        stubFor(
+            WireMock.get(urlEqualTo("/resource")).willReturn(
+                aResponse()
+                    .withHeader("Content-Type", "text/plain").withBody("Hello World!"),
+            ),
+        )
+
+        val restClient =
+            RestClient
+                .builder()
+                .baseUrl("http://localhost:" + wireMockServer.port())
+                .build()
+        val response = restClient.get().uri("/resource").retrieve().body<String>()
+        assertEquals("Hello World!", response)
+    }
+
+    @Test
+    fun testWebhook() {
+        stubFor(
+            WireMock.get(urlEqualTo("/resource")).willReturn(
+                aResponse()
+                    .withHeader("Content-Type", "text/plain").withBody("Hello World!"),
+            ),
+        )
+        val app = setupAuth(userRepository, appRepository).app
+        app.webhook = "http://localhost:" + wireMockServer.port()
+        val restClient =
+            RestClient
+                .builder()
+                .build()
+        val response = restClient.get().uri("/resource").retrieve().body<String>()
+        assertEquals("Hello World!", response)
     }
 
     private fun getPointsReachedTrigger() = triggerRepository.findByKey("points_reached")!!

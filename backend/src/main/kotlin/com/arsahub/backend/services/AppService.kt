@@ -28,6 +28,8 @@ import jakarta.validation.Valid
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.web.client.RestClient
+import java.net.URL
 
 class AppUserNotFoundException : NotFoundException("App user not found")
 
@@ -54,6 +56,7 @@ class AppService(
     private val appUserPointsHistoryRepository: AppUserPointsHistoryRepository,
 ) {
     private val logger = KotlinLogging.logger {}
+    private val restClient = RestClient.builder().build()
 
     fun getAppOrThrow(id: Long): App {
         return appRepository.findById(id).orElseThrow { AppNotFoundException(id) }
@@ -148,6 +151,67 @@ class AppService(
             }
 
             broadcastActionResult(actionResult, app, request.userId)
+            publishWebhook(app, appUser, actionResult)
+        }
+    }
+
+    data class WebhookPayload(
+        val event: String,
+        val appUserId: String,
+        val payload: Map<String, Any>,
+    )
+
+    private fun publishWebhook(
+        app: App,
+        appUser: AppUser,
+        actionResult: ActionResult,
+    ) {
+        val appWebhook = URL(app.webhook)
+        val eventKey =
+            when (actionResult) {
+                is ActionResult.AchievementUpdate -> "achievement_unlocked"
+                is ActionResult.PointsUpdate -> "points_updated"
+                else -> return
+            }
+
+        val payload =
+            when (actionResult) {
+                is ActionResult.AchievementUpdate -> {
+                    mapOf(
+                        "achievement" to AchievementResponse.fromEntity(actionResult.achievement),
+                    )
+                }
+
+                is ActionResult.PointsUpdate -> {
+                    mapOf(
+                        "points" to actionResult.newPoints,
+                        "pointsChange" to actionResult.pointsAdded,
+                    )
+                }
+
+                else -> {
+                    return
+                }
+            }
+
+        val response =
+            restClient.post()
+                .uri(appWebhook.toURI())
+                .body(
+                    WebhookPayload(
+                        event = eventKey,
+                        appUserId = appUser.userId!!,
+                        payload = payload,
+                    ),
+                )
+                .retrieve()
+                .toBodilessEntity()
+
+        if (response.statusCode.isError) {
+            logger.error { "Webhook failed: ${response.statusCode}" }
+            // TODO: handle webhook failure
+        } else {
+            logger.debug { "Webhook succeeded: ${response.statusCode}" }
         }
     }
 

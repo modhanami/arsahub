@@ -34,4 +34,7 @@ class App(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "app_id", nullable = false)
     var id: Long? = null
+
+    @Transient
+    var webhook: String? = null
 }
