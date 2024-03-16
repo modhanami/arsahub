@@ -34,7 +34,7 @@ class RuleEngine(
         appUser: AppUser,
         request: TriggerSendRequest,
         rawRequestJson: Map<String, Any>,
-        afterAction: (ActionResult) -> Unit,
+        afterAction: (ActionResult, Rule) -> Unit?,
     ) {
         val trigger = triggerService.getTriggerOrThrow(request.key!!, app)
 
@@ -58,7 +58,7 @@ class RuleEngine(
         app: App,
         appUser: AppUser,
         params: Map<String, Any>?,
-        afterAction: (ActionResult) -> Unit?,
+        afterAction: (ActionResult, Rule) -> Unit?,
     ): List<ActionResult> {
         val actionResults = mutableListOf<ActionResult>()
 
@@ -79,7 +79,7 @@ class RuleEngine(
             val actionResult = activateRule(rule, app, appUser)
             actionResults.add(actionResult)
 
-            afterAction(actionResult)
+            afterAction(actionResult, rule)
         }
 
         return actionResults
@@ -89,7 +89,7 @@ class RuleEngine(
         app: App,
         appUser: AppUser,
         actionResults: List<ActionResult>,
-        afterAction: (ActionResult) -> Unit?,
+        afterAction: (ActionResult, Rule) -> Unit?,
     ) {
         logger.info { "Handling forward chain" }
         val needToTriggerPointsReachedTrigger = actionResults.any { it is ActionResult.PointsUpdate }

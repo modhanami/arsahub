@@ -14,9 +14,11 @@ import com.arsahub.backend.exceptions.NotFoundException
 import com.arsahub.backend.models.App
 import com.arsahub.backend.models.AppInvitation
 import com.arsahub.backend.models.AppUser
+import com.arsahub.backend.models.AppUserPointsHistory
 import com.arsahub.backend.repositories.AppInvitationRepository
 import com.arsahub.backend.repositories.AppInvitationStatusRepository
 import com.arsahub.backend.repositories.AppRepository
+import com.arsahub.backend.repositories.AppUserPointsHistoryRepository
 import com.arsahub.backend.repositories.AppUserRepository
 import com.arsahub.backend.repositories.UserRepository
 import com.arsahub.backend.services.actionhandlers.ActionResult
@@ -49,6 +51,7 @@ class AppService(
     private val userRepository: UserRepository,
     private val appInvitationStatusRepository: AppInvitationStatusRepository,
     private val appInvitationRepository: AppInvitationRepository,
+    private val appUserPointsHistoryRepository: AppUserPointsHistoryRepository,
 ) {
     private val logger = KotlinLogging.logger {}
 
@@ -126,7 +129,24 @@ class AppService(
         rawRequestJson: Map<String, Any>,
     ) {
         val appUser = getAppUserOrThrow(app, request.userId!!)
-        ruleEngine.trigger(app, appUser, request, rawRequestJson) { actionResult ->
+        ruleEngine.trigger(app, appUser, request, rawRequestJson) { actionResult, rule ->
+            // save points history
+            if (actionResult is ActionResult.PointsUpdate) {
+                val pointsHistory =
+                    AppUserPointsHistory(
+                        app = app,
+                        appUser = appUser,
+                        points = actionResult.newPoints.toLong(), // TODO: convert the source type to long?
+                        pointsChange = actionResult.pointsAdded.toLong(),
+                        fromRule = rule,
+                    )
+                logger.debug {
+                    "Saving points history for app user ${appUser.userId} in app ${app.title}: " +
+                        "pointsChange=${pointsHistory.pointsChange}, points=${pointsHistory.points}"
+                }
+                appUserPointsHistoryRepository.save(pointsHistory)
+            }
+
             broadcastActionResult(actionResult, app, request.userId)
         }
     }
