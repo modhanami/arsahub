@@ -30,6 +30,7 @@ import com.arsahub.backend.repositories.AppInvitationRepository
 import com.arsahub.backend.repositories.AppInvitationStatusRepository
 import com.arsahub.backend.repositories.AppRepository
 import com.arsahub.backend.repositories.AppUserAchievementRepository
+import com.arsahub.backend.repositories.AppUserPointsHistoryRepository
 import com.arsahub.backend.repositories.AppUserRepository
 import com.arsahub.backend.repositories.RewardRepository
 import com.arsahub.backend.repositories.RuleRepository
@@ -84,6 +85,9 @@ import java.util.*
 @AutoConfigureMockMvc
 @Transactional
 class AppControllerTest() {
+    @Autowired
+    private lateinit var appUserPointsHistoryRepository: AppUserPointsHistoryRepository
+
     @Autowired
     private lateinit var appUserAchievementRepository: AppUserAchievementRepository
 
@@ -961,7 +965,7 @@ class AppControllerTest() {
      */
 
     @JvmInline
-    value class WorkshopCompletedRule(private val rule: Rule) {
+    value class WorkshopCompletedRule(val rule: Rule) {
         fun toMatchingRequestBody(
             appUser: AppUser,
             objectMapper: ObjectMapper,
@@ -1041,6 +1045,16 @@ class AppControllerTest() {
         // Assert DB
         val userAfter = appUserRepository.findById(user.id!!).get()
         assertEquals(100, userAfter.points)
+
+        // Assert points history
+        val pointsHistories = appUserPointsHistoryRepository.findAllByAppAndAppUser(authSetup.app, userAfter)
+        assertEquals(1, pointsHistories.size)
+        val pointsHistory = pointsHistories[0]
+        assertEquals(100, pointsHistory.points)
+        assertEquals(100, pointsHistory.pointsChange)
+        assertEquals(user.userId, pointsHistory.appUser!!.userId)
+        assertEquals(authSetup.app.id, pointsHistory.app!!.id)
+        assertEquals(rule.rule.id, pointsHistory.fromRule!!.id)
     }
 
     @Test
@@ -2359,6 +2373,26 @@ class AppControllerTest() {
         // Assert DB - user has 230 (+ 60) points without points_reached trigger being fired again
         val userAfterEmptyTriggerFiredAgainAgain = appUserRepository.findById(user.id!!)
         assertEquals(230, userAfterEmptyTriggerFiredAgainAgain.get().points)
+
+        // Assert points history
+        val pointsHistories =
+            appUserPointsHistoryRepository.findAllByAppAndAppUser(authSetup.app, user)
+                .sortedBy { it.createdAt }
+        assertEquals(4, pointsHistories.size)
+        // first trigger
+        assertEquals(60, pointsHistories[0].points)
+        assertEquals(60, pointsHistories[0].pointsChange)
+
+        // second trigger
+        assertEquals(120, pointsHistories[1].points)
+        assertEquals(60, pointsHistories[1].pointsChange)
+        // points_reached trigger
+        assertEquals(170, pointsHistories[2].points)
+        assertEquals(50, pointsHistories[2].pointsChange)
+
+        // third trigger
+        assertEquals(230, pointsHistories[3].points)
+        assertEquals(60, pointsHistories[3].pointsChange)
     }
 
     @Test
