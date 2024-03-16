@@ -22,6 +22,7 @@ import com.arsahub.backend.dtos.response.TransactionResponse
 import com.arsahub.backend.dtos.response.TriggerResponse
 import com.arsahub.backend.dtos.supabase.UserIdentity
 import com.arsahub.backend.models.App
+import com.arsahub.backend.models.Webhook
 import com.arsahub.backend.security.auth.CurrentApp
 import com.arsahub.backend.services.AchievementService
 import com.arsahub.backend.services.AppService
@@ -48,6 +49,7 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -522,5 +524,44 @@ class AppController(
         @SupabaseUserIdentityPrincipal identity: UserIdentity,
     ) {
         appService.declineInvitation(invitationId, identity)
+    }
+
+    // setup webhook
+    class WebhookCreateRequest(
+        @NotEmpty
+        val url: String,
+    )
+
+    class WebhookResponse(
+        val id: Long,
+        val url: String,
+    ) {
+        companion object {
+            fun fromEntity(entity: Webhook): WebhookResponse {
+                return WebhookResponse(
+                    id = entity.id!!,
+                    url = entity.url!!,
+                )
+            }
+        }
+    }
+
+    @PostMapping("/webhooks")
+    @ResponseStatus(HttpStatus.CREATED)
+    fun createWebhook(
+        @CurrentApp app: App,
+        @Valid @RequestBody request: WebhookCreateRequest,
+    ): WebhookResponse {
+        return appService.createWebhook(app, request).let { WebhookResponse.fromEntity(it) }
+    }
+
+    @PutMapping("/webhooks/{webhookId}")
+    @ResponseStatus(HttpStatus.CREATED)
+    fun updateWebhook(
+        @CurrentApp app: App,
+        @PathVariable webhookId: Long,
+        @Valid @RequestBody request: WebhookCreateRequest,
+    ): WebhookResponse {
+        return appService.updateWebhook(app, webhookId, request).let { WebhookResponse.fromEntity(it) }
     }
 }

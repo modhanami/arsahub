@@ -15,6 +15,8 @@ import com.arsahub.backend.models.App
 import com.arsahub.backend.models.AppInvitation
 import com.arsahub.backend.models.AppUser
 import com.arsahub.backend.models.AppUserPointsHistory
+import com.arsahub.backend.models.Webhook
+import com.arsahub.backend.models.WebhookRepository
 import com.arsahub.backend.repositories.AppInvitationRepository
 import com.arsahub.backend.repositories.AppInvitationStatusRepository
 import com.arsahub.backend.repositories.AppRepository
@@ -29,7 +31,7 @@ import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.client.RestClient
-import java.net.URL
+import java.net.URI
 
 class AppUserNotFoundException : NotFoundException("App user not found")
 
@@ -54,6 +56,7 @@ class AppService(
     private val appInvitationStatusRepository: AppInvitationStatusRepository,
     private val appInvitationRepository: AppInvitationRepository,
     private val appUserPointsHistoryRepository: AppUserPointsHistoryRepository,
+    private val webhookRepository: WebhookRepository,
 ) {
     private val logger = KotlinLogging.logger {}
     private val restClient = RestClient.builder().build()
@@ -151,7 +154,7 @@ class AppService(
             }
 
             broadcastActionResult(actionResult, app, request.userId)
-            publishWebhook(app, appUser, actionResult)
+            publishWebhookEvents(app, appUser, actionResult)
         }
     }
 
@@ -161,12 +164,12 @@ class AppService(
         val payload: Map<String, Any>,
     )
 
-    private fun publishWebhook(
+    private fun publishWebhookEvents(
         app: App,
         appUser: AppUser,
         actionResult: ActionResult,
     ) {
-        val appWebhook = URL(app.webhook)
+        val appWebhook = webhookRepository.findByApp(app).firstOrNull()?.url?.let { URI(it) } ?: return
         val eventKey =
             when (actionResult) {
                 is ActionResult.AchievementUpdate -> "achievement_unlocked"
@@ -196,7 +199,7 @@ class AppService(
 
         val response =
             restClient.post()
-                .uri(appWebhook.toURI())
+                .uri(appWebhook)
                 .body(
                     WebhookPayload(
                         event = eventKey,
@@ -414,5 +417,37 @@ class AppService(
         if (app.owner == appUser.user) {
             throw AppUserNotFoundException()
         }
+    }
+
+    fun createWebhook(
+        app: App,
+        request: AppController.WebhookCreateRequest,
+    ): Webhook {
+        // TODO: validate URL, and check if it's reachable?
+        // TODO: multiple webhooks per app
+        // TODO: specify events to listen to
+        // TODO: shared secret for signing requests
+
+        // limit to one webhook per app for now
+        val existingWebhooks = webhookRepository.findByApp(app)
+        if (existingWebhooks.isNotEmpty()) {
+            throw ConflictException("Only one webhook per app is allowed")
+        }
+
+        val webhook = Webhook(app = app, url = request.url)
+        logger.debug { "Creating webhook for app ${app.title}: ${webhook.url}" }
+
+        return webhookRepository.save(webhook)
+    }
+
+    fun updateWebhook(
+        app: App,
+        webhookId: Long,
+        request: AppController.WebhookCreateRequest,
+    ): Webhook {
+        val webhook = webhookRepository.findByAppAndId(app, webhookId) ?: throw NotFoundException("Webhook not found")
+        logger.debug { "Updating webhook for app ${app.title}: ${webhook.url} -> ${request.url}" }
+        webhook.url = request.url
+        return webhookRepository.save(webhook)
     }
 }
