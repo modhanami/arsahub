@@ -32,6 +32,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.client.RestClient
 import java.net.URI
+import java.util.*
 
 class AppUserNotFoundException : NotFoundException("App user not found")
 
@@ -159,6 +160,7 @@ class AppService(
     }
 
     data class WebhookPayload(
+        val id: UUID,
         val event: String,
         val appUserId: String,
         val payload: Map<String, Any>,
@@ -202,6 +204,7 @@ class AppService(
                 .uri(appWebhook)
                 .body(
                     WebhookPayload(
+                        id = UUID.randomUUID(),
                         event = eventKey,
                         appUserId = appUser.userId!!,
                         payload = payload,
