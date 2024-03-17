@@ -552,4 +552,13 @@ class AppController(
     ): List<WebhookResponse> {
         return appService.listWebhooks(app).map { WebhookResponse.fromEntity(it) }
     }
+
+    @DeleteMapping("/webhooks/{webhookId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun deleteWebhook(
+        @CurrentApp app: App,
+        @PathVariable webhookId: Long,
+    ) {
+        appService.deleteWebhook(app, webhookId)
+    }
 }

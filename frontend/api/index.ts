@@ -554,3 +554,11 @@ export async function updateWebhook(
   );
   return data;
 }
+
+export async function deleteWebhook(app: AppResponse, webhookId: number) {
+  await instance.delete<void>(`${API_URL}/apps/webhooks/${webhookId}`, {
+    headers: {
+      ...makeAppAuthHeader(app),
+    },
+  });
+}

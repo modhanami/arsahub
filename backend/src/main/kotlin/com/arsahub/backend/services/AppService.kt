@@ -452,4 +452,12 @@ class AppService(
     fun listWebhooks(app: App): List<Webhook> {
         return webhookRepository.findByApp(app)
     }
+
+    fun deleteWebhook(
+        app: App,
+        webhookId: Long,
+    ) {
+        val webhook = webhookRepository.findByAppAndId(app, webhookId) ?: throw NotFoundException("Webhook not found")
+        webhookRepository.delete(webhook)
+    }
 }

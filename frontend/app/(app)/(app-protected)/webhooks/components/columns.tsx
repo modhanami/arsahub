@@ -6,7 +6,7 @@ import { WebhookResponse } from "@/types/generated-types";
 import { DataTableColumnHeader } from "@/app/(app)/(app-protected)/triggers/components/data-table-column-header";
 import React from "react";
 import { DataTableRowActionsProps } from "@/app/(app)/examples/tasks/components/data-table-row-actions";
-import { useDeleteAppUser } from "@/hooks";
+import { useDeleteWebhook } from "@/hooks";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +18,17 @@ import { DotsHorizontalIcon } from "@radix-ui/react-icons";
 import { Icons } from "@/components/icons";
 import { Dialog } from "@/components/ui/dialog";
 import { WebhookEditForm } from "@/app/(app)/(app-protected)/webhooks/webhook-edit-form";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { isApiError } from "@/api";
+import { toast } from "@/components/ui/use-toast";
 
 export const columns: ColumnDef<WebhookResponse>[] = [
   {
@@ -55,28 +66,28 @@ export const columns: ColumnDef<WebhookResponse>[] = [
 function WebhookRowActions({ row }: DataTableRowActionsProps<WebhookResponse>) {
   const [showEditDialog, setShowEditDialog] = React.useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
-  const deleteAppUser = useDeleteAppUser();
+  const deleteWebhook = useDeleteWebhook();
 
-  // async function handleDelete() {
-  //   try {
-  //     await deleteAppUser.mutateAsync(row.original.userId!);
-  //   } catch (error) {
-  //     if (isApiError(error)) {
-  //       toast({
-  //         description:
-  //           "Failed to delete app user: " + error.response?.data.message ||
-  //           error.message,
-  //         variant: "destructive",
-  //       });
-  //       return;
-  //     }
-  //   }
-  //
-  //   setShowDeleteDialog(false);
-  //   toast({
-  //     description: `App User '${row.original.userId}' has been deleted.`,
-  //   });
-  // }
+  async function handleDelete() {
+    try {
+      await deleteWebhook.mutateAsync(row.original.id!);
+    } catch (error) {
+      if (isApiError(error)) {
+        toast({
+          description:
+            "Failed to delete webhook: " + error.response?.data.message ||
+            error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    setShowDeleteDialog(false);
+    toast({
+      description: `Webhook '${row.original.url}' has been deleted.`,
+    });
+  }
 
   return (
     <>
@@ -114,6 +125,24 @@ function WebhookRowActions({ row }: DataTableRowActionsProps<WebhookResponse>) {
           }}
         />
       </Dialog>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This webhook &apos;
+              {row.original.url}&apos; will not be recoverable.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <Button variant="destructive" onClick={handleDelete}>
+              Delete
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

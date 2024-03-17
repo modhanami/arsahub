@@ -11,6 +11,7 @@ import {
   deleteAppUser,
   deleteRule,
   deleteTrigger,
+  deleteWebhook,
   fetchAchievements,
   fetchAppByAPIKey,
   fetchAppUser,
@@ -474,6 +475,22 @@ export function useUpdateWebhook() {
       webhookId: number;
       updateRequest: WebhookCreateRequest;
     }) => currentApp && updateWebhook(currentApp, webhookId, updateRequest),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["webhooks"] });
+    },
+  });
+}
+
+export function useDeleteWebhook() {
+  const { currentApp } = useCurrentApp();
+  const queryClient = useQueryClient();
+  if (!currentApp) {
+    throw new Error("No current app");
+  }
+
+  return useMutation({
+    mutationFn: (webhookId: number) =>
+      currentApp && deleteWebhook(currentApp, webhookId),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["webhooks"] });
     },
