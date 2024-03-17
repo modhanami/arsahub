@@ -5,7 +5,6 @@ import * as React from "react";
 import { useCreateWebhook } from "@/hooks";
 import { toast } from "@/components/ui/use-toast";
 import { isApiError, isApiValidationError } from "@/api";
-import { HttpStatusCode } from "axios";
 import {
   Dialog,
   DialogClose,
@@ -35,6 +34,7 @@ export const webhookCreateSchema = z.object({
     })
     .url({
       // message: ValidationMessages.WEBHOOK_URL_INVALID
+      message: "Invalid URL",
     }),
 });
 
@@ -60,17 +60,26 @@ export function WebhookCreateForm() {
             description: "Webhook created successfully",
           });
           setIsOpen(false);
+          form.reset();
         },
         onError: (error, b, c) => {
           console.log("error", error);
           if (isApiValidationError(error)) {
-            // TODO: handle validation errors
+            toast({
+              title: "Failed to create webhook",
+              description:
+                error.response?.data.errors["url"] ||
+                error.response?.data.message,
+              variant: "destructive",
+            });
           }
           if (isApiError(error)) {
             // root error
-            if (error.response?.status === HttpStatusCode.Conflict) {
-              // TODO: handle conflict error (URL already exists)
-            }
+            toast({
+              title: "Failed to create webhook",
+              description: error.response?.data.message || error.message,
+              variant: "destructive",
+            });
           }
         },
       },

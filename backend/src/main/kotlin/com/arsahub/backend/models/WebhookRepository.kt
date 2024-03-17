@@ -9,4 +9,9 @@ interface WebhookRepository : JpaRepository<Webhook, Long> {
         app: App,
         id: Long,
     ): Webhook?
+
+    fun findByAppAndUrl(
+        app: App,
+        url: String,
+    ): Webhook?
 }

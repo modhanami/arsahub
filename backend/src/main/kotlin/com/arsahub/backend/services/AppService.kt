@@ -421,15 +421,14 @@ class AppService(
         app: App,
         request: WebhookCreateRequest,
     ): Webhook {
-        // TODO: validate URL, and check if it's reachable?
-        // TODO: multiple webhooks per app
+        // TODO: check if it's reachable?
         // TODO: specify events to listen to
         // TODO: shared secret for signing requests
 
-        // limit to one webhook per app for now
-        val existingWebhooks = webhookRepository.findByApp(app)
-        if (existingWebhooks.isNotEmpty()) {
-            throw ConflictException("Only one webhook per app is allowed")
+        webhookRepository.findByAppAndUrl(app, request.url!!).let {
+            if (it != null) {
+                throw ConflictException("Webhook already exists")
+            }
         }
 
         val webhook = Webhook(app = app, url = request.url)
