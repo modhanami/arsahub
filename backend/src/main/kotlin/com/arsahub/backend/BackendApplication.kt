@@ -2,6 +2,7 @@ package com.arsahub.backend
 
 import com.corundumstudio.socketio.Configuration
 import com.corundumstudio.socketio.SocketIOServer
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.context.event.ApplicationReadyEvent
@@ -18,6 +19,8 @@ import org.springframework.scheduling.annotation.EnableScheduling
 @EnableScheduling
 @EnableJpaAuditing
 class BackendApplication {
+    private val logger = KotlinLogging.logger {}
+
     @Value("\${socketio.server.host}")
     val host: String? = null
 
@@ -35,7 +38,13 @@ class BackendApplication {
 
     @EventListener(ApplicationReadyEvent::class)
     fun startup() {
-        socketIOServer().start()
+        val socketIOServer = socketIOServer()
+        logger.info { "Starting Socket.IO server on $host:$port" }
+        socketIOServer.addEventListener("connection_error", String::class.java) { client, data, ackRequest ->
+            logger.info { "Connection error: $data" }
+        }
+
+        socketIOServer.start()
     }
 
     @EventListener(ContextClosedEvent::class)
