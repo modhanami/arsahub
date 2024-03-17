@@ -68,7 +68,9 @@ export const columns: ColumnDef<AppUserResponse>[] = [
     ),
     cell: ({ row }) => {
       return (
-        <div className="text-right max-w-[100px]">{row.getValue("points")}</div>
+        <div className="flex space-x-2">
+          <div className="text-right max-w-[100px]">{row.getValue("points")}</div>
+        </div>
       );
     },
   },
@@ -79,9 +81,12 @@ export const columns: ColumnDef<AppUserResponse>[] = [
     ),
     cell: ({ row }) => {
       return (
-        <div className="text-right max-w-[100px]">
+        <div className="flex space-x-2">
+          <div className="text-right max-w-[100px]">
           {row.original.achievements?.length}
         </div>
+        </div>
+        
       );
     },
   },
@@ -96,7 +101,7 @@ export const columns: ColumnDef<AppUserResponse>[] = [
       const formatted = createdAt.format("YYYY-MM-DD HH:mm:ss");
       const relative = createdAt.fromNow();
       return (
-        <div className="text-right" title={formatted}>
+        <div className="font-medium" title={formatted}>
           {relative}
         </div>
       );

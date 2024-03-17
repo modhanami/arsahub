@@ -57,7 +57,9 @@ export const columns: ColumnDef<RuleResponse>[] = [
       return (
         <div className="flex space-x-2">
           <span className="max-w-[500px] truncate font-medium">
-            {row.getValue("description")}
+            {row.getValue("description")
+              ? row.getValue("description")
+              : "No Description."}
           </span>
         </div>
       );
@@ -78,7 +80,7 @@ export const columns: ColumnDef<RuleResponse>[] = [
 
       return (
         <div className="flex flex-col space-y-2">
-          <span className="max-w-[500px] truncate">
+          <span className="max-w-[500px] truncate font-medium">
             {row.original.trigger?.title}
           </span>
           {formattedConditions.length > 0 ? (
@@ -134,7 +136,7 @@ export const columns: ColumnDef<RuleResponse>[] = [
       const formatted = createdAt.format("YYYY-MM-DD HH:mm:ss");
       const relative = createdAt.fromNow();
       return (
-        <div className="text-right " title={formatted}>
+        <div className="font-medium" title={formatted}>
           {relative}
         </div>
       );

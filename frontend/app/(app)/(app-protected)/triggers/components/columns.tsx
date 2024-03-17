@@ -89,7 +89,9 @@ export const columns: ColumnDef<TriggerResponse>[] = [
       return (
         <div className="flex space-x-2">
           <span className="max-w-[500px] truncate font-medium">
-            {row.getValue("description")}
+            {row.getValue("description")
+              ? row.getValue("description")
+              : "No Description."}
           </span>
         </div>
       );
@@ -107,7 +109,7 @@ export const columns: ColumnDef<TriggerResponse>[] = [
       const formatted = createdAt.format("YYYY-MM-DD HH:mm:ss");
       const relative = createdAt.fromNow();
       return (
-        <div className="text-right font-medium" title={formatted}>
+        <div className="font-medium" title={formatted}>
           {relative}
         </div>
       );

@@ -63,7 +63,9 @@ export const columns: ColumnDef<AchievementResponse>[] = [
       return (
         <div className="flex space-x-2">
           <span className="max-w-[400px] truncate font-medium">
-            {row.getValue("description")}
+            {row.getValue("description")
+              ? row.getValue("description")
+              : "No Description."}
           </span>
         </div>
       );
