@@ -37,6 +37,7 @@ import {
   Twitter,
   User,
   Users,
+  WebhookIcon,
   X,
   Zap,
 } from "lucide-react";
@@ -100,4 +101,5 @@ export const Icons = {
   reward: LucideTicket,
   pointsShop: ShoppingCartIcon,
   edit: PencilIcon,
+  webhook: WebhookIcon,
 };

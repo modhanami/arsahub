@@ -18,6 +18,8 @@ import {
   TriggerSendRequest,
   TriggerUpdateRequest,
   UserResponse,
+  WebhookCreateRequest,
+  WebhookResponse,
 } from "../types/generated-types";
 
 import axios from "axios";
@@ -506,4 +508,57 @@ export async function syncSupabaseIdentity({
   );
 
   return data;
+}
+
+export async function fetchWebhooks(app: AppResponse) {
+  const { data } = await instance.get<WebhookResponse[]>(
+    `${API_URL}/apps/webhooks`,
+    {
+      headers: {
+        ...makeAppAuthHeader(app),
+      },
+    },
+  );
+  return data;
+}
+
+export async function createWebhook(
+  app: AppResponse,
+  newWebhook: WebhookCreateRequest,
+) {
+  const { data } = await instance.post<WebhookResponse>(
+    `${API_URL}/apps/webhooks`,
+    newWebhook,
+    {
+      headers: {
+        ...makeAppAuthHeader(app),
+      },
+    },
+  );
+  return data;
+}
+
+export async function updateWebhook(
+  app: AppResponse,
+  webhookId: number,
+  updateRequest: WebhookCreateRequest,
+) {
+  const { data } = await instance.put<WebhookResponse>(
+    `${API_URL}/apps/webhooks/${webhookId}`,
+    updateRequest,
+    {
+      headers: {
+        ...makeAppAuthHeader(app),
+      },
+    },
+  );
+  return data;
+}
+
+export async function deleteWebhook(app: AppResponse, webhookId: number) {
+  await instance.delete<void>(`${API_URL}/apps/webhooks/${webhookId}`, {
+    headers: {
+      ...makeAppAuthHeader(app),
+    },
+  });
 }

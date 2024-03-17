@@ -1,7 +1,7 @@
 /* tslint:disable */
 /* eslint-disable */
 
-// Generated using typescript-generator version 3.2.1263 on 2024-03-01 23:01:22.
+// Generated using typescript-generator version 3.2.1263 on 2024-03-16 21:58:32.
 
 export interface AchievementCreateRequest {
   title: string;
@@ -106,6 +106,10 @@ export interface UserSignupRequest {
   password: string;
 }
 
+export interface WebhookCreateRequest {
+  url: string;
+}
+
 export interface AchievementResponse {
   achievementId: number;
   title: string;
@@ -206,6 +210,18 @@ export interface UserResponse {
   name: string;
 }
 
+export interface WebhookPayload {
+  id: string;
+  event: string;
+  appUserId: string;
+  payload: { [index: string]: any };
+}
+
+export interface WebhookResponse {
+  id: number;
+  url: string;
+}
+
 export interface AchievementUnlock extends AppUpdate {
   userId: string;
   achievement: AchievementResponse;
@@ -243,8 +259,8 @@ export interface MultipartFile extends InputStreamSource {
   empty: boolean;
   resource: Resource;
   size: number;
-  originalFilename: string;
   contentType: string;
+  originalFilename: string;
 }
 
 export interface App
@@ -267,14 +283,14 @@ export interface Entry {
 }
 
 export interface Resource extends InputStreamSource {
+  uri: URI;
   open: boolean;
   file: any;
   url: URL;
   readable: boolean;
+  contentAsByteArray: any;
   description: string;
   filename: string;
-  uri: URI;
-  contentAsByteArray: any;
 }
 
 export interface InputStreamSource {
@@ -305,9 +321,9 @@ export interface PersistentAttributeInterceptable
 
 export interface SelfDirtinessTracker extends PrimeAmongSecondarySupertypes {}
 
-export interface URL extends Serializable {}
-
 export interface URI extends Comparable<URI>, Serializable {}
+
+export interface URL extends Serializable {}
 
 export interface ManagedMappedSuperclass extends Managed {}
 
