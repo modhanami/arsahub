@@ -1097,8 +1097,10 @@ class AppControllerTest() {
             postRequestedFor(urlEqualTo("/webhook"))
                 .withRequestBody(
                     equalToJson(
+                        // id is an escaped wiremock placeholder
                         """
                         {
+                            "id": "${"\${"}json-unit.any-string${"}"}",
                             "event": "points_updated",
                             "appUserId": "${userAfter.userId}",
                             "payload": {
