@@ -88,7 +88,8 @@ create table rule
         constraint rule_achievement_achievement_id_fk
             references achievement,
     repeatability        text   not null,
-    condition_expression text
+    condition_expression text,
+    deleted_at           timestamp with time zone
 );
 
 create index idx_16438_trigger_id
@@ -341,11 +342,11 @@ create table webhook
     webhook_id bigserial
         constraint webhook_pk
             primary key,
-    app_id     bigint                   not null
+    app_id     bigint                                 not null
         constraint webhook_app_app_id_fk
             references app,
-    url        text                     not null,
-    created_at timestamp with time zone not null,
+    url        text                                   not null,
+    created_at timestamp with time zone default now() not null,
     updated_at timestamp with time zone
 );
 

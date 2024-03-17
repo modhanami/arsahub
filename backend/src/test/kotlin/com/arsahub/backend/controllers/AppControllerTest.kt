@@ -2753,6 +2753,7 @@ class AppControllerTest() {
                 repeatability = UnlimitedRuleRepeatability
             }
 
+        val rules1 = ruleRepository.findAll()
         // Act & Assert HTTP
         mockMvc.performWithAppAuth(
             delete("/api/apps/rules/${rule.id}"),
@@ -2760,12 +2761,12 @@ class AppControllerTest() {
             .andExpect(status().isNoContent)
 
         // Assert DB
-        val rules = ruleRepository.findById(rule.id!!)
-        assertTrue(rules.isEmpty)
+        val ruleAfter = ruleRepository.findByIdAndApp(rule.id!!, authSetup.app)
+        assertNull(ruleAfter)
     }
 
     @Test
-    fun `delete rule - failed - activated once`() {
+    fun `delete rule - success - is in use`() {
         // Arrange
         val rule =
             createRule(authSetup.app) {
@@ -2798,12 +2799,11 @@ class AppControllerTest() {
         mockMvc.performWithAppAuth(
             delete("/api/apps/rules/${rule.id}"),
         )
-            .andExpect(status().isConflict)
-            .andExpect(jsonPath("$.message").value("Rule is in use"))
+            .andExpect(status().isNoContent)
 
         // Assert DB
-        val rules = ruleRepository.findById(rule.id!!)
-        assertTrue(rules.isPresent)
+        val ruleAfter = ruleRepository.findByIdAndApp(rule.id!!, authSetup.app)
+        assertNull(ruleAfter)
     }
 
     @Test
