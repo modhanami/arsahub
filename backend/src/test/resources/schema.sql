@@ -350,3 +350,27 @@ create table webhook
     updated_at timestamp with time zone
 );
 
+create table leaderboard_type
+(
+    leaderboard_type_id bigserial
+        constraint leaderboard_type_pk
+            primary key,
+    name                text not null
+);
+
+create table leaderboard_config
+(
+    leaderboard_config_id bigserial
+        constraint leaderboard_config_pk
+            primary key,
+    app_id                bigint   not null
+        constraint leaderboard_config_app_app_id_fk
+            references app,
+    leaderboard_type_id   smallint not null
+        constraint leaderboard_config_leaderboard_type_leaderboard_type_id_fk
+            references leaderboard_type,
+    start_day             smallint,
+    reset_day             smallint,
+    reset_time            time with time zone
+);
+

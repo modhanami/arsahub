@@ -10,3 +10,8 @@ WITH points_reached_trigger AS (
 INSERT
 INTO trigger_field (key, type, label, trigger_id)
 VALUES ('points', 'integer', 'Points', (SELECT trigger_id FROM points_reached_trigger));
+
+insert into leaderboard_type(leaderboard_type_id, name)
+values (1, 'Daily'),
+       (2, 'Weekly'),
+       (3, 'Monthly');

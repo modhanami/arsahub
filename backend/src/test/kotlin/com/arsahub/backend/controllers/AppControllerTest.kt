@@ -18,6 +18,7 @@ import com.arsahub.backend.dtos.request.TriggerDefinition
 import com.arsahub.backend.models.App
 import com.arsahub.backend.models.AppInvitation
 import com.arsahub.backend.models.AppUser
+import com.arsahub.backend.models.AppUserPointsHistory
 import com.arsahub.backend.models.OncePerUserRuleRepeatability
 import com.arsahub.backend.models.Reward
 import com.arsahub.backend.models.Rule
@@ -85,6 +86,9 @@ import org.testcontainers.ext.ScriptUtils
 import org.testcontainers.jdbc.JdbcDatabaseDelegate
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
+import java.time.Instant
+import java.time.OffsetDateTime
+import java.time.temporal.ChronoUnit
 import java.util.*
 
 @SpringBootTest(
@@ -3215,6 +3219,63 @@ class AppControllerTest() {
                 .build()
         val response = restClient.get().uri("/resource").retrieve().body<String>()
         assertEquals("Hello World!", response)
+    }
+
+    @Test
+    fun `findLatestPointsByStartTimeInclusiveEndTimeExclusive`() {
+        // Arrange
+        val appUser1 = createAppUser(authSetup.app)
+        val appUser2 = createAppUser(authSetup.app, userId = UUID.randomUUID().toString())
+
+        // subject week = 2024-05-08:14:00 (Wed, inclusive) - 2024-05-15:14:00 (Wed, exclusive)
+        val weekStart = OffsetDateTime.parse("2024-05-08T14:00:00+02:00")
+        val weekStartInstant = OffsetDateTime.parse("2024-05-08T14:00:00+02:00").toInstant()
+        println("Week start: $weekStart")
+
+        fun pointsHistory(
+            appUser: AppUser,
+            points: Long,
+            createdAt: Instant,
+        ) = AppUserPointsHistory(
+            app = authSetup.app,
+            appUser = appUser,
+            pointsChange = 0,
+            points = points,
+        ).apply { this.createdAt = createdAt }
+
+        val pointsHistories =
+            mutableListOf(
+                pointsHistory(appUser1, 100, weekStartInstant.minus(1, ChronoUnit.SECONDS)),
+                pointsHistory(appUser1, 200, weekStartInstant),
+                pointsHistory(appUser1, 250, weekStartInstant.plus(1, ChronoUnit.DAYS)),
+                pointsHistory(appUser1, 300, weekStartInstant.plus(7, ChronoUnit.DAYS).minus(1, ChronoUnit.SECONDS)),
+                pointsHistory(appUser1, 400, weekStartInstant.plus(7, ChronoUnit.DAYS)),
+                pointsHistory(appUser2, 100, weekStartInstant.minus(1, ChronoUnit.SECONDS)),
+                pointsHistory(appUser2, 200, weekStartInstant),
+                pointsHistory(appUser2, 250, weekStartInstant.plus(1, ChronoUnit.DAYS)),
+                pointsHistory(appUser2, 300, weekStartInstant.plus(7, ChronoUnit.DAYS).minus(1, ChronoUnit.SECONDS)),
+                pointsHistory(appUser2, 400, weekStartInstant.plus(7, ChronoUnit.DAYS)),
+            )
+        appUserPointsHistoryRepository.saveAll(pointsHistories)
+
+        // query with startTime and endTime
+        val startTime = weekStartInstant
+        val endTime = weekStartInstant.plus(7, ChronoUnit.DAYS)
+        val leaderboard =
+            appUserPointsHistoryRepository.findByStartTimeInclusiveEndTimeExclusive(
+                authSetup.app,
+                startTime,
+                endTime,
+            )
+        assertEquals(6, leaderboard.size)
+
+        val ranking =
+            appUserPointsHistoryRepository.findLatestPointsByStartTimeInclusiveEndTimeExclusive(
+                authSetup.app.id!!,
+                startTime,
+                endTime,
+            )
+        assertEquals(2, ranking.size)
     }
 
     private fun getPointsReachedTrigger() = triggerRepository.findByKey("points_reached")!!
