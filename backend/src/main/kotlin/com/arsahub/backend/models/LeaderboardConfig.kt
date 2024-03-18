@@ -10,7 +10,7 @@ import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
 import jakarta.validation.constraints.NotNull
-import java.time.OffsetTime
+import java.time.LocalTime
 
 @Entity
 @Table(name = "leaderboard_config")
@@ -27,8 +27,12 @@ class LeaderboardConfig(
     var startDay: Short? = null,
     @Column(name = "reset_day")
     var resetDay: Short? = null,
-    @Column(name = "reset_time")
-    var resetTime: OffsetTime? = null,
+    @NotNull
+    @Column(name = "reset_time", nullable = false)
+    var resetTime: LocalTime? = null,
+    @NotNull
+    @Column(name = "timezone", nullable = false, length = Integer.MAX_VALUE)
+    var timezone: String? = null,
 ) {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -287,6 +287,14 @@ class AppController(
         return LeaderboardResponse(leaderboard = "total-points", entries = emptyList())
     }
 
+    @GetMapping("/{appId}/leaderboards/{leaderboardId}")
+    fun getLeaderboard(
+        @CurrentApp app: App,
+        @PathVariable leaderboardId: Long,
+    ): LeaderboardResponse {
+        return leaderboardService.getLeaderboard(app, leaderboardId)
+    }
+
     @Operation(
         summary = "Create a rule",
         responses = [
