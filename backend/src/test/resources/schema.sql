@@ -1,8 +1,11 @@
-create sequence achievement_activity_id_seq;
+create
+    sequence achievement_activity_id_seq;
 
-create sequence rule_progress_times_rule_progress_single_id_seq;
+create
+    sequence rule_progress_times_rule_progress_single_id_seq;
 
-create sequence user_activity_progress_user_activity_progress_id_seq;
+create
+    sequence user_activity_progress_user_activity_progress_id_seq;
 
 create table "user"
 (
@@ -11,12 +14,12 @@ create table "user"
             primary key,
     created_at       timestamp with time zone default now() not null,
     updated_at       timestamp with time zone default now() not null,
-    external_user_id text                                   not null
+    external_user_id text not null
         constraint user_pk
             unique,
-    email            text                                   not null,
-    google_user_id text,
-    name             text                                   not null
+    email            text not null,
+    google_user_id   text,
+    name             text not null
 );
 
 create table app
@@ -81,7 +84,7 @@ create table rule
     app_id                bigint
         constraint rule_app_app_id_fk
             references app,
-    conditions            jsonb,
+    conditions           jsonb,
     action               text   not null,
     action_points         integer,
     action_achievement_id bigint
@@ -133,7 +136,8 @@ create table rule_progress
             references app
 );
 
-alter sequence rule_progress_times_rule_progress_single_id_seq owned by rule_progress.rule_progress_id;
+alter
+    sequence rule_progress_times_rule_progress_single_id_seq owned by rule_progress.rule_progress_id;
 
 create index idx_16462_rule_id
     on rule_progress (rule_id);
@@ -180,21 +184,22 @@ create table app_user_progress
             references app_user
 );
 
-alter sequence user_activity_progress_user_activity_progress_id_seq owned by app_user_progress.app_user_activity_progress_id;
+alter
+    sequence user_activity_progress_user_activity_progress_id_seq owned by app_user_progress.app_user_activity_progress_id;
 
 create table trigger_log
 (
     trigger_log_id bigserial
         constraint trigger_log_pk
             primary key,
-    trigger_id     integer
+    trigger_id   integer
         constraint trigger_log_trigger_trigger_id_fk
             references trigger,
-    request_body   jsonb  not null,
-    app_id         bigint not null
+    request_body jsonb  not null,
+    app_id       bigint not null
         constraint trigger_log_app_app_id_fk
             references app,
-    app_user_id    bigint not null
+    app_user_id  bigint not null
         constraint trigger_log_app_user_app_user_id_fk
             references app_user
             on delete cascade
@@ -275,7 +280,7 @@ create table reward
 
 create table transaction
 (
-    transaction_id   bigserial
+    transaction_id bigserial
         primary key,
     app_user_id      bigint                  not null
         references app_user
@@ -317,21 +322,21 @@ create table app_invitation
 
 create table app_user_points_history
 (
-    app_user_id                bigint                   not null
+    app_user_id   bigint                                 not null
         constraint app_user_points_history_app_user_app_user_id_fk
             references app_user
             on delete cascade,
-    app_id                     bigint                   not null
+    app_id        bigint                                 not null
         constraint app_user_points_history_app_app_id_fk
             references app
             on delete cascade,
-    points                     bigint                   not null,
-    points_change              bigint                   not null,
+    points        bigint                                 not null,
+    points_change bigint                                 not null,
     from_rule_id               bigint
         constraint app_user_points_history_rule_rule_id_fk
             references rule
             on delete cascade,
-    created_at                 timestamp with time zone not null,
+    created_at    timestamp with time zone default now() not null,
     app_user_points_history_id bigserial
         constraint app_user_points_history_pk
             primary key
@@ -342,10 +347,10 @@ create table webhook
     webhook_id bigserial
         constraint webhook_pk
             primary key,
-    app_id     bigint                                 not null
+    app_id bigint not null
         constraint webhook_app_app_id_fk
             references app,
-    url        text                                   not null,
+    url    text   not null,
     created_at timestamp with time zone default now() not null,
     updated_at timestamp with time zone
 );

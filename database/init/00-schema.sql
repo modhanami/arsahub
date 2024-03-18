@@ -336,7 +336,7 @@ create table app_user_points_history
         constraint app_user_points_history_rule_rule_id_fk
         references rule
         on delete cascade,
-    created_at    timestamp with time zone not null,
+    created_at    timestamp with time zone default now() not null,
     app_user_points_history_id bigserial
         constraint app_user_points_history_pk
         primary key
