@@ -104,8 +104,11 @@ class RuleService(
     ) {
         // Convert CEL expression to a map of variable names to corresponding trigger field types,
         // or throw an exception if the corresponding trigger field is not found
+        logger.info { "Validating condition expression: $conditionExpression" }
         val varDecls = trigger.fields.getCelVarDecls()
+        logger.debug { "Variable declarations: $varDecls" }
         val validationResult = RuleEngine.getProgramValidationResult(conditionExpression, varDecls)
+        logger.debug { "Validation result: $validationResult" }
         val invalidFieldsMessage = "Invalid fields in condition expression"
         require(!validationResult.hasError()) {
             // TODO: distinct error messages

@@ -205,9 +205,10 @@ class RuleEngine(
         params: Map<String, Any>?,
         appUser: AppUser,
     ): Boolean {
-        // Refactor the above to use google/cel-java as the expression language for the conditions instead
+        logger.debug { "Checking condition expression" }
         val conditionExpression = rule.conditionExpression
         if (conditionExpression.isNullOrEmpty()) {
+            logger.debug { "No condition expression, params=$params" }
             return params.isNullOrEmpty()
         }
 
@@ -222,6 +223,7 @@ class RuleEngine(
         }
 
         if (params.isNullOrEmpty()) {
+            logger.debug { "No params, skipping" }
             return false
         }
 
@@ -236,6 +238,9 @@ class RuleEngine(
             }
         val varDecls =
             rule.trigger?.fields?.getCelVarDecls() ?: emptyList()
+
+        logger.debug { "Program variables: $programVariables" }
+        logger.debug { "Var decls: $varDecls" }
 
         val program = getProgram(conditionExpression, varDecls)
 
@@ -252,10 +257,11 @@ class RuleEngine(
     ): CelRuntime.Program {
         val validationResult = getProgramValidationResult(expression, varDecls)
         if (validationResult.hasError()) {
-            println(validationResult.issueString)
+            logger.error { "Invalid expression: $expression, errors: ${validationResult.issueString}" }
             throw IllegalArgumentException("Invalid expression: $expression")
         }
         val ast = validationResult.ast
+        logger.trace { "Program AST: $ast" }
 
         // Plan an executable program instance.
         val program = CEL_RUNTIME.createProgram(ast)
