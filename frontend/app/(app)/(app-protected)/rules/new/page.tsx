@@ -140,8 +140,6 @@ export default function Page() {
     combinator: "and",
     rules: [],
   });
-  const [conditionExpression, setConditionExpression] =
-    React.useState<string>("");
 
   // TODO: disallow duplicate operators for a given field
   // TODO: disable field selection when no operators are available
@@ -199,7 +197,7 @@ export default function Page() {
       },
       title: data.title.trim(),
       description: data.description?.trim() || null,
-      conditionExpression: conditionExpression,
+      conditionExpression: getFormattedCELExpression(query, fields),
       conditions: null,
     };
 
