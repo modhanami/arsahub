@@ -187,7 +187,6 @@ export default function Page() {
       title: data.title.trim(),
       description: data.description?.trim() || null,
       conditionExpression: getFormattedCELExpression(query, fields),
-      conditions: null,
     };
 
     createRule.mutate(payload);

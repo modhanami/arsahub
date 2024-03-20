@@ -66,10 +66,6 @@ class RuleService(
             validateConditionExpression(trigger, request.conditionExpression)
         }
 
-        triggerService.validateParamsAgainstTriggerFields(request.conditions, trigger.fields)
-
-        // TODO: more validations for conditions
-
         val rule =
             Rule(
                 app = app,
@@ -77,7 +73,6 @@ class RuleService(
                 description = request.description,
                 trigger = trigger,
                 triggerParams = request.trigger.params?.toMutableMap(),
-                conditions = request.conditions?.toMutableMap(),
                 repeatability = ruleRepeatability.key,
                 conditionExpression = request.conditionExpression,
             )
@@ -115,6 +110,7 @@ class RuleService(
             invalidFieldsMessage
         }
 
+        // TODO: Strict checking like in validateParamsAgainstTriggerFields
         val referenceNames =
             validationResult.ast.referenceMap.values
                 .filter { it.overloadIds().isEmpty() } // only consider references to fields

@@ -17,7 +17,6 @@ import {
 import { Select, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
 import React from "react";
-import { v4 as uuidv4 } from "uuid";
 import { Input } from "@/components/ui/input";
 import {
   FieldDefinition,
@@ -83,25 +82,7 @@ function UpdateRuleForm({ rule }: UpdateRuleFormProps) {
   const isPointsReachedTrigger = selectedTriggerKey === "points_reached";
 
   // TODO: display conditions
-  let conditions: Condition<any>[] = [];
   if (isPointsReachedTrigger) {
-    console.log("Force once_per_user");
-    // set to having one condition of 'points' is 'is' 'value'
-    conditions = [
-      {
-        uuid: uuidv4(),
-        field: "points",
-        operator: "is",
-        value: "",
-        fieldDefinition: {
-          key: "points",
-          label: "Points",
-          type: "integer",
-        },
-        inputType: "number",
-        inputProps: { step: 1 },
-      },
-    ];
   }
 
   async function onSubmit(data: FormData) {

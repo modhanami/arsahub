@@ -735,9 +735,7 @@ class AppControllerTest() {
                   "points": 100
                 }
               },
-              "conditions": {
-                "workshopId": 1
-              },
+              "conditionExpression": "workshopId == 1",
               "repeatability": "unlimited"
             }
             """.trimIndent()
@@ -753,7 +751,7 @@ class AppControllerTest() {
             .andExpect(jsonPath("$.trigger.key").value("workshop_completed"))
             .andExpect(jsonPath("$.action").value("add_points"))
             .andExpect(jsonPath("$.actionPoints").value(100))
-            .andExpect(jsonPath("$.conditions.workshopId").value(1))
+            .andExpect(jsonPath("$.conditionExpression").value("workshopId == 1"))
             .andExpect(jsonPath("$.repeatability").value("unlimited"))
 
         // Assert DB
@@ -764,7 +762,7 @@ class AppControllerTest() {
         assertEquals("workshop_completed", rule.trigger?.key)
         assertEquals("add_points", rule.action)
         assertEquals(100, rule.actionPoints)
-        assertEquals(1, rule.conditions?.get("workshopId"))
+        assertEquals("workshopId == 1", rule.conditionExpression)
         assertEquals("unlimited", rule.repeatability)
     }
 
@@ -865,7 +863,6 @@ class AppControllerTest() {
         var description: String? = null,
         var action: ActionBuilder? = null,
         var actionPoints: Int? = null,
-        var conditions: MutableList<ConditionBuilder> = mutableListOf(),
         var repeatability: RuleRepeatability? = null,
         var conditionExpression: String? = null,
     ) {
@@ -1378,109 +1375,6 @@ class AppControllerTest() {
     }
 
     // More rules validation
-
-    // Disallow empty condition key or value
-    @Test
-    fun `fails with 400 when creating a rule with empty condition key`() {
-        // Arrange
-        val trigger = createWorkshopCompletedTrigger(authSetup.app)
-
-        // Act & Assert HTTP
-        mockMvc.performWithAppAuth(
-            post("/api/apps/rules")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    """
-                    {
-                      "title": "When workshop ID 1 completed then add 100 points - unlimited",
-                      "trigger": {
-                        "key": "${trigger.key}"
-                      },
-                      "action": {
-                        "key": "add_points",
-                        "params": {
-                          "points": 100
-                        }
-                      },
-                      "conditions": {
-                        "": 1
-                      },
-                      "repeatability": "unlimited"
-                    }
-                    """.trimIndent(),
-                ),
-        )
-            .andExpect(status().isBadRequest)
-            .andExpect(jsonPath("$.message").value("Condition key cannot be empty"))
-    }
-
-    @Test
-    fun `fails with 400 when creating a rule with empty condition value`() {
-        // Arrange
-        val trigger = createWorkshopCompletedTrigger(authSetup.app)
-
-        // Act & Assert HTTP
-        mockMvc.performWithAppAuth(
-            post("/api/apps/rules")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    """
-                    {
-                      "title": "When workshop ID 1 completed then add 100 points - unlimited",
-                      "trigger": {
-                        "key": "${trigger.key}"
-                      },
-                      "action": {
-                        "key": "add_points",
-                        "params": {
-                          "points": 100
-                        }
-                      },
-                      "conditions": {
-                        "workshopId": ""
-                      },
-                      "repeatability": "unlimited"
-                    }
-                    """.trimIndent(),
-                ),
-        )
-            .andExpect(status().isBadRequest)
-            .andExpect(jsonPath("$.message").value("Condition value cannot be empty"))
-    }
-
-    @Test
-    fun `fails with 400 when creating a rule with null condition value`() {
-        // Arrange
-        val trigger = createWorkshopCompletedTrigger(authSetup.app)
-
-        // Act & Assert HTTP
-        mockMvc.performWithAppAuth(
-            post("/api/apps/rules")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    """
-                    {
-                      "title": "When workshop ID 1 completed then add 100 points - unlimited",
-                      "trigger": {
-                        "key": "${trigger.key}"
-                      },
-                      "action": {
-                        "key": "add_points",
-                        "params": {
-                          "points": 100
-                        }
-                      },
-                      "conditions": {
-                        "workshopId": null
-                      },
-                      "repeatability": "unlimited"
-                    }
-                    """.trimIndent(),
-                ),
-        )
-            .andExpect(status().isBadRequest)
-            .andExpect(jsonPath("$.message").value("Condition value cannot be empty"))
-    }
 
     // Points Shop
 
@@ -2280,6 +2174,7 @@ class AppControllerTest() {
     // - Points reached
     @Test
     fun `create rule with points_reached trigger - success`() {
+        // TODO: validate condition expression uses valid trigger field keys
         val pointsReachedTriggerKey = "points_reached"
 
         // Act & Assert HTTP
@@ -2299,9 +2194,7 @@ class AppControllerTest() {
                           "points": 50
                         }
                       },
-                      "conditions": {
-                        "points": 100
-                      },
+                      "conditionExpression": "points == 100",
                       "repeatability": "once_per_user"
                     }
                     """.trimIndent(),
@@ -2317,7 +2210,7 @@ class AppControllerTest() {
         assertEquals("When user reaches 100 points then add 50 points", rule.title)
         assertEquals("add_points", rule.action)
         assertEquals(50, rule.actionPoints)
-        assertEquals(100, rule.conditions!!["points"])
+        assertEquals("points == 100", rule.conditionExpression)
         assertEquals("once_per_user", rule.repeatability)
     }
 
@@ -2342,9 +2235,7 @@ class AppControllerTest() {
                           "points": 50
                         }
                       },
-                      "conditions": {
-                        "points": 100
-                      },
+                      "conditionExpression": "points == 100",
                       "repeatability": "unlimited"
                     }
                     """.trimIndent(),

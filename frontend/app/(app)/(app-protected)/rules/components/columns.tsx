@@ -69,7 +69,6 @@ export const columns: ColumnDef<RuleResponse>[] = [
       <DataTableColumnHeader column={column} title="Trigger" />
     ),
     cell: ({ row }) => {
-      const conditions = row.original.conditions || {};
       const formattedConditions = row.original.conditionExpression;
 
       return (

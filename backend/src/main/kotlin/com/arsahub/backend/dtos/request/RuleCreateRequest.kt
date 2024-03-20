@@ -13,7 +13,6 @@ class RuleCreateRequest(
     description: String? = null,
     val trigger: TriggerDefinition,
     val action: ActionDefinition,
-    val conditions: Map<String, Any>? = null,
     repeatability: String?,
     val conditionExpression: String? = null,
 ) {

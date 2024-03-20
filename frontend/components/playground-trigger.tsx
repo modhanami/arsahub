@@ -57,7 +57,6 @@ export function PlaygroundTriggerForm() {
 
   const watchTriggerKey = form.watch("trigger.key");
   const watchUserId = form.watch("userId");
-  const watchParams = form.watch("params");
 
   const selectedUserId = watchUserId || null;
   const [isCreating, setIsSending] = React.useState(false);
@@ -207,36 +206,6 @@ export function PlaygroundTriggerForm() {
   function isParamUsed(key: string) {
     return triggerParams.fields.some((field) => field.key === key);
   }
-
-  // filter the rules based on the selected trigger
-  // TODO: this should be done on the server
-  const filteredRules = rules.filter((rule) => {
-    // if no trigger is selected, show all rules
-    if (!selectedTrigger) {
-      return true;
-    }
-
-    // if rule conditions are empty, the params must be empty too
-    if (!rule.conditions || Object.keys(rule.conditions).length === 0) {
-      return triggerParams.fields.length === 0;
-    }
-
-    // all params must match to the rule's conditions
-    return Object.entries(rule.conditions ?? {}).every(([key, value]) => {
-      const triggerParam = watchParams.find((param) => param.key === key);
-      const triggerField = triggerFields.find((field) => field.key === key);
-
-      if (!triggerParam || !triggerField) {
-        return false;
-      }
-
-      if (triggerField.type === "text") {
-        return triggerParam.value.toString() === value;
-      } else if (triggerField.type === "integer") {
-        return Number(triggerParam.value) === value;
-      }
-    });
-  });
 
   return (
     <>

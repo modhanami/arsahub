@@ -37,9 +37,6 @@ class Rule(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "app_id")
     var app: App? = null,
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "conditions")
-    var conditions: MutableMap<String, Any>? = null,
     @NotNull
     @Column(name = "action", nullable = false, length = Integer.MAX_VALUE)
     var action: String? = null,
