@@ -930,6 +930,25 @@ class AppControllerTest() {
     }
 
     @Test
+    fun `does not fire matching rules when dry triggering - for the given user ID in the app`() {
+        // Arrange
+        val user = createAppUser(authSetup.app)
+        val rule = setupWorkshopCompletedRule(authSetup.app, 1, "trust me", 100).rule
+
+        // Act & Assert
+        mockMvc.performWithAppAuth(
+            post("/api/apps/trigger/dry")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(getMatchingSendTriggerPayloadForWorkshopCompletedRule(rule, user, 1, "trust me")),
+        )
+            .andExpect(status().isOk)
+
+        // Assert DB
+        val userAfter = appUserRepository.findById(user.id!!).get()
+        assertEquals(0, userAfter.points)
+    }
+
+    @Test
     fun `fires matching rules - empty rule conditions and empty trigger params`() {
         // Arrange
         val workShopCompletedTrigger = createWorkshopCompletedTrigger(authSetup.app)

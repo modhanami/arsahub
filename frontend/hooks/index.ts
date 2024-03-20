@@ -10,6 +10,7 @@ import {
   deleteAppUser,
   deleteRule,
   deleteTrigger,
+  dryTrigger,
   fetchAchievements,
   fetchAppByAPIKey,
   fetchAppUser,
@@ -222,6 +223,18 @@ export function useSendTrigger() {
   return useMutation({
     mutationFn: (request: TriggerSendRequest) =>
       sendTrigger(currentApp, request),
+  });
+}
+
+export function useDryTrigger() {
+  const { currentApp } = useCurrentApp();
+  if (!currentApp) {
+    throw new Error("No current app");
+  }
+
+  return useMutation({
+    mutationFn: (request: TriggerSendRequest) =>
+      dryTrigger(currentApp, request),
   });
 }
 

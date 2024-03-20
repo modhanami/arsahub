@@ -67,13 +67,15 @@ class RuleEngine(
         rawRequestJson: Map<String, Any>,
         afterAction: (ActionResult) -> Unit,
     ) {
+        logger.info { "Triggering" }
         val trigger = triggerService.getTriggerOrThrow(request.key!!, app)
 
         logTrigger(trigger, app, appUser, rawRequestJson)
 
         triggerService.validateParamsAgainstTriggerFields(request.params, trigger.fields)
 
-        val matchingRules = ruleService.getMatchingRules(app, trigger)
+        val referencingRules = ruleService.getRulesByReferencedTrigger(app, trigger)
+        val matchingRules = getMatchingRules(referencingRules, appUser, request.params)
         val actionResults = processMatchingRules(matchingRules, app, appUser, request.params, afterAction)
 
         handleForwardChain(app, appUser, actionResults, afterAction)
@@ -82,6 +84,41 @@ class RuleEngine(
          TODO: Currently, the trigger log is committed as a whole with other operations.
                Could possibly let Kafka handle this in the future and separate ingestion from processing.
          */
+    }
+
+    fun dryTrigger(
+        app: App,
+        appUser: AppUser,
+        request: TriggerSendRequest,
+    ): List<Rule> {
+        logger.info { "Dry triggering" }
+        val trigger = triggerService.getTriggerOrThrow(request.key!!, app)
+
+        triggerService.validateParamsAgainstTriggerFields(request.params, trigger.fields)
+
+        val referencingRules = ruleService.getRulesByReferencedTrigger(app, trigger)
+        val matchingRules = getMatchingRules(referencingRules, appUser, request.params)
+
+        return matchingRules
+
+        // TODO: dry trigger should get complete flow, including forward chain?
+    }
+
+    private fun getMatchingRules(
+        rules: List<Rule>,
+        appUser: AppUser,
+        params: Map<String, Any>?,
+    ): List<Rule> {
+        return rules.filter { rule ->
+            logger.debug { "Checking rule ${rule.title} (${rule.id})" }
+
+            return@filter (
+                // check repeatability
+                validateRepeatability(rule, appUser) &&
+                    // check the condition expression, if any
+                    validateConditionExpression(rule, params, appUser)
+            )
+        }
     }
 
     private fun processMatchingRules(
@@ -130,7 +167,7 @@ class RuleEngine(
         }
 
         val pointsReachedTrigger = triggerService.getBuiltInTriggerOrThrow("points_reached")
-        val matchingRules = ruleService.getMatchingRules(app, pointsReachedTrigger)
+        val matchingRules = ruleService.getRulesByReferencedTrigger(app, pointsReachedTrigger)
 
         logger.debug { "Found ${matchingRules.size} matching rules for points_reached trigger" }
         processMatchingRules(matchingRules, app, appUser, emptyMap(), afterAction)
@@ -242,7 +279,7 @@ class RuleEngine(
         logger.debug { "Program variables: $programVariables" }
         logger.debug { "Var decls: $varDecls" }
 
-        val program = getProgram(conditionExpression, varDecls)
+        val program = getProgram(conditionExpression!!, varDecls)
 
         val executionResult =
             program.eval(

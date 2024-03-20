@@ -37,7 +37,7 @@ class RuleService(
         return ruleRepository.findAllByApp(app)
     }
 
-    fun getMatchingRules(
+    fun getRulesByReferencedTrigger(
         app: App,
         trigger: Trigger,
     ): List<Rule> {

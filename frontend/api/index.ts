@@ -256,6 +256,22 @@ export async function sendTrigger(
   });
 }
 
+export async function dryTrigger(
+  currentApp: AppResponse,
+  trigger: TriggerSendRequest,
+) {
+  const { data } = await instance.post<RuleResponse[]>(
+    `${API_URL}/apps/trigger/dry`,
+    trigger,
+    {
+      headers: {
+        ...makeAppAuthHeader(currentApp),
+      },
+    },
+  );
+  return data;
+}
+
 export async function fetchRules(app: AppResponse) {
   const { data } = await instance.get<RuleResponse[]>(`${API_URL}/apps/rules`, {
     headers: {

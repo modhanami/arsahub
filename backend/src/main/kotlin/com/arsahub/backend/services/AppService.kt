@@ -14,6 +14,7 @@ import com.arsahub.backend.exceptions.NotFoundException
 import com.arsahub.backend.models.App
 import com.arsahub.backend.models.AppInvitation
 import com.arsahub.backend.models.AppUser
+import com.arsahub.backend.models.Rule
 import com.arsahub.backend.repositories.AppInvitationRepository
 import com.arsahub.backend.repositories.AppInvitationStatusRepository
 import com.arsahub.backend.repositories.AppRepository
@@ -105,6 +106,15 @@ class AppService(
         ruleEngine.trigger(app, appUser, request, rawRequestJson) { actionResult ->
             broadcastActionResult(actionResult, app, request.userId)
         }
+    }
+
+    fun dryTrigger(
+        app: App,
+        @Valid request: TriggerSendRequest,
+        rawRequestJson: Map<String, Any>,
+    ): List<Rule> {
+        val appUser = getAppUserOrThrow(app, request.userId!!)
+        return ruleEngine.dryTrigger(app, appUser, request)
     }
 
     private fun broadcastActionResult(
