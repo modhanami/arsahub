@@ -288,25 +288,9 @@ class RuleEngine(
         return executionResult ?: false
     }
 
-    fun getProgram(
-        expression: String,
-        varDecls: List<CelVarDecl>,
-    ): CelRuntime.Program {
-        val validationResult = getProgramValidationResult(expression, varDecls)
-        if (validationResult.hasError()) {
-            logger.error { "Invalid expression: $expression, errors: ${validationResult.issueString}" }
-            throw IllegalArgumentException("Invalid expression: $expression")
-        }
-        val ast = validationResult.ast
-        logger.trace { "Program AST: $ast" }
-
-        // Plan an executable program instance.
-        val program = CEL_RUNTIME.createProgram(ast)
-        return program
-    }
-
     companion object {
         private val celOptions: CelOptions = CelOptions.current().build()
+        private val logger = KotlinLogging.logger {}
 
         private const val OPERATOR_CONTAINS = "contains"
 
@@ -482,12 +466,29 @@ class RuleEngine(
                 .addFunctionBindings(celFunctionBindings)
                 .build()
 
+        fun getProgram(
+            expression: String,
+            varDecls: List<CelVarDecl>? = emptyList(),
+        ): CelRuntime.Program {
+            val validationResult = getProgramValidationResult(expression, varDecls)
+            if (validationResult.hasError()) {
+                logger.error { "Invalid expression: $expression, errors: ${validationResult.issueString}" }
+                throw IllegalArgumentException("Invalid expression: $expression")
+            }
+            val ast = validationResult.ast
+            logger.trace { "Program AST: $ast" }
+
+            // Plan an executable program instance.
+            val program = CEL_RUNTIME.createProgram(ast)
+            return program
+        }
+
         fun getProgramValidationResult(
             expression: String,
-            varDecls: List<CelVarDecl>,
+            varDecls: List<CelVarDecl>?,
         ): CelValidationResult {
             // Compile the expression into an Abstract Syntax Tree.
-            val compiler = getCompiler(varDecls)
+            val compiler = getCompiler(varDecls ?: emptyList())
             return compiler.compile(expression)
         }
 
