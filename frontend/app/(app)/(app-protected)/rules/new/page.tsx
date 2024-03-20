@@ -167,24 +167,11 @@ export default function Page() {
     if (isPointsReachedTrigger) {
       console.log("Force once_per_user");
       form.setValue("repeatability", "once_per_user");
-      // set to having one condition of 'points' is 'is' 'value'
       // TODO: fix blurring of input when setting query
-      // setQuery({
-      //   combinator: "and",
-      //   rules: [
-      //     {
-      //       field: fields[0].name,
-      //       operator: "is",
-      //       value: 1,
-      //     },
-      //   ],
-      // });
     } else {
       setQuery({ combinator: "and", rules: [] });
     }
-  }, [selectedTrigger]);
-
-  const onlyValueMode = isPointsReachedTrigger;
+  }, [form, isPointsReachedTrigger, selectedTrigger]);
 
   const operatorFactory = isPointsReachedTrigger
     ? () => defaultOperators.filter((op) => ["="].includes(op.name))
@@ -226,7 +213,6 @@ export default function Page() {
     <Card>
       <CardHeader>
         <CardTitle>Create Rule</CardTitle>
-        {/*<CardDescription>Create Rule</CardDescription>*/}
       </CardHeader>
       <CardContent>
         {/*  Config Trigger */}
@@ -522,27 +508,6 @@ export default function Page() {
     </Card>
   );
 }
-
-// const fields: Field[] = [
-//   { name: "firstName", label: "First Name" },
-//   { name: "lastName", label: "Last Name" },
-// ];
-//
-// const initialQuery: RuleGroupType = {
-//   combinator: "and",
-//   rules: [
-//     {
-//       field: "firstName",
-//       operator: "beginsWith",
-//       value: "Stev",
-//     },
-//     {
-//       field: "lastName",
-//       operator: "in",
-//       value: "Vai,Vaughan",
-//     },
-//   ],
-// };
 
 function getOperators(
   fieldName: string,
