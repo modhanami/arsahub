@@ -44,13 +44,15 @@ import {
   FullOperator,
   QueryBuilder,
   RuleGroupType,
-  RuleType,
+  RuleGroupTypeAny,
 } from "react-querybuilder";
 import "react-querybuilder/dist/query-builder.css";
 import { QueryBuilderDnD } from "@react-querybuilder/dnd";
 import * as ReactDnD from "react-dnd";
 import * as ReactDndHtml5Backend from "react-dnd-html5-backend";
 import { customRuleProcessorCEL } from "@/app/(app)/(app-protected)/rules/new/querybuilder/customRuleProcessorCEL";
+import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 
 const actions = [
   {
@@ -231,213 +233,277 @@ export default function Page() {
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
-            className="w-2/3 space-y-6"
+            className="w-2/3 space-y-8"
           >
-            {/*Title*/}
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Title</FormLabel>
-                  <FormControl>
-                    <InputWithCounter
-                      placeholder="Title"
-                      maxLength={ValidationLengths.TITLE_MAX_LENGTH}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/*Description*/}
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <TextareaWithCounter
-                      placeholder="Description"
-                      maxLength={ValidationLengths.DESCRIPTION_MAX_LENGTH}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <h3 className="text-lg font-semibold">When</h3>
-            <FormField
-              control={form.control}
-              name="trigger.key"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Trigger</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a trigger" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {triggers?.map((trigger) => (
-                        <SelectItem
-                          key={trigger.id}
-                          value={trigger.key!!}
-                          className="flex items-center justify-between w-full"
-                        >
-                          {trigger.title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormDescription>
-                    You can manage triggers in{" "}
-                    <NextUILink
-                      size="sm"
-                      color={"primary"}
-                      href={resolveBasePath("/triggers")}
-                    >
-                      Triggers
-                    </NextUILink>
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/*  Config Condition */}
-            <h3 className="text-lg font-semibold">If</h3>
-            <QueryBuilderDnD dnd={{ ...ReactDnD, ...ReactDndHtml5Backend }}>
-              <QueryBuilder
-                disabled={
-                  !selectedTrigger || selectedTrigger.fields?.length === 0
-                }
-                fields={fields}
-                query={query}
-                getOperators={operatorFactory}
-                onQueryChange={setQuery}
-                resetOnFieldChange={false}
-                controlElements={
-                  rulesModificationDisabled
-                    ? {
-                        addRuleAction: () => null,
-                        addGroupAction: () => null,
-                        combinatorSelector: () => null,
-                        removeRuleAction: () => null,
-                        removeGroupAction: () => null,
-                      }
-                    : isPointsReachedTrigger
-                      ? {
-                          addGroupAction: () => null,
-                          combinatorSelector: () => null,
-                          removeRuleAction: () => null,
-                          removeGroupAction: () => null,
-                        }
-                      : undefined
-                }
-                controlClassnames={
-                  rulesModificationDisabled
-                    ? undefined
-                    : { queryBuilder: "queryBuilder-branches" }
-                }
-              />
-            </QueryBuilderDnD>
-            {query.rules.length !== 0 && (
-              <>
-                <h4>Condition Expression</h4>
-                <pre>
-                  <code>{getFormattedCELExpression(query, fields)}</code>
-                </pre>
-              </>
-            )}
-            {/*  Config Action */}
-            <h3 className="text-lg font-semibold">Then</h3>
-            <FormField
-              control={form.control}
-              name="action.key"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Action</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger>
-                      <SelectValue
-                        className="flex items-center justify-between w-full"
-                        placeholder="Select an action"
-                      />
-                    </SelectTrigger>
-                    <SelectContent className="w-full">
-                      {actions.map((action) => (
-                        <SelectItem
-                          key={action.key}
-                          value={action.key}
-                          className="flex items-center justify-between w-full"
-                        >
-                          {action.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/*Action params*/}
-            {form.watch("action.key") == "add_points" && (
+            <div className="space-y-4">
+              {/*Title*/}
               <FormField
                 control={form.control}
-                name="action.params.points"
+                name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Points</FormLabel>
+                    <FormLabel>Title</FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="Points"
-                        type="number"
+                      <InputWithCounter
+                        placeholder="Title"
+                        maxLength={ValidationLengths.TITLE_MAX_LENGTH}
                         {...field}
-                        step={1}
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            )}
 
-            {form.watch("action.key") == "unlock_achievement" && (
+              {/*Description*/}
               <FormField
                 control={form.control}
-                name="action.params.achievementId"
+                name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Achievement</FormLabel>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <TextareaWithCounter
+                        placeholder="Description"
+                        maxLength={ValidationLengths.DESCRIPTION_MAX_LENGTH}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <Separator />
+
+            <div className="space-y-4">
+              <div className="space-y-4 my-">
+                <SectionTitle number={1} title="When" />
+                <FormField
+                  control={form.control}
+                  name="trigger.key"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Trigger</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a trigger" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {triggers?.map((trigger) => (
+                            <SelectItem
+                              key={trigger.id}
+                              value={trigger.key!!}
+                              className="flex items-center justify-between w-full"
+                            >
+                              {trigger.title}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        You can manage triggers in{" "}
+                        <NextUILink
+                          size="sm"
+                          color={"primary"}
+                          href={resolveBasePath("/triggers")}
+                        >
+                          Triggers
+                        </NextUILink>
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+            <Separator />
+
+            <div
+              className={cn("space-y-4", {
+                "opacity-50 cursor-not-allowed":
+                  !selectedTrigger || selectedTrigger.fields?.length === 0,
+              })}
+            >
+              {/*  Config Condition */}
+              <SectionTitle number={2} title="If" isOptional />
+
+              <h3 className="text-lg font-semibold">If</h3>
+              <QueryBuilderDnD dnd={{ ...ReactDnD, ...ReactDndHtml5Backend }}>
+                <QueryBuilder
+                  disabled={
+                    !selectedTrigger || selectedTrigger.fields?.length === 0
+                  }
+                  fields={fields}
+                  query={query}
+                  getOperators={operatorFactory}
+                  onQueryChange={setQuery}
+                  resetOnFieldChange={false}
+                  controlElements={
+                    rulesModificationDisabled
+                      ? {
+                          addRuleAction: () => null,
+                          addGroupAction: () => null,
+                          combinatorSelector: () => null,
+                          removeRuleAction: () => null,
+                          removeGroupAction: () => null,
+                        }
+                      : isPointsReachedTrigger
+                        ? {
+                            addGroupAction: () => null,
+                            combinatorSelector: () => null,
+                            removeRuleAction: () => null,
+                            removeGroupAction: () => null,
+                          }
+                        : undefined
+                  }
+                  controlClassnames={
+                    rulesModificationDisabled
+                      ? undefined
+                      : { queryBuilder: "queryBuilder-branches" }
+                  }
+                />
+              </QueryBuilderDnD>
+              {query.rules.length !== 0 && (
+                <>
+                  <h4>Condition Expression</h4>
+                  <pre>
+                    <code>{getFormattedCELExpression(query, fields)}</code>
+                  </pre>
+                </>
+              )}
+            </div>
+            <Separator />
+
+            <div className="space-y-4">
+              {/*  Config Action */}
+              <SectionTitle number={3} title="Then" />
+
+              <FormField
+                control={form.control}
+                name="action.key"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Action</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <SelectTrigger>
+                        <SelectValue
+                          className="flex items-center justify-between w-full"
+                          placeholder="Select an action"
+                        />
+                      </SelectTrigger>
+                      <SelectContent className="w-full">
+                        {actions.map((action) => (
+                          <SelectItem
+                            key={action.key}
+                            value={action.key}
+                            className="flex items-center justify-between w-full"
+                          >
+                            {action.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/*Action params*/}
+              {form.watch("action.key") == "add_points" && (
+                <FormField
+                  control={form.control}
+                  name="action.params.points"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Points</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Points"
+                          type="number"
+                          {...field}
+                          step={1}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
+              {form.watch("action.key") == "unlock_achievement" && (
+                <FormField
+                  control={form.control}
+                  name="action.params.achievementId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Achievement</FormLabel>
+                      <FormControl>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value?.toString()}
+                        >
+                          <SelectTrigger>
+                            <SelectValue
+                              className="flex items-center justify-between w-full"
+                              placeholder="Select an achievement"
+                            />
+                          </SelectTrigger>
+                          <SelectContent className="w-full">
+                            {achievements?.map((achievement) => (
+                              <SelectItem
+                                key={achievement.achievementId}
+                                value={achievement.achievementId?.toString()}
+                                className="flex items-center justify-between w-full"
+                              >
+                                {achievement.title}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+            </div>
+            <Separator />
+
+            <div className="space-y-4">
+              <SectionTitle title="More settings" />
+              {/*Repeatability*/}
+              <FormField
+                control={form.control}
+                name="repeatability"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Repeatability</FormLabel>
                     <FormControl>
                       <Select
                         onValueChange={field.onChange}
-                        value={field.value?.toString()}
+                        value={field.value}
+                        disabled={isRepeatabilityDisabled}
                       >
                         <SelectTrigger>
                           <SelectValue
                             className="flex items-center justify-between w-full"
-                            placeholder="Select an achievement"
+                            placeholder="Select a repeatability"
                           />
                         </SelectTrigger>
                         <SelectContent className="w-full">
-                          {achievements?.map((achievement) => (
+                          {repeatability.map((repeatability) => (
                             <SelectItem
-                              key={achievement.achievementId}
-                              value={achievement.achievementId?.toString()}
+                              key={repeatability.value}
+                              value={repeatability.value}
                               className="flex items-center justify-between w-full"
                             >
-                              {achievement.title}
+                              {repeatability.label}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -447,44 +513,7 @@ export default function Page() {
                   </FormItem>
                 )}
               />
-            )}
-
-            {/*Repeatability*/}
-            <FormField
-              control={form.control}
-              name="repeatability"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Repeatability</FormLabel>
-                  <FormControl>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                      disabled={isRepeatabilityDisabled}
-                    >
-                      <SelectTrigger>
-                        <SelectValue
-                          className="flex items-center justify-between w-full"
-                          placeholder="Select a repeatability"
-                        />
-                      </SelectTrigger>
-                      <SelectContent className="w-full">
-                        {repeatability.map((repeatability) => (
-                          <SelectItem
-                            key={repeatability.value}
-                            value={repeatability.value}
-                            className="flex items-center justify-between w-full"
-                          >
-                            {repeatability.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            </div>
 
             <Button type="submit">Submit</Button>
           </form>
@@ -537,14 +566,31 @@ function getOperators(
   return [];
 }
 
-function getFormattedCELExpression(
-  query: RuleGroupType<RuleType, string>,
-  fields: Field[],
-) {
+function getFormattedCELExpression(query: RuleGroupTypeAny, fields: Field[]) {
   return formatQuery(query, {
     format: "cel",
     fields,
     parseNumbers: true,
     ruleProcessor: customRuleProcessorCEL,
   });
+}
+
+interface SectionTitleProps {
+  title: string;
+  number?: number;
+  isOptional?: boolean;
+}
+
+function SectionTitle({ number, title, isOptional }: SectionTitleProps) {
+  return (
+    <div className="flex items-center space-x-2">
+      {number && (
+        <span className="h-8 w-8 bg-secondary rounded-full inline-flex items-center justify-center text-sm font-semibold">
+          {number}
+        </span>
+      )}
+      <h3 className="text-lg font-semibold">{title}</h3>
+      {isOptional && <span className="text-muted-foreground">(Optional)</span>}
+    </div>
+  );
 }
