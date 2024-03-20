@@ -350,11 +350,14 @@ export default function Page() {
                 }
               />
             </QueryBuilderDnD>
-            <h4>Query</h4>
-            <pre>
-              <code>{getFormattedCELExpression(query, fields)}</code>
-            </pre>
-
+            {query.rules.length !== 0 && (
+              <>
+                <h4>Condition Expression</h4>
+                <pre>
+                  <code>{getFormattedCELExpression(query, fields)}</code>
+                </pre>
+              </>
+            )}
             {/*  Config Action */}
             <h3 className="text-lg font-semibold">Then</h3>
             <FormField
