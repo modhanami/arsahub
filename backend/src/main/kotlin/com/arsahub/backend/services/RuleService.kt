@@ -198,9 +198,9 @@ class RuleService(
         val rule = ruleRepository.findByIdOrNull(ruleId) ?: throw RuleNotFoundException()
         assertCanDeleteRule(app, rule)
 
-        assertRuleNotInUse(app, rule)
+        rule.markAsDeleted()
 
-        ruleRepository.delete(rule)
+        ruleRepository.save(rule)
     }
 
     private fun assertCanDeleteRule(
@@ -209,16 +209,6 @@ class RuleService(
     ) {
         if (rule.app!!.id != currentApp.id) {
             throw RuleNotFoundException()
-        }
-    }
-
-    private fun assertRuleNotInUse(
-        currentApp: App,
-        rule: Rule,
-    ) {
-        val ruleProgresses = ruleProgressRepository.findByRuleAndApp(rule, currentApp)
-        if (ruleProgresses.isNotEmpty() && ruleProgresses.any { (it.activationCount ?: 0) > 0 }) {
-            throw RuleInUseException()
         }
     }
 

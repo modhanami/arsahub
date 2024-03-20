@@ -12,10 +12,13 @@ import jakarta.persistence.Table
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
 import org.hibernate.annotations.JdbcTypeCode
+import org.hibernate.annotations.Where
 import org.hibernate.type.SqlTypes
+import java.time.Instant
 
 @Entity
 @Table(name = "rule")
+@Where(clause = "deleted_at IS NULL")
 class Rule(
     @Size(max = 255)
     @NotNull
@@ -50,9 +53,15 @@ class Rule(
     var repeatability: String? = null,
     @Column(name = "condition_expression", length = Integer.MAX_VALUE)
     var conditionExpression: String? = null,
+    @Column(name = "deleted_at")
+    var deletedAt: Instant? = null,
 ) : AuditedEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "rule_id", nullable = false)
     var id: Long? = null
+
+    fun markAsDeleted() {
+        deletedAt = Instant.now()
+    }
 }

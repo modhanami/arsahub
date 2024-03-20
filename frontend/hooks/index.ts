@@ -6,10 +6,12 @@ import {
   createReward,
   createRule,
   createTrigger,
+  createWebhook,
   deleteAchievement,
   deleteAppUser,
   deleteRule,
   deleteTrigger,
+  deleteWebhook,
   dryTrigger,
   fetchAchievements,
   fetchAppByAPIKey,
@@ -23,12 +25,14 @@ import {
   fetchTrigger,
   fetchTriggers,
   FetchTriggersOptions,
+  fetchWebhooks,
   getRule,
   sendTrigger,
   setAchievementImage,
   setRewardImage,
   updateRule,
   updateTrigger,
+  updateWebhook,
 } from "@/api";
 import {
   AchievementCreateRequest,
@@ -41,13 +45,14 @@ import {
   TriggerCreateRequest,
   TriggerSendRequest,
   TriggerUpdateRequest,
+  UserIdentity,
+  WebhookCreateRequest,
 } from "@/types/generated-types";
 import {
   AchievementSetImageRequestClient,
   RewardSetImageRequestClient,
   UserResponseWithAccessToken,
 } from "@/types";
-import { useCurrentUser } from "@/lib/current-user";
 
 export function useAppUsers() {
   const { currentApp } = useCurrentApp();
@@ -317,12 +322,10 @@ export function useLeaderboard(appId: number, type: string) {
   });
 }
 
-export function useOwnedApp() {
-  const { currentUser } = useCurrentUser();
+export function useOwnedApp(user?: UserIdentity | null) {
   return useQuery({
-    queryKey: ["app"],
+    queryKey: ["app", user?.internalUserId],
     queryFn: fetchMyApp,
-    enabled: !!currentUser,
   });
 }
 
@@ -440,6 +443,69 @@ export function useSetRewardImage() {
           });
         },
       );
+    },
+  });
+}
+
+export function useWebhooks() {
+  const { currentApp } = useCurrentApp();
+
+  return useQuery({
+    queryKey: ["webhooks"],
+    queryFn: () => currentApp && fetchWebhooks(currentApp),
+    enabled: !!currentApp,
+  });
+}
+
+export function useCreateWebhook() {
+  const { currentApp } = useCurrentApp();
+  const queryClient = useQueryClient();
+  if (!currentApp) {
+    throw new Error("No current app");
+  }
+
+  return useMutation({
+    mutationFn: (newWebhook: WebhookCreateRequest) =>
+      createWebhook(currentApp, newWebhook),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["webhooks"] });
+    },
+  });
+}
+
+export function useUpdateWebhook() {
+  const { currentApp } = useCurrentApp();
+  const queryClient = useQueryClient();
+  if (!currentApp) {
+    throw new Error("No current app");
+  }
+
+  return useMutation({
+    mutationFn: ({
+      webhookId,
+      updateRequest,
+    }: {
+      webhookId: number;
+      updateRequest: WebhookCreateRequest;
+    }) => currentApp && updateWebhook(currentApp, webhookId, updateRequest),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["webhooks"] });
+    },
+  });
+}
+
+export function useDeleteWebhook() {
+  const { currentApp } = useCurrentApp();
+  const queryClient = useQueryClient();
+  if (!currentApp) {
+    throw new Error("No current app");
+  }
+
+  return useMutation({
+    mutationFn: (webhookId: number) =>
+      currentApp && deleteWebhook(currentApp, webhookId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["webhooks"] });
     },
   });
 }

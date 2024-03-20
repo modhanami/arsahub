@@ -50,6 +50,12 @@ repositories {
 
 val kotestVersion = "5.8.0"
 
+dependencyManagement {
+    imports {
+        mavenBom("org.springframework.cloud:spring-cloud-dependencies:2023.0.0")
+    }
+}
+
 dependencies {
     implementation(platform("software.amazon.awssdk:bom:2.23.7"))
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
@@ -99,6 +105,8 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-devtools")
     testImplementation("com.ninja-squad:springmockk:4.0.2")
     testImplementation("io.github.serpro69:kotlin-faker:1.15.0")
+    testImplementation("org.springframework.cloud:spring-cloud-contract-stub-runner")
+    testImplementation("org.springframework.cloud:spring-cloud-contract-wiremock")
     implementation("io.jsonwebtoken:jjwt-api:0.12.3")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.3")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.3")

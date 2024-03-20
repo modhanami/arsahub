@@ -30,6 +30,7 @@ import com.arsahub.backend.repositories.AppInvitationRepository
 import com.arsahub.backend.repositories.AppInvitationStatusRepository
 import com.arsahub.backend.repositories.AppRepository
 import com.arsahub.backend.repositories.AppUserAchievementRepository
+import com.arsahub.backend.repositories.AppUserPointsHistoryRepository
 import com.arsahub.backend.repositories.AppUserRepository
 import com.arsahub.backend.repositories.RewardRepository
 import com.arsahub.backend.repositories.RuleRepository
@@ -44,6 +45,13 @@ import com.arsahub.backend.services.TriggerService
 import com.corundumstudio.socketio.SocketIOServer
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
+import com.github.tomakehurst.wiremock.WireMockServer
+import com.github.tomakehurst.wiremock.client.WireMock
+import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.equalToJson
+import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.stubFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import org.hamcrest.Matchers.containsInAnyOrder
 import org.hamcrest.Matchers.hasEntry
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -59,6 +67,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection
+import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock
 import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
@@ -69,6 +78,8 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.web.client.RestClient
+import org.springframework.web.client.body
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.ext.ScriptUtils
 import org.testcontainers.jdbc.JdbcDatabaseDelegate
@@ -81,9 +92,16 @@ import java.util.*
 )
 @Testcontainers
 @ActiveProfiles("dev", "test")
-@AutoConfigureMockMvc
 @Transactional
+@AutoConfigureMockMvc
+@AutoConfigureWireMock(port = 0)
 class AppControllerTest() {
+    @Autowired
+    private lateinit var wireMockServer: WireMockServer
+
+    @Autowired
+    private lateinit var appUserPointsHistoryRepository: AppUserPointsHistoryRepository
+
     @Autowired
     private lateinit var appUserAchievementRepository: AppUserAchievementRepository
 
@@ -218,6 +236,103 @@ class AppControllerTest() {
             .andExpect(jsonPath("$[1].userId").value("00000000-0000-0000-0000-000000000002"))
             .andExpect(jsonPath("$[1].displayName").value("User2"))
             .andExpect(jsonPath("$[1].points").value(2000))
+    }
+
+    @Test
+    fun `creates app users - success`() {
+        // Arrange
+        val jsonBody =
+            """
+            [
+                {
+                    "uniqueId": "00000000-0000-0000-0000-000000000001",
+                    "displayName": "User1"
+                },
+                {
+                    "uniqueId": "00000000-0000-0000-0000-000000000002",
+                    "displayName": "User2"
+                }
+            ]
+            """.trimIndent()
+        val otherApp = setupAuth(userRepository, appRepository).app
+        val use1InOtherApp =
+            AppUser(
+                userId = UUID.fromString("00000000-0000-0000-0000-000000000001").toString(),
+                displayName = "User1",
+                app = otherApp,
+                points = 1000,
+            )
+        appUserRepository.save(use1InOtherApp)
+
+        // Act & Assert
+        mockMvc.performWithAppAuth(
+            post("/api/apps/users/bulk")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonBody),
+        )
+            .andExpect(status().isCreated)
+            .andExpect(jsonPath("$.length()").value(2))
+            .andExpect(jsonPath("$[0].userId").value("00000000-0000-0000-0000-000000000001"))
+            .andExpect(jsonPath("$[0].displayName").value("User1"))
+            .andExpect(jsonPath("$[0].points").value(0))
+            .andExpect(jsonPath("$[1].userId").value("00000000-0000-0000-0000-000000000002"))
+            .andExpect(jsonPath("$[1].displayName").value("User2"))
+            .andExpect(jsonPath("$[1].points").value(0))
+
+        // Assert DB
+        val appUsers = appUserRepository.findAllByApp(authSetup.app)
+        assertEquals(2, appUsers.size)
+        val appUser1 = appUsers.find { it.userId == "00000000-0000-0000-0000-000000000001" }
+        assertNotNull(appUser1)
+        assertEquals("User1", appUser1!!.displayName)
+        assertEquals(0, appUser1.points)
+        val appUser2 = appUsers.find { it.userId == "00000000-0000-0000-0000-000000000002" }
+        assertNotNull(appUser2)
+        assertEquals("User2", appUser2!!.displayName)
+        assertEquals(0, appUser2.points)
+    }
+
+    @Test
+    fun `creates app users - failed - some users already exist`() {
+        // Arrange
+        val appUser1 =
+            AppUser(
+                userId = UUID.fromString("00000000-0000-0000-0000-000000000001").toString(),
+                displayName = "User1",
+                app = authSetup.app,
+                points = 1000,
+            )
+        appUserRepository.save(appUser1)
+
+        val jsonBody =
+            """
+            [
+                {
+                    "uniqueId": "00000000-0000-0000-0000-000000000001",
+                    "displayName": "User1"
+                },
+                {
+                    "uniqueId": "00000000-0000-0000-0000-000000000002",
+                    "displayName": "User2"
+                }
+            ]
+            """.trimIndent()
+
+        // Act & Assert
+        mockMvc.performWithAppAuth(
+            post("/api/apps/users/bulk")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonBody),
+        )
+            .andExpect(status().isConflict)
+            .andExpect(jsonPath("$.message").value("Some users already exist"))
+
+        // Assert DB
+        val appUsers = appUserRepository.findAllByApp(authSetup.app)
+        assertEquals(1, appUsers.size)
+        val appUser = appUsers[0]
+        assertEquals("User1", appUser.displayName)
+        assertEquals(1000, appUser.points)
     }
 
     @Test
@@ -892,11 +1007,33 @@ class AppControllerTest() {
     }
 
     // Matching rules
+    // TODO: split into multiple tests
     @Test
     fun `fires matching rules - for the given user ID in the app`() {
         // Arrange
         val user = createAppUser(authSetup.app)
         val rule = setupWorkshopCompletedRule(authSetup.app, 1, "trust me", 100).rule
+
+        // Arrange webhook
+        stubFor(
+            WireMock.post(urlEqualTo("/webhook")).willReturn(
+                aResponse()
+                    .withHeader("Content-Type", "text/plain")
+                    .withBody("Well received"),
+            ),
+        )
+        mockMvc.performWithAppAuth(
+            post("/api/apps/webhooks")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "url": "http://localhost:${wireMockServer.port()}/webhook"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isCreated)
 
         // Act & Assert
         mockMvc.performWithAppAuth(
@@ -909,6 +1046,37 @@ class AppControllerTest() {
         // Assert DB
         val userAfter = appUserRepository.findById(user.id!!).get()
         assertEquals(100, userAfter.points)
+
+        // Assert points history
+        val pointsHistories = appUserPointsHistoryRepository.findAllByAppAndAppUser(authSetup.app, userAfter)
+        assertEquals(1, pointsHistories.size)
+        val pointsHistory = pointsHistories[0]
+        assertEquals(100, pointsHistory.points)
+        assertEquals(100, pointsHistory.pointsChange)
+        assertEquals(user.userId, pointsHistory.appUser!!.userId)
+        assertEquals(authSetup.app.id, pointsHistory.app!!.id)
+        assertEquals(rule.rule.id, pointsHistory.fromRule!!.id)
+
+        // Assert webhook
+        wireMockServer.verify(
+            postRequestedFor(urlEqualTo("/webhook"))
+                .withRequestBody(
+                    equalToJson(
+                        // id is an escaped wiremock placeholder
+                        """
+                        {
+                            "id": "${"\${"}json-unit.any-string${"}"}",
+                            "event": "points_updated",
+                            "appUserId": "${userAfter.userId}",
+                            "payload": {
+                                "points": 100,
+                                "pointsChange": 100
+                            }
+                        }
+                        """.trimIndent(),
+                    ),
+                ),
+        )
     }
 
     private fun getMatchingSendTriggerPayloadForWorkshopCompletedRule(
@@ -2406,6 +2574,26 @@ class AppControllerTest() {
         // Assert DB - user has 230 (+ 60) points without points_reached trigger being fired again
         val userAfterEmptyTriggerFiredAgainAgain = appUserRepository.findById(user.id!!)
         assertEquals(230, userAfterEmptyTriggerFiredAgainAgain.get().points)
+
+        // Assert points history
+        val pointsHistories =
+            appUserPointsHistoryRepository.findAllByAppAndAppUser(authSetup.app, user)
+                .sortedBy { it.createdAt }
+        assertEquals(4, pointsHistories.size)
+        // first trigger
+        assertEquals(60, pointsHistories[0].points)
+        assertEquals(60, pointsHistories[0].pointsChange)
+
+        // second trigger
+        assertEquals(120, pointsHistories[1].points)
+        assertEquals(60, pointsHistories[1].pointsChange)
+        // points_reached trigger
+        assertEquals(170, pointsHistories[2].points)
+        assertEquals(50, pointsHistories[2].pointsChange)
+
+        // third trigger
+        assertEquals(230, pointsHistories[3].points)
+        assertEquals(60, pointsHistories[3].pointsChange)
     }
 
     @Test
@@ -2709,6 +2897,7 @@ class AppControllerTest() {
                 repeatability = UnlimitedRuleRepeatability
             }
 
+        val rules1 = ruleRepository.findAll()
         // Act & Assert HTTP
         mockMvc.performWithAppAuth(
             delete("/api/apps/rules/${rule.id}"),
@@ -2716,12 +2905,12 @@ class AppControllerTest() {
             .andExpect(status().isNoContent)
 
         // Assert DB
-        val rules = ruleRepository.findById(rule.id!!)
-        assertTrue(rules.isEmpty)
+        val ruleAfter = ruleRepository.findByIdAndApp(rule.id!!, authSetup.app)
+        assertNull(ruleAfter)
     }
 
     @Test
-    fun `delete rule - failed - activated once`() {
+    fun `delete rule - success - is in use`() {
         // Arrange
         val rule =
             createRule(authSetup.app) {
@@ -2754,12 +2943,11 @@ class AppControllerTest() {
         mockMvc.performWithAppAuth(
             delete("/api/apps/rules/${rule.id}"),
         )
-            .andExpect(status().isConflict)
-            .andExpect(jsonPath("$.message").value("Rule is in use"))
+            .andExpect(status().isNoContent)
 
         // Assert DB
-        val rules = ruleRepository.findById(rule.id!!)
-        assertTrue(rules.isPresent)
+        val ruleAfter = ruleRepository.findByIdAndApp(rule.id!!, authSetup.app)
+        assertNull(ruleAfter)
     }
 
     @Test
@@ -3153,6 +3341,24 @@ class AppControllerTest() {
         // Assert DB
         val rules = ruleRepository.findById(rule.id!!)
         assertTrue(rules.isPresent)
+    }
+
+    @Test
+    fun testWireMock() {
+        stubFor(
+            WireMock.get(urlEqualTo("/resource")).willReturn(
+                aResponse()
+                    .withHeader("Content-Type", "text/plain").withBody("Hello World!"),
+            ),
+        )
+
+        val restClient =
+            RestClient
+                .builder()
+                .baseUrl("http://localhost:" + wireMockServer.port())
+                .build()
+        val response = restClient.get().uri("/resource").retrieve().body<String>()
+        assertEquals("Hello World!", response)
     }
 
     private fun getPointsReachedTrigger() = triggerRepository.findByKey("points_reached")!!

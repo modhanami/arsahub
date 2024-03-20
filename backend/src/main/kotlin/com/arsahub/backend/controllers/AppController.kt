@@ -11,6 +11,7 @@ import com.arsahub.backend.dtos.request.RuleUpdateRequest
 import com.arsahub.backend.dtos.request.TriggerCreateRequest
 import com.arsahub.backend.dtos.request.TriggerSendRequest
 import com.arsahub.backend.dtos.request.TriggerUpdateRequest
+import com.arsahub.backend.dtos.request.WebhookCreateRequest
 import com.arsahub.backend.dtos.response.AchievementResponse
 import com.arsahub.backend.dtos.response.ApiValidationError
 import com.arsahub.backend.dtos.response.AppResponse
@@ -20,6 +21,7 @@ import com.arsahub.backend.dtos.response.RewardResponse
 import com.arsahub.backend.dtos.response.RuleResponse
 import com.arsahub.backend.dtos.response.TransactionResponse
 import com.arsahub.backend.dtos.response.TriggerResponse
+import com.arsahub.backend.dtos.response.WebhookResponse
 import com.arsahub.backend.dtos.supabase.UserIdentity
 import com.arsahub.backend.models.App
 import com.arsahub.backend.security.auth.CurrentApp
@@ -48,6 +50,7 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -240,6 +243,15 @@ class AppController(
         @CurrentApp app: App,
     ): AppUserResponse {
         return appService.addUser(app, request).let { AppUserResponse.fromEntity(it) }
+    }
+
+    @PostMapping("/users/bulk")
+    @ResponseStatus(HttpStatus.CREATED)
+    fun addUsersIntoApp(
+        @Valid @RequestBody request: List<AppUserCreateRequest>,
+        @CurrentApp app: App,
+    ): List<AppUserResponse> {
+        return appService.addUsers(app, request).map { AppUserResponse.fromEntity(it) }
     }
 
     @Operation(
@@ -524,5 +536,40 @@ class AppController(
         @SupabaseUserIdentityPrincipal identity: UserIdentity,
     ) {
         appService.declineInvitation(invitationId, identity)
+    }
+
+    @PostMapping("/webhooks")
+    @ResponseStatus(HttpStatus.CREATED)
+    fun createWebhook(
+        @CurrentApp app: App,
+        @Valid @RequestBody request: WebhookCreateRequest,
+    ): WebhookResponse {
+        return appService.createWebhook(app, request).let { WebhookResponse.fromEntity(it) }
+    }
+
+    @PutMapping("/webhooks/{webhookId}")
+    @ResponseStatus(HttpStatus.CREATED)
+    fun updateWebhook(
+        @CurrentApp app: App,
+        @PathVariable webhookId: Long,
+        @Valid @RequestBody request: WebhookCreateRequest,
+    ): WebhookResponse {
+        return appService.updateWebhook(app, webhookId, request).let { WebhookResponse.fromEntity(it) }
+    }
+
+    @GetMapping("/webhooks")
+    fun listWebhooks(
+        @CurrentApp app: App,
+    ): List<WebhookResponse> {
+        return appService.listWebhooks(app).map { WebhookResponse.fromEntity(it) }
+    }
+
+    @DeleteMapping("/webhooks/{webhookId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun deleteWebhook(
+        @CurrentApp app: App,
+        @PathVariable webhookId: Long,
+    ) {
+        appService.deleteWebhook(app, webhookId)
     }
 }

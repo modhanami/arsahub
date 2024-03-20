@@ -4,6 +4,8 @@ import { supabase } from "@/lib/supabase";
 import { Session } from "@supabase/supabase-js";
 import { syncSupabaseIdentity } from "@/api";
 import { UserIdentity } from "@/types/generated-types";
+import { useAppApiKey, useCurrentApp } from "@/lib/current-app";
+import { useOwnedApp } from "@/hooks";
 
 interface CurrentUserContextProps {
   currentUser: UserIdentity | null;
@@ -26,6 +28,9 @@ export function CurrentUserProvider({
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<UserIdentity | null>(null);
   const [session, setSession] = useState<Session | null>(null);
+  const { apiKey, updateApiKey } = useAppApiKey();
+  const { clearCurrentApp } = useCurrentApp();
+  const { data: ownedApp } = useOwnedApp(user);
 
   useEffect(() => {
     supabase.auth
@@ -69,6 +74,14 @@ export function CurrentUserProvider({
     sessionCheck();
   }, [session]);
 
+  // auto set the API key if it is not set and the user is logged in and has an app
+  useEffect(() => {
+    if (!apiKey && ownedApp) {
+      console.log("auto setting API key");
+      updateApiKey(ownedApp.apiKey);
+    }
+  }, [apiKey, ownedApp, updateApiKey]);
+
   async function startLoginFlow({ returnTo }: { returnTo: string }) {
     console.log("startLoginFlow", user, session, returnTo);
     if (user) {
@@ -89,6 +102,7 @@ export function CurrentUserProvider({
   async function startLogoutFlow() {
     console.log("startLogoutFlow", user, session);
     await supabase.auth.signOut();
+    clearCurrentApp();
   }
 
   return (
