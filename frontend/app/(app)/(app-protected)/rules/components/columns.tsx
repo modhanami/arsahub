@@ -70,22 +70,16 @@ export const columns: ColumnDef<RuleResponse>[] = [
     ),
     cell: ({ row }) => {
       const conditions = row.original.conditions || {};
-      const formattedConditions = Object.entries(conditions)
-        .map(([key, value]) => {
-          return `${key} = ${value}`;
-        })
-        .join(", ");
+      const formattedConditions = row.original.conditionExpression;
 
       return (
         <div className="flex flex-col space-y-2">
           <span className="max-w-[500px] truncate">
             {row.original.trigger?.title}
           </span>
-          {formattedConditions.length > 0 ? (
-            <span className="max-w-[500px] truncate font-medium text-muted-foreground">
-              {formattedConditions}
-            </span>
-          ) : null}
+          <span className="max-w-[500px] truncate font-medium text-muted-foreground">
+            {formattedConditions}
+          </span>
         </div>
       );
     },

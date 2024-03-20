@@ -1,7 +1,7 @@
 /* tslint:disable */
 /* eslint-disable */
 
-// Generated using typescript-generator version 3.2.1263 on 2024-03-15 21:27:59.
+// Generated using typescript-generator version 3.2.1263 on 2024-03-20 12:53:34.
 
 export interface AchievementCreateRequest {
   title: string;
@@ -69,7 +69,8 @@ export interface RuleCreateRequest {
   repeatability: string | null;
 }
 
-export interface RuleCreateRequestKt {}
+export interface RuleCreateRequestKt {
+}
 
 export interface RuleUpdateRequest {
   title: string | null;
@@ -175,6 +176,7 @@ export interface RuleResponse {
   id: number | null;
   repeatability: string | null;
   conditions: { [index: string]: any } | null;
+  conditionExpression: string | null;
 }
 
 export interface SignupResponse {
@@ -212,7 +214,8 @@ export interface AchievementUnlock extends AppUpdate {
   achievement: AchievementResponse;
 }
 
-export interface AppUpdate {}
+export interface AppUpdate {
+}
 
 export interface LeaderboardUpdate extends AppUpdate {
   leaderboard: LeaderboardResponse;
@@ -248,11 +251,7 @@ export interface MultipartFile extends InputStreamSource {
   originalFilename: string;
 }
 
-export interface App
-  extends AuditedEntity,
-    ManagedEntity,
-    PersistentAttributeInterceptable,
-    SelfDirtinessTracker {
+export interface App extends AuditedEntity, ManagedEntity, PersistentAttributeInterceptable, SelfDirtinessTracker {
   title: string | null;
   description: string | null;
   apiKey: string | null;
@@ -270,10 +269,10 @@ export interface Entry {
 export interface Resource extends InputStreamSource {
   open: boolean;
   file: any;
-  url: URL;
   readable: boolean;
-  description: string;
+  url: URL;
   filename: string;
+  description: string;
   uri: URI;
   contentAsByteArray: any;
 }
@@ -282,11 +281,7 @@ export interface InputStreamSource {
   inputStream: any;
 }
 
-export interface User
-  extends AuditedEntity,
-    ManagedEntity,
-    PersistentAttributeInterceptable,
-    SelfDirtinessTracker {
+export interface User extends AuditedEntity, ManagedEntity, PersistentAttributeInterceptable, SelfDirtinessTracker {
   externalUserId: string | null;
   email: string | null;
   googleUserId: string | null;
@@ -299,26 +294,35 @@ export interface AuditedEntity extends ManagedMappedSuperclass {
   updatedAt: Date | null;
 }
 
-export interface ManagedEntity extends Managed {}
+export interface ManagedEntity extends Managed {
+}
 
-export interface PersistentAttributeInterceptable
-  extends PrimeAmongSecondarySupertypes {}
+export interface PersistentAttributeInterceptable extends PrimeAmongSecondarySupertypes {
+}
 
-export interface SelfDirtinessTracker extends PrimeAmongSecondarySupertypes {}
+export interface SelfDirtinessTracker extends PrimeAmongSecondarySupertypes {
+}
 
-export interface URL extends Serializable {}
+export interface URL extends Serializable {
+}
 
-export interface URI extends Comparable<URI>, Serializable {}
+export interface URI extends Comparable<URI>, Serializable {
+}
 
-export interface ManagedMappedSuperclass extends Managed {}
+export interface ManagedMappedSuperclass extends Managed {
+}
 
-export interface Managed extends PrimeAmongSecondarySupertypes {}
+export interface Managed extends PrimeAmongSecondarySupertypes {
+}
 
-export interface PrimeAmongSecondarySupertypes {}
+export interface PrimeAmongSecondarySupertypes {
+}
 
-export interface Serializable {}
+export interface Serializable {
+}
 
-export interface Comparable<T> {}
+export interface Comparable<T> {
+}
 
 export const enum ValidationLengths {
   TITLE_MIN_LENGTH = 4,
