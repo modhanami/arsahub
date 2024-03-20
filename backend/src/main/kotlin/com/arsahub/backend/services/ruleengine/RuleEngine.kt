@@ -279,7 +279,7 @@ class RuleEngine(
         logger.debug { "Program variables: $programVariables" }
         logger.debug { "Var decls: $varDecls" }
 
-        val program = getProgram(conditionExpression!!, varDecls)
+        val program = getProgram(conditionExpression, varDecls)
 
         val executionResult =
             program.eval(

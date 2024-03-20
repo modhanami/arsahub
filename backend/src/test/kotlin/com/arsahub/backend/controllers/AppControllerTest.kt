@@ -1055,7 +1055,7 @@ class AppControllerTest() {
         assertEquals(100, pointsHistory.pointsChange)
         assertEquals(user.userId, pointsHistory.appUser!!.userId)
         assertEquals(authSetup.app.id, pointsHistory.app!!.id)
-        assertEquals(rule.rule.id, pointsHistory.fromRule!!.id)
+        assertEquals(rule.id, pointsHistory.fromRule!!.id)
 
         // Assert webhook
         wireMockServer.verify(

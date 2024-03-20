@@ -20,7 +20,6 @@ import com.arsahub.backend.models.AppUserPointsHistory
 import com.arsahub.backend.models.Rule
 import com.arsahub.backend.models.Webhook
 import com.arsahub.backend.models.WebhookRepository
-import com.arsahub.backend.models.Rule
 import com.arsahub.backend.repositories.AppInvitationRepository
 import com.arsahub.backend.repositories.AppInvitationStatusRepository
 import com.arsahub.backend.repositories.AppRepository
