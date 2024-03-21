@@ -21,11 +21,17 @@ import * as React from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import * as z from "zod";
 import { playgroundTriggerSchema } from "../lib/validations/playground";
-import { useAppUsers, useRules, useSendTrigger, useTriggers } from "@/hooks";
+import {
+  useAppUsers,
+  useDryTrigger,
+  useRules,
+  useSendTrigger,
+  useTriggers,
+} from "@/hooks";
 import { useCurrentApp } from "@/lib/current-app";
 import { toast } from "@/components/ui/use-toast";
 import { Input } from "@/components/ui/input";
-import { FieldDefinition } from "@/types/generated-types";
+import { FieldDefinition, RuleResponse } from "@/types/generated-types";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -33,6 +39,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { resolveBasePath } from "@/lib/base-path";
+import { useDebounceCallback } from "usehooks-ts";
 
 type FormData = z.infer<typeof playgroundTriggerSchema>;
 
@@ -47,7 +54,11 @@ export function PlaygroundTriggerForm() {
       params: [],
     },
   });
-  const selectedUserId = form.watch("userId") || null;
+
+  const watchTriggerKey = form.watch("trigger.key");
+  const watchUserId = form.watch("userId");
+
+  const selectedUserId = watchUserId || null;
   const [isCreating, setIsSending] = React.useState(false);
 
   const { currentApp } = useCurrentApp();
@@ -56,7 +67,7 @@ export function PlaygroundTriggerForm() {
   const { data: rules } = useRules();
   const sendTriggerMutation = useSendTrigger();
   const selectedTrigger = triggers?.find(
-    (trigger) => trigger.key === form.watch("trigger.key"),
+    (trigger) => trigger.key === watchTriggerKey,
   );
   const triggerFields = selectedTrigger?.fields || [];
   const { data: users } = useAppUsers();
@@ -65,6 +76,62 @@ export function PlaygroundTriggerForm() {
     control: form.control,
     name: "params",
   });
+
+  const [dryTriggerReferencingRules, setDryTriggerReferencingRules] =
+    React.useState<RuleResponse[]>([]);
+  const dryTrigger = useDryTrigger();
+
+  function refreshDryTriggerResult() {
+    console.log("refreshDryTriggerResult");
+    const parseResult = playgroundTriggerSchema.safeParse(form.getValues());
+
+    if (parseResult.success) {
+      const { data } = parseResult;
+      const dryTriggerRequest = {
+        key: data.trigger.key,
+        userId: data.userId,
+        params: data.params.reduce(
+          (acc, param) => {
+            if (typeof param.value === "string" && param.value.length !== 0) {
+              acc[param.key] = param.value;
+            } else if (typeof param.value !== "string") {
+              acc[param.key] = param.value;
+            }
+            return acc;
+          },
+          {} as Record<string, string | number>,
+        ),
+      };
+
+      if (
+        dryTriggerRequest.key.length != 0 &&
+        dryTriggerRequest.userId.length != 0
+      ) {
+        console.log("dry trigger request is valid");
+        dryTrigger.mutate(dryTriggerRequest, {
+          onSuccess: (data) => {
+            setDryTriggerReferencingRules(data);
+          },
+        });
+      }
+    } else {
+      console.log("dry trigger request not valid");
+      console.log(parseResult.error.errors);
+      setDryTriggerReferencingRules([]);
+    }
+  }
+
+  const debouncedRefreshDryTriggerResult = useDebounceCallback(
+    refreshDryTriggerResult,
+    500,
+    {
+      trailing: true,
+    },
+  );
+
+  React.useEffect(() => {
+    debouncedRefreshDryTriggerResult();
+  }, [watchTriggerKey, watchUserId]);
 
   if (!triggers || !rules || !users) {
     return <div>Loading...</div>;
@@ -139,38 +206,6 @@ export function PlaygroundTriggerForm() {
   function isParamUsed(key: string) {
     return triggerParams.fields.some((field) => field.key === key);
   }
-
-  // filter the rules based on the selected trigger
-  // TODO: this should be done on the server
-  const filteredRules = rules.filter((rule) => {
-    // if no trigger is selected, show all rules
-    if (!selectedTrigger) {
-      return true;
-    }
-
-    // if rule conditions are empty, the params must be empty too
-    if (!rule.conditions || Object.keys(rule.conditions).length === 0) {
-      return triggerParams.fields.length === 0;
-    }
-
-    // all params must match to the rule's conditions
-    return Object.entries(rule.conditions ?? {}).every(([key, value]) => {
-      const triggerParam = form
-        .watch("params")
-        .find((param) => param.key === key);
-      const triggerField = triggerFields.find((field) => field.key === key);
-
-      if (!triggerParam || !triggerField) {
-        return false;
-      }
-
-      if (triggerField.type === "text") {
-        return triggerParam.value.toString() === value;
-      } else if (triggerField.type === "integer") {
-        return Number(triggerParam.value) === value;
-      }
-    });
-  });
 
   return (
     <>
@@ -321,6 +356,11 @@ export function PlaygroundTriggerForm() {
                                         ? "text"
                                         : "number"
                                     }
+                                    onChange={(e) => {
+                                      field.onChange(e);
+                                      // TODO: debouncing does not work for input's onChange event
+                                      debouncedRefreshDryTriggerResult();
+                                    }}
                                   />
                                 </FormControl>
                                 <FormMessage />
@@ -352,8 +392,8 @@ export function PlaygroundTriggerForm() {
                       Will trigger these rules
                     </p>
                     <ul className="space-y-1 list-disc list-inside text-muted-foreground">
-                      {filteredRules?.length > 0 &&
-                        filteredRules.map((rule) => (
+                      {dryTriggerReferencingRules?.length > 0 &&
+                        dryTriggerReferencingRules.map((rule) => (
                           <li className="text-sm font-medium " key={rule.id}>
                             {rule.title}
                           </li>

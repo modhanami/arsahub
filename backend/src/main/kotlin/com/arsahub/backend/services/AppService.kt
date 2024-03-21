@@ -285,6 +285,15 @@ class AppService(
         logger.debug { "Webhook $webhook took $duration for app ${app.title} " }
     }
 
+    fun dryTrigger(
+        app: App,
+        @Valid request: TriggerSendRequest,
+        rawRequestJson: Map<String, Any>,
+    ): List<Rule> {
+        val appUser = getAppUserOrThrow(app, request.userId!!)
+        return ruleEngine.dryTrigger(app, appUser, request)
+    }
+
     private fun broadcastActionResult(
         actionResult: ActionResult,
         app: App,
