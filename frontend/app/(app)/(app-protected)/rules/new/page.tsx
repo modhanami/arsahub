@@ -186,7 +186,10 @@ export default function Page() {
       },
       title: data.title.trim(),
       description: data.description?.trim() || null,
-      conditionExpression: getFormattedCELExpression(query, fields),
+      conditionExpression:
+        query.rules.length === 0
+          ? null
+          : getFormattedCELExpression(query, fields),
     };
 
     createRule.mutate(payload);
