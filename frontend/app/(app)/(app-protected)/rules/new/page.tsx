@@ -154,7 +154,7 @@ export default function Page() {
     return (
       selectedTrigger?.fields?.map((field) => ({
         name: field.key!,
-        label: field.label || field.key!,
+        label: field.key!,
         dataType: field.type!,
         inputType: field.type === "integer" ? "number" : "text",
       })) || []
