@@ -404,9 +404,6 @@ class RuleEngine(
                         SimpleType.BOOL,
                     ),
                 ),
-                // [10,20,30].containsAll([20]) // true
-                // [10,20,30].containsAll([20, 10]) // true
-                // [10,20,30].containsAll([20, 40]) // false
                 CelFunctionDecl.newFunctionDeclaration(
                     "containsAll",
                     CelOverloadDecl.newMemberOverload(
@@ -415,6 +412,13 @@ class RuleEngine(
                         SimpleType.BOOL,
                         ListType.create(SimpleType.INT),
                         ListType.create(SimpleType.INT),
+                    ),
+                    CelOverloadDecl.newMemberOverload(
+                        "contains_all",
+                        "tests whether the list operand contains all the elements of the argument list",
+                        SimpleType.BOOL,
+                        ListType.create(SimpleType.STRING),
+                        ListType.create(SimpleType.STRING),
                     ),
                 ),
             )
@@ -469,9 +473,6 @@ class RuleEngine(
                     String::class.javaObjectType,
                     String::startsWith,
                 ),
-                //                [10,20,30].containsAll([20]) // true
-// [10,20,30].containsAll([20, 10]) // true
-// [10,20,30].containsAll([20, 40]) // false
                 CelRuntime.CelFunctionBinding.from(
                     "contains_all",
                     List::class.javaObjectType,
