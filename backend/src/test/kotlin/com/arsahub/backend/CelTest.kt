@@ -60,6 +60,13 @@ class CelTest {
                 Arguments.of("logical_and", "27 <= 27 && 'Test'.startsWith('Te')", true),
                 Arguments.of("logical_or", "26 > 27 || 'Test'.startsWith('Te')", true),
                 Arguments.of("logical_group", "(26 > 27 || 25 > 0) || 'Test'.startsWith('Te')", true),
+                // list (used as set)
+                //                [10,20,30].containsAll([20]) // true
+// [10,20,30].containsAll([20, 10]) // true
+// [10,20,30].containsAll([20, 40]) // false
+                Arguments.of("list: containsAll", "[10, 20, 30].containsAll([20])", true),
+                Arguments.of("list: containsAll", "[10, 20, 30].containsAll([20, 10])", true),
+                Arguments.of("list: containsAll", "[10, 20, 30].containsAll([20, 40])", false),
                 // TODO: negation
 //                Arguments.of("string: not equals", "'Test' != 'est'", true),
 //                Arguments.of("int: not equals", "27 != 28", true),

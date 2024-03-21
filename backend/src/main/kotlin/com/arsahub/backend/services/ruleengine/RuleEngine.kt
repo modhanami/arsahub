@@ -22,6 +22,7 @@ import dev.cel.common.CelOverloadDecl
 import dev.cel.common.CelValidationResult
 import dev.cel.common.CelVarDecl
 import dev.cel.common.types.CelType
+import dev.cel.common.types.ListType
 import dev.cel.common.types.SimpleType
 import dev.cel.compiler.CelCompiler
 import dev.cel.compiler.CelCompilerImpl
@@ -403,6 +404,19 @@ class RuleEngine(
                         SimpleType.BOOL,
                     ),
                 ),
+                // [10,20,30].containsAll([20]) // true
+                // [10,20,30].containsAll([20, 10]) // true
+                // [10,20,30].containsAll([20, 40]) // false
+                CelFunctionDecl.newFunctionDeclaration(
+                    "containsAll",
+                    CelOverloadDecl.newMemberOverload(
+                        "contains_all",
+                        "tests whether the list operand contains all the elements of the argument list",
+                        SimpleType.BOOL,
+                        ListType.create(SimpleType.INT),
+                        ListType.create(SimpleType.INT),
+                    ),
+                ),
             )
         private val celFunctionBindings =
             listOf(
@@ -455,6 +469,14 @@ class RuleEngine(
                     String::class.javaObjectType,
                     String::startsWith,
                 ),
+                //                [10,20,30].containsAll([20]) // true
+// [10,20,30].containsAll([20, 10]) // true
+// [10,20,30].containsAll([20, 40]) // false
+                CelRuntime.CelFunctionBinding.from(
+                    "contains_all",
+                    List::class.javaObjectType,
+                    List::class.javaObjectType,
+                ) { x, y -> (x as List<*>).containsAll(y as List<*>) },
             )
 
         // Construct the compilation and runtime environments.
