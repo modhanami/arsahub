@@ -6,15 +6,19 @@ import com.arsahub.backend.models.AppUser
 import com.arsahub.backend.models.Rule
 import com.arsahub.backend.models.RuleProgress
 import com.arsahub.backend.models.RuleRepeatability
+import com.arsahub.backend.models.RuleTriggerFieldState
 import com.arsahub.backend.models.Trigger
 import com.arsahub.backend.models.TriggerField
+import com.arsahub.backend.models.TriggerFieldType
 import com.arsahub.backend.models.TriggerLog
 import com.arsahub.backend.repositories.RuleProgressRepository
+import com.arsahub.backend.repositories.RuleTriggerFieldStateRepository
 import com.arsahub.backend.repositories.TriggerLogRepository
 import com.arsahub.backend.services.RuleService
 import com.arsahub.backend.services.TriggerService
 import com.arsahub.backend.services.actionhandlers.ActionHandlerRegistry
 import com.arsahub.backend.services.actionhandlers.ActionResult
+import com.arsahub.backend.services.getAccumulatableFields
 import dev.cel.checker.CelCheckerLegacyImpl
 import dev.cel.common.CelFunctionDecl
 import dev.cel.common.CelOptions
@@ -43,9 +47,10 @@ fun Iterable<TriggerField>.getCelVarDecls(): List<CelVarDecl> {
 }
 
 fun TriggerField.getCelType(): CelType {
-    return when (type) {
-        "integer" -> SimpleType.INT
-        "text" -> SimpleType.STRING
+    return when (TriggerFieldType.fromString(this.type!!)) {
+        TriggerFieldType.INTEGER -> SimpleType.INT
+        TriggerFieldType.TEXT -> SimpleType.STRING
+        TriggerFieldType.INTEGER_SET -> ListType.create(SimpleType.INT)
         else -> throw IllegalArgumentException("Unsupported trigger field type: $type")
     }
 }
@@ -55,6 +60,7 @@ class RuleEngine(
     private val actionHandlerRegistry: ActionHandlerRegistry,
     private val triggerLogRepository: TriggerLogRepository,
     private val ruleProgressRepository: RuleProgressRepository,
+    private val ruleTriggerFieldStateRepository: RuleTriggerFieldStateRepository,
     private val triggerService: TriggerService,
     private val ruleService: RuleService,
 ) {
@@ -76,10 +82,30 @@ class RuleEngine(
         triggerService.validateParamsAgainstTriggerFields(request.params, trigger.fields)
 
         val referencingRules = ruleService.getRulesByReferencedTrigger(app, trigger)
-        val matchingRules = getMatchingRules(referencingRules, appUser, request.params)
-        val actionResults = processMatchingRules(matchingRules, app, appUser, request.params, afterAction)
+        val matchingRules =
+            getMatchingRules(referencingRules, appUser, request.params) { rule, params ->
+                val updatedRuleTriggerFieldStates = updateRuleTriggerFieldState(app, appUser, rule, trigger, params)
+                if (updatedRuleTriggerFieldStates.isEmpty()) {
+                    return@getMatchingRules params
+                }
 
-        handleForwardChain(app, appUser, actionResults, afterAction)
+                val paramsWithAccumulatedFields =
+                    params?.toMutableMap()?.apply {
+                        updatedRuleTriggerFieldStates.forEach { state ->
+                            val key = state.triggerField?.key!!
+                            val value =
+                                when (TriggerFieldType.fromString(state.triggerField?.type!!)) {
+                                    TriggerFieldType.INTEGER_SET -> state.stateIntSet!!.toList()
+                                    else -> throw IllegalArgumentException("Unsupported trigger field type: ${state.triggerField?.type}")
+                                }
+                            put(key, value)
+                        }
+                    }
+                return@getMatchingRules paramsWithAccumulatedFields
+            }
+        val actionResults = processMatchingRules(matchingRules, app, appUser, trigger, request.params, afterAction)
+
+        handleForwardChain(app, appUser, trigger, actionResults, afterAction)
 
         /*
          TODO: Currently, the trigger log is committed as a whole with other operations.
@@ -109,15 +135,23 @@ class RuleEngine(
         rules: List<Rule>,
         appUser: AppUser,
         params: Map<String, Any>?,
+        preprocessParams: (
+            (
+                rule: Rule,
+                params: Map<String, Any>?,
+            ) -> Map<String, Any>?
+        )? = null,
     ): List<Rule> {
         return rules.filter { rule ->
             logger.debug { "Checking rule ${rule.title} (${rule.id})" }
+
+            val preprocessedParams = preprocessParams?.let { it(rule, params) } ?: params
 
             return@filter (
                 // check repeatability
                 validateRepeatability(rule, appUser) &&
                     // check the condition expression, if any
-                    validateConditionExpression(rule, params, appUser)
+                    validateConditionExpression(rule, preprocessedParams, appUser)
             )
         }
     }
@@ -126,6 +160,7 @@ class RuleEngine(
         matchingRules: List<Rule>,
         app: App,
         appUser: AppUser,
+        trigger: Trigger,
         params: Map<String, Any>?,
         afterAction: (ActionResult, Rule) -> Unit?,
     ): List<ActionResult> {
@@ -133,16 +168,6 @@ class RuleEngine(
 
         for (rule in matchingRules) {
             logger.debug { "Checking rule ${rule.title} (${rule.id})" }
-
-            if (
-                // check repeatability
-                !validateRepeatability(rule, appUser) ||
-                // check the condition expression, if any
-                !validateConditionExpression(rule, params, appUser)
-            ) {
-                //  not repeatable or conditions don't match
-                continue
-            }
 
             // handle action
             val actionResult = activateRule(rule, app, appUser)
@@ -154,9 +179,84 @@ class RuleEngine(
         return actionResults
     }
 
+    private fun getAccumulatedFields(
+        rule: Rule,
+        trigger: Trigger,
+    ): List<String> {
+        return trigger.fields.getAccumulatableFields().map { it.key!! }.filter {
+            rule.accumulatedFields?.contains(it) == true
+        }
+    }
+
+    private fun updateRuleTriggerFieldState(
+        app: App,
+        appUser: AppUser,
+        rule: Rule,
+        trigger: Trigger,
+        params: Map<String, Any>?,
+    ): List<RuleTriggerFieldState> {
+        val accumulatedFields = getAccumulatedFields(rule, trigger)
+
+        logger.debug { "Accumulated fields: $accumulatedFields" }
+        if (accumulatedFields.isEmpty()) {
+            return emptyList()
+        }
+
+        return accumulatedFields.map { accumulatedField ->
+            val value = params?.get(accumulatedField)
+            if (value == null) {
+                logger.debug { "No value for accumulated field $accumulatedField, skipping" }
+                return@map null
+            }
+
+            val triggerField = trigger.fields.first { it.key == accumulatedField }
+            val triggerFieldType = TriggerFieldType.fromString(triggerField.type!!)
+
+            logger.debug { "Updating accumulated field $accumulatedField" }
+            val state =
+                ruleTriggerFieldStateRepository.findByAppAndAppUserAndRule(app, appUser, rule)
+                    ?: RuleTriggerFieldState(
+                        app = app,
+                        appUser = appUser,
+                        triggerField = triggerField,
+                        rule = rule,
+                    )
+
+            when (triggerFieldType) {
+                TriggerFieldType.INTEGER_SET -> {
+                    if (!(value is List<*> && value.all { it is Int })) {
+                        logger.error { "Value for accumulated field $accumulatedField is not a list of integers" }
+                        return@map null
+                    }
+
+                    if (state.stateIntSet == null) {
+                        state.stateIntSet = intArrayOf()
+                    }
+
+                    val prevState = state.stateIntSet!!
+                    val newState =
+                        prevState
+                            .toMutableSet()
+                            .apply { addAll(value.filterIsInstance<Int>()) }
+                            .toIntArray()
+
+                    state.stateIntSet = newState
+                    logger.debug { "${TriggerFieldType.INTEGER_SET}: value: $value, prevState: ${prevState.toList()}, newState: ${newState.toList()}" }
+                    return@map ruleTriggerFieldStateRepository.save(state)
+                }
+
+                else -> {
+                    logger.error { "Unsupported trigger field type: $triggerFieldType" }
+                    return@map null
+                }
+            }
+        }.filterNotNull()
+    }
+
     private fun handleForwardChain(
         app: App,
         appUser: AppUser,
+        trigger: Trigger,
         actionResults: List<ActionResult>,
         afterAction: (ActionResult, Rule) -> Unit?,
     ) {
@@ -171,7 +271,7 @@ class RuleEngine(
         val matchingRules = ruleService.getRulesByReferencedTrigger(app, pointsReachedTrigger)
 
         logger.debug { "Found ${matchingRules.size} matching rules for points_reached trigger" }
-        processMatchingRules(matchingRules, app, appUser, emptyMap(), afterAction)
+        processMatchingRules(matchingRules, app, appUser, trigger, emptyMap(), afterAction)
     }
 
     private fun logTrigger(
@@ -270,6 +370,8 @@ class RuleEngine(
             params.mapValues { (key, value) ->
                 if (value is Int) {
                     value.toLong()
+                } else if (value is List<*> && value.all { it is Int }) {
+                    value.map { (it as Int).toLong() }
                 } else {
                     value
                 }
