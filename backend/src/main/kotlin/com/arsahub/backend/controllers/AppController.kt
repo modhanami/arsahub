@@ -160,6 +160,17 @@ class AppController(
         return appService.trigger(app, request, jsonMap)
     }
 
+    @PostMapping("/trigger/dry")
+    fun dryTrigger(
+        @RequestBody json: ObjectNode,
+        @CurrentApp app: App,
+    ): List<RuleResponse> {
+        val request = objectMapper.treeToValue(json, TriggerSendRequest::class.java)
+        val jsonMap: Map<String, Any> = objectMapper.convertValue(json, object : TypeReference<Map<String, Any>>() {})
+
+        return appService.dryTrigger(app, request, jsonMap).map { RuleResponse.fromEntity(it) }
+    }
+
     @Operation(
         summary = "Validate key",
         responses = [

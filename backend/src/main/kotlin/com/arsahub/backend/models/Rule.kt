@@ -37,9 +37,6 @@ class Rule(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "app_id")
     var app: App? = null,
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "conditions")
-    var conditions: MutableMap<String, Any>? = null,
     @NotNull
     @Column(name = "action", nullable = false, length = Integer.MAX_VALUE)
     var action: String? = null,
@@ -51,6 +48,8 @@ class Rule(
     @NotNull
     @Column(name = "repeatability", nullable = false, length = Integer.MAX_VALUE)
     var repeatability: String? = null,
+    @Column(name = "condition_expression", length = Integer.MAX_VALUE)
+    var conditionExpression: String? = null,
     @Column(name = "deleted_at")
     var deletedAt: Instant? = null,
 ) : AuditedEntity() {
