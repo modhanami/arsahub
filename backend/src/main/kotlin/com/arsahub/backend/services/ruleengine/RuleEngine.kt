@@ -84,21 +84,34 @@ class RuleEngine(
         val referencingRules = ruleService.getRulesByReferencedTrigger(app, trigger)
         val matchingRules =
             getMatchingRules(referencingRules, appUser, request.params) { rule, params ->
-                val updatedRuleTriggerFieldStates = updateRuleTriggerFieldState(app, appUser, rule, trigger, params)
+                val updatedRuleTriggerFieldStates =
+                    updateRuleTriggerFieldStateForRule(app, appUser, rule, trigger, params)
                 if (updatedRuleTriggerFieldStates.isEmpty()) {
-                    return@getMatchingRules params
+                    logger.debug { "No updated rule trigger field states" }
+                } else {
+                    logger.debug { "Updated rule trigger field states: $updatedRuleTriggerFieldStates" }
                 }
 
+                val accumulatedFields = getAccumulatedFields(rule, trigger)
                 val paramsWithAccumulatedFields =
                     params?.toMutableMap()?.apply {
-                        updatedRuleTriggerFieldStates.forEach { state ->
-                            val key = state.triggerField?.key!!
+                        accumulatedFields.forEach { field ->
+                            val triggerField = trigger.fields.first { it.key == field }
+                            val state =
+                                ruleTriggerFieldStateRepository.findByAppAndAppUserAndRuleAndTriggerField(
+                                    app,
+                                    appUser,
+                                    rule,
+                                    triggerField,
+                                )
+                                    ?: return@forEach
                             val value =
-                                when (TriggerFieldType.fromString(state.triggerField?.type!!)) {
+                                when (TriggerFieldType.fromString(triggerField.type!!)) {
                                     TriggerFieldType.INTEGER_SET -> state.stateIntSet!!.toList()
-                                    else -> throw IllegalArgumentException("Unsupported trigger field type: ${state.triggerField?.type}")
+                                    else -> throw IllegalArgumentException("Unsupported trigger field type: ${triggerField.type}")
                                 }
-                            put(key, value)
+                            logger.debug { "Setting param $field to $value, was ${if (containsKey(field)) get(field) else null}" }
+                            put(triggerField.key!!, value)
                         }
                     }
                 return@getMatchingRules paramsWithAccumulatedFields
@@ -188,7 +201,7 @@ class RuleEngine(
         }
     }
 
-    private fun updateRuleTriggerFieldState(
+    private fun updateRuleTriggerFieldStateForRule(
         app: App,
         appUser: AppUser,
         rule: Rule,
@@ -214,12 +227,17 @@ class RuleEngine(
 
             logger.debug { "Updating accumulated field $accumulatedField" }
             val state =
-                ruleTriggerFieldStateRepository.findByAppAndAppUserAndRule(app, appUser, rule)
+                ruleTriggerFieldStateRepository.findByAppAndAppUserAndRuleAndTriggerField(
+                    app,
+                    appUser,
+                    rule,
+                    triggerField,
+                )
                     ?: RuleTriggerFieldState(
                         app = app,
                         appUser = appUser,
-                        triggerField = triggerField,
                         rule = rule,
+                        triggerField = triggerField,
                     )
 
             when (triggerFieldType) {
@@ -268,7 +286,8 @@ class RuleEngine(
         }
 
         val pointsReachedTrigger = triggerService.getBuiltInTriggerOrThrow("points_reached")
-        val matchingRules = ruleService.getRulesByReferencedTrigger(app, pointsReachedTrigger)
+        val referencingRules = ruleService.getRulesByReferencedTrigger(app, pointsReachedTrigger)
+        val matchingRules = getMatchingRules(referencingRules, appUser, emptyMap())
 
         logger.debug { "Found ${matchingRules.size} matching rules for points_reached trigger" }
         processMatchingRules(matchingRules, app, appUser, trigger, emptyMap(), afterAction)
