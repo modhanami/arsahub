@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
 import { Link as NextUILink } from "@nextui-org/react";
-import React, { useMemo } from "react";
+import React from "react";
 import { Input } from "@/components/ui/input";
 import {
   RuleCreateRequest,
@@ -153,16 +153,20 @@ export default function Page() {
 
   const isRepeatabilityDisabled = isPointsReachedTrigger;
 
-  const fields: Field[] = useMemo(() => {
+  const fields: Field[] = React.useMemo(() => {
     return (
       selectedTrigger?.fields?.map((field) => ({
         name: field.key!,
         label: field.key!,
         dataType: field.type!,
         inputType: field.type === "integer" ? "number" : "text",
+        operators: getOperators(field.key!, field.type!, {
+          isPointsReachedTrigger,
+        }),
+        defaultOperator: getDefaultOperator(field.type!),
       })) || []
     );
-  }, [selectedTrigger]);
+  }, [isPointsReachedTrigger, selectedTrigger?.fields]);
 
   React.useEffect(() => {
     // if select points_reached, force repeatability as once_per_user
@@ -175,10 +179,6 @@ export default function Page() {
       setQuery({ combinator: "and", rules: [] });
     }
   }, [form, isPointsReachedTrigger, selectedTrigger]);
-
-  const operatorFactory = isPointsReachedTrigger
-    ? () => defaultOperators.filter((op) => ["="].includes(op.name))
-    : getOperators;
 
   function onSubmit(data: FormData) {
     const payload: RuleCreateRequest = {
@@ -346,7 +346,6 @@ export default function Page() {
                   }
                   fields={fields}
                   query={query}
-                  getOperators={operatorFactory}
                   onQueryChange={setQuery}
                   resetOnFieldChange={false}
                   controlElements={
@@ -585,11 +584,22 @@ export default function Page() {
   );
 }
 
+interface GetOperatorsOptions {
+  isPointsReachedTrigger: boolean;
+}
+
 function getOperators(
   fieldName: string,
-  { fieldData }: { fieldData: Field },
+  fieldType: string,
+  options: GetOperatorsOptions,
 ): FlexibleOptionList<FullOperator> {
-  switch (fieldData.dataType) {
+  console.log("getOperators", fieldName, fieldType, options);
+  const { isPointsReachedTrigger } = options;
+  if (isPointsReachedTrigger) {
+    return [{ name: "=", label: "equals" }];
+  }
+
+  switch (fieldType) {
     case "text":
       return [
         { name: "=", label: "equals" },
@@ -604,9 +614,19 @@ function getOperators(
         ),
       ];
     case "integerSet":
-      return [{ name: "containsAll", label: "contains all" }];
+      return [
+        { name: "containsAll", value: "containsAll", label: "contains all" },
+      ];
   }
   return [];
+}
+
+function getDefaultOperator(fieldType: string): string {
+  switch (fieldType) {
+    case "integerSet":
+      return "containsAll";
+  }
+  return "";
 }
 
 function getFormattedCELExpression(query: RuleGroupTypeAny, fields: Field[]) {
