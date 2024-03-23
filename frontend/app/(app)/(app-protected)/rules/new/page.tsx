@@ -29,6 +29,7 @@ import React, { useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import {
   RuleCreateRequest,
+  TriggerResponse,
   ValidationLengths,
   ValidationMessages,
 } from "@/types/generated-types";
@@ -45,6 +46,7 @@ import {
   QueryBuilder,
   RuleGroupType,
   RuleGroupTypeAny,
+  RuleType,
 } from "react-querybuilder";
 import "react-querybuilder/dist/query-builder.css";
 import { QueryBuilderDnD } from "@react-querybuilder/dnd";
@@ -53,6 +55,7 @@ import * as ReactDndHtml5Backend from "react-dnd-html5-backend";
 import { customRuleProcessorCEL } from "@/app/(app)/(app-protected)/rules/new/querybuilder/customRuleProcessorCEL";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const actions = [
   {
@@ -120,6 +123,7 @@ const FormSchema = z.object({
   repeatability: z.string({
     required_error: "Please select a repeatability",
   }), // TODO: add validation, or change to enum
+  accumulatedFields: z.array(z.string()).optional(),
 });
 
 type FormData = z.infer<typeof FormSchema>;
@@ -190,6 +194,11 @@ export default function Page() {
         query.rules.length === 0
           ? null
           : getFormattedCELExpression(query, fields),
+      accumulatedFields:
+        data.accumulatedFields === undefined ||
+        data.accumulatedFields.length === 0
+          ? null
+          : data.accumulatedFields,
     };
 
     createRule.mutate(payload);
@@ -211,6 +220,15 @@ export default function Page() {
 
   const rulesModificationDisabled =
     isPointsReachedTrigger && query.rules.length === 1;
+
+  const accumulatableFields = (
+    (selectedTrigger && getAccumulatableFields(selectedTrigger)) ||
+    []
+  ).filter((field) => {
+    return query.rules.some((rule) => {
+      return (rule as RuleType).field === field.key;
+    });
+  });
   return (
     <Card>
       <CardHeader>
@@ -364,6 +382,63 @@ export default function Page() {
                     <code>{getFormattedCELExpression(query, fields)}</code>
                   </pre>
                 </>
+              )}
+              {accumulatableFields.length > 0 && (
+                <FormField
+                  control={form.control}
+                  name="accumulatedFields"
+                  render={() => (
+                    <FormItem>
+                      <div className="m-4">
+                        <FormLabel className="text-base">
+                          Accumulated Fields
+                        </FormLabel>
+                        <FormDescription>
+                          Select the fields you want to accumulate when this
+                          rule is triggered.
+                        </FormDescription>
+                        {accumulatableFields.map((item) => (
+                          <FormField
+                            key={item.key}
+                            control={form.control}
+                            name="accumulatedFields"
+                            render={({ field }) => {
+                              return (
+                                <FormItem
+                                  key={item.key}
+                                  className="flex flex-row items-start space-x-3 space-y-0 my-2"
+                                >
+                                  <FormControl>
+                                    <Checkbox
+                                      checked={field.value?.includes(item.key!)}
+                                      onCheckedChange={(checked) => {
+                                        return checked
+                                          ? field.onChange([
+                                              ...(field.value || []),
+                                              item.key!,
+                                            ])
+                                          : field.onChange(
+                                              field.value?.filter(
+                                                (value) => value !== item.key,
+                                              ),
+                                            );
+                                      }}
+                                    />
+                                  </FormControl>
+                                  <FormLabel className="font-normal">
+                                    {item.key}
+                                  </FormLabel>
+                                </FormItem>
+                              );
+                            }}
+                          />
+                        ))}
+                      </div>
+
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               )}
             </div>
             <Separator />
@@ -529,6 +604,8 @@ function getOperators(
           ["=", ">", ">=", "<", "<="].includes(op.name),
         ),
       ];
+    case "integerSet":
+      return [{ name: "containsAll", label: "contains all" }];
   }
   return [];
 }
@@ -560,4 +637,10 @@ function SectionTitle({ number, title, isOptional }: SectionTitleProps) {
       {isOptional && <span className="text-muted-foreground">(Optional)</span>}
     </div>
   );
+}
+
+function getAccumulatableFields(trigger: TriggerResponse) {
+  return trigger.fields?.filter((field) => {
+    return ["integerSet"].includes(field.type!);
+  });
 }

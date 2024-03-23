@@ -55,6 +55,19 @@ export const customRuleProcessorCEL: RuleProcessor = (
       })`;
     }
 
+    case "containsAll": {
+      return `${field}.containsAll([${toArray(value)
+        .map((val) => {
+          const valNum = shouldRenderAsNumber(parseNumbers, fieldData)
+            ? parseNumber(val, { parseNumbers: true })
+            : NaN;
+
+          return isNaN(valNum) ? "" : valNum;
+        })
+        .filter((val) => val !== "")
+        .join(", ")}])`;
+    }
+
     case "beginsWith":
     case "doesNotBeginWith": {
       const negate = shouldNegate(operatorTL) ? "!" : "";
@@ -147,5 +160,10 @@ const shouldRenderAsNumber = (
   parseNumbers?: boolean,
   fieldData?: FullField,
 ) => {
-  return parseNumbers && fieldData?.dataType === "integer";
+  return (
+    parseNumbers &&
+    (fieldData === undefined ||
+      fieldData?.dataType === "integer" ||
+      fieldData?.dataType === "integerSet")
+  );
 };

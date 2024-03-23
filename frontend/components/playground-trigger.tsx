@@ -20,7 +20,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as React from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import * as z from "zod";
-import { playgroundTriggerSchema } from "../lib/validations/playground";
+import {
+  parseArrayOfStringIntegers,
+  playgroundTriggerSchema,
+} from "../lib/validations/playground";
 import {
   useAppUsers,
   useDryTrigger,
@@ -92,14 +95,34 @@ export function PlaygroundTriggerForm() {
         userId: data.userId,
         params: data.params.reduce(
           (acc, param) => {
-            if (typeof param.value === "string" && param.value.length !== 0) {
+            const triggerField = triggerFields.find(
+              (field) => field.key === param.key,
+            );
+
+            if (!triggerField) {
+              return acc;
+            }
+
+            if (
+              triggerField.type === "text" &&
+              typeof param.value === "string" &&
+              param.value.length !== 0
+            ) {
               acc[param.key] = param.value;
-            } else if (typeof param.value !== "string") {
+            } else if (
+              triggerField.type === "integer" &&
+              typeof param.value !== "string"
+            ) {
               acc[param.key] = param.value;
+            } else if (
+              triggerField.type === "integerSet" &&
+              typeof param.value === "string"
+            ) {
+              acc[param.key] = parseArrayOfStringIntegers(param.value);
             }
             return acc;
           },
-          {} as Record<string, string | number>,
+          {} as Record<string, string | number | number[]>,
         ),
       };
 
@@ -146,10 +169,34 @@ export function PlaygroundTriggerForm() {
         userId: values.userId,
         params: values.params.reduce(
           (acc, param) => {
-            acc[param.key] = param.value;
+            const triggerField = triggerFields.find(
+              (field) => field.key === param.key,
+            );
+
+            if (!triggerField) {
+              return acc;
+            }
+
+            if (
+              triggerField.type === "text" &&
+              typeof param.value === "string" &&
+              param.value.length !== 0
+            ) {
+              acc[param.key] = param.value;
+            } else if (
+              triggerField.type === "integer" &&
+              typeof param.value !== "string"
+            ) {
+              acc[param.key] = param.value;
+            } else if (
+              triggerField.type === "integerSet" &&
+              typeof param.value === "string"
+            ) {
+              acc[param.key] = parseArrayOfStringIntegers(param.value);
+            }
             return acc;
           },
-          {} as Record<string, string | number>,
+          {} as Record<string, string | number | number[]>,
         ),
       },
       {
@@ -182,6 +229,14 @@ export function PlaygroundTriggerForm() {
         key: triggerField.key,
         type: triggerField.type,
         value: 0,
+      });
+    }
+
+    if (triggerField.type === "integerSet") {
+      triggerParams.append({
+        key: triggerField.key,
+        type: triggerField.type,
+        value: "",
       });
     }
   }
@@ -352,9 +407,9 @@ export function PlaygroundTriggerForm() {
                                   <Input
                                     {...field}
                                     type={
-                                      triggerField?.type === "text"
-                                        ? "text"
-                                        : "number"
+                                      triggerField?.type === "integer"
+                                        ? "number"
+                                        : "text"
                                     }
                                     onChange={(e) => {
                                       field.onChange(e);
