@@ -291,7 +291,15 @@ export default function Page() {
                     <FormItem>
                       <FormLabel>Trigger</FormLabel>
                       <Select
-                        onValueChange={field.onChange}
+                        onValueChange={(value) => {
+                          if (
+                            query.rules.length > 0 &&
+                            !confirm("You have unsaved changes. Continue?")
+                          ) {
+                            return;
+                          }
+                          field.onChange(value);
+                        }}
                         defaultValue={field.value}
                       >
                         <FormControl>
