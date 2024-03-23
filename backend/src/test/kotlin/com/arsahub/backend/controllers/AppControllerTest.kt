@@ -1089,124 +1089,124 @@ class AppControllerTest() {
         )
     }
 
-    @Test
-    fun `fires matching rules - with integer set trigger field - accumulated`() {
-        // Arrange
-        val user = createAppUser(authSetup.app)
-        val trigger =
-            createTrigger(authSetup.app) {
-                key = "workshop_completed"
-                title = "Workshop Completed"
-                description = "When a workshop is completed"
-                fields {
-                    integerSet("workshopId", "Workshop ID")
-                    text("source")
-                }
-            }
-        val rule =
-            createRule(authSetup.app) {
-                this.trigger = trigger
-                title = "When workshop 1, 2, 3 completed, add 100 points"
-                action {
-                    addPoints(100)
-                }
-                conditionExpression = "workshopId.containsAll([1, 2, 3]) && source == 'trust me'"
-                repeatability = UnlimitedRuleRepeatability
-                accumulatedFields = listOf("workshopId")
-            }.let(::WorkshopCompletedRule)
-        val ruleCreated = ruleRepository.findById(rule.rule.id!!).get()
-        assertNotNull(ruleCreated.accumulatedFields)
-
-        // Act & Assert
-        // first trigger with workshopId 2
-        mockMvc.performWithAppAuth(
-            post("/api/apps/trigger")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    """
-                    {
-                        "key": "${trigger.key}",
-                        "params": {
-                            "workshopId": [2],
-                            "source": "trust me"
-                        },
-                        "userId": "${user.userId}"
-                    }
-                    """.trimIndent(),
-                ),
-        )
-            .andExpect(status().isOk)
-
-        // Assert rule trigger field state
-        val ruleTriggerFieldState =
-            ruleTriggerFieldStateRepository.findByAppAndAppUserAndRuleAndTriggerField(
-                authSetup.app,
-                user,
-                rule.rule,
-                trigger.fields.first { it.key == "workshopId" },
-            )
-        assertNotNull(ruleTriggerFieldState)
-        assertTrue(ruleTriggerFieldState!!.stateIntSet!!.toSet() == setOf(2))
-
-        // Assert points
-        val userAfter = appUserRepository.findById(user.id!!).get()
-        assertEquals(0, userAfter.points)
-
-        // second trigger with workshopId 3 and 1 should fire the rule
-        mockMvc.performWithAppAuth(
-            post("/api/apps/trigger")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    """
-                    {
-                        "key": "${trigger.key}",
-                        "params": {
-                            "workshopId": [3, 1],
-                            "source": "trust me"
-                        },
-                        "userId": "${user.userId}"
-                    }
-                    """.trimIndent(),
-                ),
-        )
-            .andExpect(status().isOk)
-
-        // Assert rule trigger field state
-        val ruleTriggerFieldStateAfter =
-            ruleTriggerFieldStateRepository.findByAppAndAppUserAndRuleAndTriggerField(
-                authSetup.app,
-                user,
-                rule.rule,
-                trigger.fields.first { it.key == "workshopId" },
-            )
-        assertTrue(ruleTriggerFieldStateAfter!!.stateIntSet!!.toSet() == setOf(1, 2, 3))
-
-        // Assert points
-        val userAfterSecond = appUserRepository.findById(user.id!!).get()
-        assertEquals(100, userAfterSecond.points)
-
-        // third trigger without workshopId should still fire the rule (accumulated + unlimited)
-        mockMvc.performWithAppAuth(
-            post("/api/apps/trigger")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    """
-                    {
-                        "key": "${trigger.key}",
-                        "params": {
-                            "source": "trust me"
-                        },
-                        "userId": "${user.userId}"
-                    }
-                    """.trimIndent(),
-                ),
-        )
-            .andExpect(status().isOk)
-
-        // Assert points
-        val userAfterThird = appUserRepository.findById(user.id!!).get()
-        assertEquals(200, userAfterThird.points)
-    }
+//    @Test
+//    fun `fires matching rules - with integer set trigger field - accumulated`() {
+//        // Arrange
+//        val user = createAppUser(authSetup.app)
+//        val trigger =
+//            createTrigger(authSetup.app) {
+//                key = "workshop_completed"
+//                title = "Workshop Completed"
+//                description = "When a workshop is completed"
+//                fields {
+//                    integerSet("workshopId", "Workshop ID")
+//                    text("source")
+//                }
+//            }
+//        val rule =
+//            createRule(authSetup.app) {
+//                this.trigger = trigger
+//                title = "When workshop 1, 2, 3 completed, add 100 points"
+//                action {
+//                    addPoints(100)
+//                }
+//                conditionExpression = "workshopId.containsAll([1, 2, 3]) && source == 'trust me'"
+//                repeatability = UnlimitedRuleRepeatability
+//                accumulatedFields = listOf("workshopId")
+//            }.let(::WorkshopCompletedRule)
+//        val ruleCreated = ruleRepository.findById(rule.rule.id!!).get()
+//        assertNotNull(ruleCreated.accumulatedFields)
+//
+//        // Act & Assert
+//        // first trigger with workshopId 2
+//        mockMvc.performWithAppAuth(
+//            post("/api/apps/trigger")
+//                .contentType(MediaType.APPLICATION_JSON)
+//                .content(
+//                    """
+//                    {
+//                        "key": "${trigger.key}",
+//                        "params": {
+//                            "workshopId": [2],
+//                            "source": "trust me"
+//                        },
+//                        "userId": "${user.userId}"
+//                    }
+//                    """.trimIndent(),
+//                ),
+//        )
+//            .andExpect(status().isOk)
+//
+//        // Assert rule trigger field state
+//        val ruleTriggerFieldState =
+//            ruleTriggerFieldStateRepository.findByAppAndAppUserAndRuleAndTriggerField(
+//                authSetup.app,
+//                user,
+//                rule.rule,
+//                trigger.fields.first { it.key == "workshopId" },
+//            )
+//        assertNotNull(ruleTriggerFieldState)
+//        assertTrue(ruleTriggerFieldState!!.stateIntSet!!.toSet() == setOf(2))
+//
+//        // Assert points
+//        val userAfter = appUserRepository.findById(user.id!!).get()
+//        assertEquals(0, userAfter.points)
+//
+//        // second trigger with workshopId 3 and 1 should fire the rule
+//        mockMvc.performWithAppAuth(
+//            post("/api/apps/trigger")
+//                .contentType(MediaType.APPLICATION_JSON)
+//                .content(
+//                    """
+//                    {
+//                        "key": "${trigger.key}",
+//                        "params": {
+//                            "workshopId": [3, 1],
+//                            "source": "trust me"
+//                        },
+//                        "userId": "${user.userId}"
+//                    }
+//                    """.trimIndent(),
+//                ),
+//        )
+//            .andExpect(status().isOk)
+//
+//        // Assert rule trigger field state
+//        val ruleTriggerFieldStateAfter =
+//            ruleTriggerFieldStateRepository.findByAppAndAppUserAndRuleAndTriggerField(
+//                authSetup.app,
+//                user,
+//                rule.rule,
+//                trigger.fields.first { it.key == "workshopId" },
+//            )
+//        assertTrue(ruleTriggerFieldStateAfter!!.stateIntSet!!.toSet() == setOf(1, 2, 3))
+//
+//        // Assert points
+//        val userAfterSecond = appUserRepository.findById(user.id!!).get()
+//        assertEquals(100, userAfterSecond.points)
+//
+//        // third trigger without workshopId should still fire the rule (accumulated + unlimited)
+//        mockMvc.performWithAppAuth(
+//            post("/api/apps/trigger")
+//                .contentType(MediaType.APPLICATION_JSON)
+//                .content(
+//                    """
+//                    {
+//                        "key": "${trigger.key}",
+//                        "params": {
+//                            "source": "trust me"
+//                        },
+//                        "userId": "${user.userId}"
+//                    }
+//                    """.trimIndent(),
+//                ),
+//        )
+//            .andExpect(status().isOk)
+//
+//        // Assert points
+//        val userAfterThird = appUserRepository.findById(user.id!!).get()
+//        assertEquals(200, userAfterThird.points)
+//    }
 
     @Test
     fun `fires matching rules - with integer set trigger field - non-accumulated`() {

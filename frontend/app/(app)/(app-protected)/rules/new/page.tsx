@@ -55,7 +55,6 @@ import * as ReactDndHtml5Backend from "react-dnd-html5-backend";
 import { customRuleProcessorCEL } from "@/app/(app)/(app-protected)/rules/new/querybuilder/customRuleProcessorCEL";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { Checkbox } from "@/components/ui/checkbox";
 
 const actions = [
   {
@@ -383,63 +382,63 @@ export default function Page() {
                   </pre>
                 </>
               )}
-              {accumulatableFields.length > 0 && (
-                <FormField
-                  control={form.control}
-                  name="accumulatedFields"
-                  render={() => (
-                    <FormItem>
-                      <div className="m-4">
-                        <FormLabel className="text-base">
-                          Accumulated Fields
-                        </FormLabel>
-                        <FormDescription>
-                          Select the fields you want to accumulate when this
-                          rule is triggered.
-                        </FormDescription>
-                        {accumulatableFields.map((item) => (
-                          <FormField
-                            key={item.key}
-                            control={form.control}
-                            name="accumulatedFields"
-                            render={({ field }) => {
-                              return (
-                                <FormItem
-                                  key={item.key}
-                                  className="flex flex-row items-start space-x-3 space-y-0 my-2"
-                                >
-                                  <FormControl>
-                                    <Checkbox
-                                      checked={field.value?.includes(item.key!)}
-                                      onCheckedChange={(checked) => {
-                                        return checked
-                                          ? field.onChange([
-                                              ...(field.value || []),
-                                              item.key!,
-                                            ])
-                                          : field.onChange(
-                                              field.value?.filter(
-                                                (value) => value !== item.key,
-                                              ),
-                                            );
-                                      }}
-                                    />
-                                  </FormControl>
-                                  <FormLabel className="font-normal">
-                                    {item.key}
-                                  </FormLabel>
-                                </FormItem>
-                              );
-                            }}
-                          />
-                        ))}
-                      </div>
+              {/*{accumulatableFields.length > 0 && (*/}
+              {/*  <FormField*/}
+              {/*    control={form.control}*/}
+              {/*    name="accumulatedFields"*/}
+              {/*    render={() => (*/}
+              {/*      <FormItem>*/}
+              {/*        <div className="m-4">*/}
+              {/*          <FormLabel className="text-base">*/}
+              {/*            Accumulated Fields*/}
+              {/*          </FormLabel>*/}
+              {/*          <FormDescription>*/}
+              {/*            Select the fields you want to accumulate when this*/}
+              {/*            rule is triggered.*/}
+              {/*          </FormDescription>*/}
+              {/*          {accumulatableFields.map((item) => (*/}
+              {/*            <FormField*/}
+              {/*              key={item.key}*/}
+              {/*              control={form.control}*/}
+              {/*              name="accumulatedFields"*/}
+              {/*              render={({ field }) => {*/}
+              {/*                return (*/}
+              {/*                  <FormItem*/}
+              {/*                    key={item.key}*/}
+              {/*                    className="flex flex-row items-start space-x-3 space-y-0 my-2"*/}
+              {/*                  >*/}
+              {/*                    <FormControl>*/}
+              {/*                      <Checkbox*/}
+              {/*                        checked={field.value?.includes(item.key!)}*/}
+              {/*                        onCheckedChange={(checked) => {*/}
+              {/*                          return checked*/}
+              {/*                            ? field.onChange([*/}
+              {/*                                ...(field.value || []),*/}
+              {/*                                item.key!,*/}
+              {/*                              ])*/}
+              {/*                            : field.onChange(*/}
+              {/*                                field.value?.filter(*/}
+              {/*                                  (value) => value !== item.key,*/}
+              {/*                                ),*/}
+              {/*                              );*/}
+              {/*                        }}*/}
+              {/*                      />*/}
+              {/*                    </FormControl>*/}
+              {/*                    <FormLabel className="font-normal">*/}
+              {/*                      {item.key}*/}
+              {/*                    </FormLabel>*/}
+              {/*                  </FormItem>*/}
+              {/*                );*/}
+              {/*              }}*/}
+              {/*            />*/}
+              {/*          ))}*/}
+              {/*        </div>*/}
 
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
+              {/*        <FormMessage />*/}
+              {/*      </FormItem>*/}
+              {/*    )}*/}
+              {/*  />*/}
+              {/*)}*/}
             </div>
             <Separator />
 

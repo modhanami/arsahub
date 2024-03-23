@@ -84,37 +84,39 @@ class RuleEngine(
         val referencingRules = ruleService.getRulesByReferencedTrigger(app, trigger)
         val matchingRules =
             getMatchingRules(referencingRules, appUser, request.params) { rule, params ->
-                val updatedRuleTriggerFieldStates =
-                    updateRuleTriggerFieldStateForRule(app, appUser, rule, trigger, params)
-                if (updatedRuleTriggerFieldStates.isEmpty()) {
-                    logger.debug { "No updated rule trigger field states" }
-                } else {
-                    logger.debug { "Updated rule trigger field states: $updatedRuleTriggerFieldStates" }
-                }
+//                val updatedRuleTriggerFieldStates =
+//                    updateRuleTriggerFieldStateForRule(app, appUser, rule, trigger, params)
+//                if (updatedRuleTriggerFieldStates.isEmpty()) {
+//                    logger.debug { "No updated rule trigger field states" }
+//                } else {
+//                    logger.debug { "Updated rule trigger field states: $updatedRuleTriggerFieldStates" }
+//                }
+//
+//                val accumulatedFields = getAccumulatedFields(rule, trigger)
+//                val paramsWithAccumulatedFields =
+//                    params?.toMutableMap()?.apply {
+//                        accumulatedFields.forEach { field ->
+//                            val triggerField = trigger.fields.first { it.key == field }
+//                            val state =
+//                                ruleTriggerFieldStateRepository.findByAppAndAppUserAndRuleAndTriggerField(
+//                                    app,
+//                                    appUser,
+//                                    rule,
+//                                    triggerField,
+//                                )
+//                                    ?: return@forEach
+//                            val value =
+//                                when (TriggerFieldType.fromString(triggerField.type!!)) {
+//                                    TriggerFieldType.INTEGER_SET -> state.stateIntSet!!.toList()
+//                                    else -> throw IllegalArgumentException("Unsupported trigger field type: ${triggerField.type}")
+//                                }
+//                            logger.debug { "Setting param $field to $value, was ${if (containsKey(field)) get(field) else null}" }
+//                            put(triggerField.key!!, value)
+//                        }
+//                    }
+//                return@getMatchingRules paramsWithAccumulatedFields
 
-                val accumulatedFields = getAccumulatedFields(rule, trigger)
-                val paramsWithAccumulatedFields =
-                    params?.toMutableMap()?.apply {
-                        accumulatedFields.forEach { field ->
-                            val triggerField = trigger.fields.first { it.key == field }
-                            val state =
-                                ruleTriggerFieldStateRepository.findByAppAndAppUserAndRuleAndTriggerField(
-                                    app,
-                                    appUser,
-                                    rule,
-                                    triggerField,
-                                )
-                                    ?: return@forEach
-                            val value =
-                                when (TriggerFieldType.fromString(triggerField.type!!)) {
-                                    TriggerFieldType.INTEGER_SET -> state.stateIntSet!!.toList()
-                                    else -> throw IllegalArgumentException("Unsupported trigger field type: ${triggerField.type}")
-                                }
-                            logger.debug { "Setting param $field to $value, was ${if (containsKey(field)) get(field) else null}" }
-                            put(triggerField.key!!, value)
-                        }
-                    }
-                return@getMatchingRules paramsWithAccumulatedFields
+                params
             }
         val actionResults = processMatchingRules(matchingRules, app, appUser, trigger, request.params, afterAction)
 
