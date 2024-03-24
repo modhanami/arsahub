@@ -155,16 +155,20 @@ export default function Page() {
 
   const fields: Field[] = React.useMemo(() => {
     return (
-      selectedTrigger?.fields?.map((field) => ({
-        name: field.key!,
-        label: field.key!,
-        dataType: field.type!,
-        inputType: field.type === "integer" ? "number" : "text",
-        operators: getOperators(field.key!, field.type!, {
-          isPointsReachedTrigger,
-        }),
-        defaultOperator: getDefaultOperator(field.type!),
-      })) || []
+      selectedTrigger?.fields?.map((field) => {
+        const _field = {
+          name: field.key!,
+          label: field.key!,
+          dataType: field.type!,
+          inputType: field.type === "integer" ? "number" : "text",
+          operators: getOperators(field.key!, field.type!, {
+            isPointsReachedTrigger,
+          }),
+          defaultOperator: getDefaultOperator(field.type!),
+        };
+        console.log("_field", _field);
+        return _field;
+      }) || []
     );
   }, [isPointsReachedTrigger, selectedTrigger?.fields]);
 
@@ -349,13 +353,15 @@ export default function Page() {
               <h3 className="text-lg font-semibold">If</h3>
               <QueryBuilderDnD dnd={{ ...ReactDnD, ...ReactDndHtml5Backend }}>
                 <QueryBuilder
+                  resetOnOperatorChange
+                  resetOnFieldChange
+                  debugMode
                   disabled={
                     !selectedTrigger || selectedTrigger.fields?.length === 0
                   }
                   fields={fields}
                   query={query}
                   onQueryChange={setQuery}
-                  resetOnFieldChange={false}
                   controlElements={
                     rulesModificationDisabled
                       ? {
