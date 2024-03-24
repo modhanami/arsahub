@@ -30,6 +30,8 @@ import { TextareaWithCounter } from "@/components/ui/textarea-with-counter";
 import { useRule, useUpdateRule } from "@/hooks";
 import { isApiError } from "@/api";
 import { HttpStatusCode } from "axios";
+import { resolveBasePath } from "@/lib/base-path";
+import { useRouter } from "next/navigation";
 
 const FormSchema = z.object({
   title: z
@@ -76,6 +78,7 @@ function UpdateRuleForm({ rule }: UpdateRuleFormProps) {
     resolver: zodResolver(FormSchema),
     defaultValues: getDefaultValues(rule),
   });
+  const router = useRouter();
   const selectedTriggerKey = rule.trigger?.key;
   const updateRule = useUpdateRule();
 
@@ -100,6 +103,7 @@ function UpdateRuleForm({ rule }: UpdateRuleFormProps) {
     });
 
     form.reset(getDefaultValues(updatedRule));
+    router.push(resolveBasePath(`/rules`));
   }
 
   return (

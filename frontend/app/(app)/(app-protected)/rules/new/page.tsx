@@ -55,6 +55,7 @@ import * as ReactDndHtml5Backend from "react-dnd-html5-backend";
 import { customRuleProcessorCEL } from "@/app/(app)/(app-protected)/rules/new/querybuilder/customRuleProcessorCEL";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 
 const actions = [
   {
@@ -131,6 +132,7 @@ export default function Page() {
   const form = useForm<FormData>({
     resolver: zodResolver(FormSchema),
   });
+  const router = useRouter();
   const { data: triggers } = useTriggers({ withBuiltIn: true });
   const { data: achievements } = useAchievements({
     enabled: form.watch("action.key") === "unlock_achievement",
@@ -204,16 +206,15 @@ export default function Page() {
           : data.accumulatedFields,
     };
 
-    createRule.mutate(payload);
-    console.log("payload", payload);
+    createRule.mutate(payload, {
+      onSuccess: () => {
+        router.push(resolveBasePath(`/rules`));
+      },
+    });
 
     toast({
-      title: "You submitted the following values:",
-      description: (
-        <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-          <code className="text-white">{JSON.stringify(payload, null, 2)}</code>
-        </pre>
-      ),
+      title: "Rule created",
+      description: "Your rule was created successfully.",
     });
   }
 

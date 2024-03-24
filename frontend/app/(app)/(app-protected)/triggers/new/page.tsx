@@ -193,9 +193,9 @@ export default function Page({}) {
             description: "Your trigger was created successfully.",
           });
           setIsOpen(false);
-          router.push(resolveBasePath(`/triggers/new`));
 
           form.reset(getEmptyDefaultValues());
+          router.push(resolveBasePath(`/triggers`));
         },
         onError: (error, b, c) => {
           console.log("error", error);

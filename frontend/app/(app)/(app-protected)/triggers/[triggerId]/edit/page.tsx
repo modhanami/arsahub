@@ -33,6 +33,8 @@ import {
   getFieldTypeLabel,
 } from "@/app/(app)/(app-protected)/triggers/shared";
 import { Label } from "@/components/ui/label";
+import { resolveBasePath } from "@/lib/base-path";
+import { useRouter } from "next/navigation";
 
 const triggerUpdateSchema = z.object({
   title: z
@@ -91,6 +93,7 @@ function UpdateTriggerForm({ trigger }: UpdateTriggerFormProps) {
     resolver: zodResolver(triggerUpdateSchema),
     defaultValues: getDefaultValues(trigger),
   });
+  const router = useRouter();
   const mutation = useUpdateTrigger();
 
   async function onSubmit(values: FormData) {
@@ -108,6 +111,7 @@ function UpdateTriggerForm({ trigger }: UpdateTriggerFormProps) {
       });
 
       form.reset(getDefaultValues(updatedTrigger));
+      router.push(resolveBasePath(`/triggers`));
     } catch (error) {
       console.log("error", error);
       if (isApiValidationError(error)) {
