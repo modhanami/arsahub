@@ -15,6 +15,7 @@ import com.arsahub.backend.dtos.request.FieldDefinition
 import com.arsahub.backend.dtos.request.RuleCreateRequest
 import com.arsahub.backend.dtos.request.TriggerCreateRequest
 import com.arsahub.backend.dtos.request.TriggerDefinition
+import com.arsahub.backend.dtos.response.WebhookPayload
 import com.arsahub.backend.models.App
 import com.arsahub.backend.models.AppInvitation
 import com.arsahub.backend.models.AppUser
@@ -43,6 +44,7 @@ import com.arsahub.backend.services.AppService
 import com.arsahub.backend.services.AuthService
 import com.arsahub.backend.services.RuleService
 import com.arsahub.backend.services.TriggerService
+import com.arsahub.backend.services.WebhookDeliveryService
 import com.corundumstudio.socketio.SocketIOServer
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
@@ -70,6 +72,8 @@ import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection
 import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock
 import org.springframework.http.MediaType
+import org.springframework.kafka.core.KafkaTemplate
+import org.springframework.kafka.test.context.EmbeddedKafka
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
@@ -96,9 +100,17 @@ import java.util.*
 @Transactional
 @AutoConfigureMockMvc
 @AutoConfigureWireMock(port = 0)
+@EmbeddedKafka(
+    topics = [WebhookDeliveryService.Topics.WEBHOOK_DELIVERIES],
+    partitions = 1,
+    brokerProperties = ["port=9092"],
+)
 class AppControllerTest() {
     @Autowired
     private lateinit var ruleTriggerFieldStateRepository: RuleTriggerFieldStateRepository
+
+    @Autowired
+    private lateinit var kafkaTemplateWebhookDelivery: KafkaTemplate<String, WebhookPayload>
 
     @Autowired
     private lateinit var wireMockServer: WireMockServer
@@ -1032,13 +1044,14 @@ class AppControllerTest() {
                     .withBody("Well received"),
             ),
         )
+        val webhookUrl = """http://localhost:${wireMockServer.port()}/webhook"""
         mockMvc.performWithAppAuth(
             post("/api/apps/webhooks")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     """
                     {
-                        "url": "http://localhost:${wireMockServer.port()}/webhook"
+                        "url": "$webhookUrl"
                     }
                     """.trimIndent(),
                 ),
@@ -1068,6 +1081,9 @@ class AppControllerTest() {
         assertEquals(rule.id, pointsHistory.fromRule!!.id)
 
         // Assert webhook
+        // TODO: find a way to wait for the webhook to be called
+        Thread.sleep(1000)
+
         wireMockServer.verify(
             postRequestedFor(urlEqualTo("/webhook"))
                 .withRequestBody(
@@ -1076,6 +1092,8 @@ class AppControllerTest() {
                         """
                         {
                             "id": "${"\${"}json-unit.any-string${"}"}",
+                            "appId": ${authSetup.app.id},
+                            "webhookUrl": "$webhookUrl",
                             "event": "points_updated",
                             "appUserId": "${userAfter.userId}",
                             "payload": {
@@ -1086,6 +1104,21 @@ class AppControllerTest() {
                         """.trimIndent(),
                     ),
                 ),
+        )
+    }
+
+    @Test
+    fun `what`() {
+        kafkaTemplateWebhookDelivery.send(
+            WebhookDeliveryService.Topics.WEBHOOK_DELIVERIES,
+            WebhookPayload(
+                id = UUID.randomUUID(),
+                appId = 1,
+                webhookUrl = "http://localhost:8080/webhook",
+                event = "points_updated",
+                appUserId = "1",
+                payload = mapOf("points" to 100, "pointsChange" to 100),
+            ),
         )
     }
 
