@@ -1515,6 +1515,198 @@ class AppControllerTest() {
     }
 
     @Test
+    fun `fires matching rules - integer in operator`() {
+        // Arrange
+        val user = createAppUser(authSetup.app)
+        val trigger =
+            createTrigger(authSetup.app) {
+                key = "workshop_completed"
+                title = "Workshop Completed"
+                description = "When a workshop is completed"
+                fields {
+                    integer("workshopId", "Workshop ID")
+                    text("source")
+                }
+            }
+        val rule =
+            createRule(authSetup.app) {
+                this.trigger = trigger
+                title = "When workshop 1, 2, 3 completed, add 100 points"
+                action {
+                    addPoints(100)
+                }
+                conditionExpression = "workshopId in [1, 2, 3] && source == 'trust me'"
+                repeatability = UnlimitedRuleRepeatability
+            }.let(::WorkshopCompletedRule)
+
+        // Act & Assert
+        // first trigger with workshopId 2
+        mockMvc.performWithAppAuth(
+            post("/api/apps/trigger")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "key": "${trigger.key}",
+                        "params": {
+                            "workshopId": 2,
+                            "source": "trust me"
+                        },
+                        "userId": "${user.userId}"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+
+        // Assert points
+        val userAfter = appUserRepository.findById(user.id!!).get()
+        assertEquals(100, userAfter.points)
+
+        // second trigger with workshopId 3
+        mockMvc.performWithAppAuth(
+            post("/api/apps/trigger")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "key": "${trigger.key}",
+                        "params": {
+                            "workshopId": 3,
+                            "source": "trust me"
+                        },
+                        "userId": "${user.userId}"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+
+        // Assert points
+        val userAfterSecond = appUserRepository.findById(user.id!!).get()
+        assertEquals(200, userAfterSecond.points)
+
+        // third trigger with workshopId 7 should not fire the rule
+        mockMvc.performWithAppAuth(
+            post("/api/apps/trigger")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "key": "${trigger.key}",
+                        "params": {
+                            "workshopId": 7,
+                            "source": "trust me"
+                        },
+                        "userId": "${user.userId}"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+
+        // Assert points
+        val userAfterThird = appUserRepository.findById(user.id!!).get()
+        assertEquals(200, userAfterThird.points)
+    }
+
+    @Test
+    fun `fires matching rules - text in operator`() {
+        // Arrange
+        val user = createAppUser(authSetup.app)
+        val trigger =
+            createTrigger(authSetup.app) {
+                key = "workshop_completed"
+                title = "Workshop Completed"
+                description = "When a workshop is completed"
+                fields {
+                    text("workshopId", "Workshop ID")
+                    text("source")
+                }
+            }
+        val rule =
+            createRule(authSetup.app) {
+                this.trigger = trigger
+                title = "When workshop 1, 2, 3 completed, add 100 points"
+                action {
+                    addPoints(100)
+                }
+                conditionExpression = "workshopId in ['1', '2', '3'] && source == 'trust me'"
+                repeatability = UnlimitedRuleRepeatability
+            }.let(::WorkshopCompletedRule)
+
+        // Act & Assert
+        // first trigger with workshopId 2
+        mockMvc.performWithAppAuth(
+            post("/api/apps/trigger")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "key": "${trigger.key}",
+                        "params": {
+                            "workshopId": "2",
+                            "source": "trust me"
+                        },
+                        "userId": "${user.userId}"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+
+        // Assert points
+        val userAfter = appUserRepository.findById(user.id!!).get()
+        assertEquals(100, userAfter.points)
+
+        // second trigger with workshopId 3
+        mockMvc.performWithAppAuth(
+            post("/api/apps/trigger")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "key": "${trigger.key}",
+                        "params": {
+                            "workshopId": "3",
+                            "source": "trust me"
+                        },
+                        "userId": "${user.userId}"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+
+        // Assert points
+        val userAfterSecond = appUserRepository.findById(user.id!!).get()
+        assertEquals(200, userAfterSecond.points)
+
+        // third trigger with workshopId 7 should not fire the rule
+        mockMvc.performWithAppAuth(
+            post("/api/apps/trigger")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "key": "${trigger.key}",
+                        "params": {
+                            "workshopId": "7",
+                            "source": "trust me"
+                        },
+                        "userId": "${user.userId}"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+
+        // Assert points
+        val userAfterThird = appUserRepository.findById(user.id!!).get()
+        assertEquals(200, userAfterThird.points)
+    }
+
+    @Test
     fun `does not fire matching rules when dry triggering - for the given user ID in the app`() {
         // Arrange
         val user = createAppUser(authSetup.app)
