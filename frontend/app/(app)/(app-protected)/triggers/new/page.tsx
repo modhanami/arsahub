@@ -44,6 +44,7 @@ import { toast } from "@/components/ui/use-toast";
 import {
   FieldTypeEnum,
   generateTriggerKeyFromTitle,
+  getFieldTypeLabel,
 } from "@/app/(app)/(app-protected)/triggers/shared";
 import { DashboardHeader } from "@/components/header";
 import { DashboardShell } from "@/components/shell";
@@ -152,7 +153,7 @@ export default function Page({}) {
       ...fields,
       {
         key: "",
-        type: "Text",
+        type: "text",
         label: "",
       },
     ]);
@@ -180,7 +181,7 @@ export default function Page({}) {
         description: values.description || "",
         fields: values.fields.map((field) => ({
           key: field.key,
-          type: field.type.toLowerCase(),
+          type: field.type,
           label: field.label || null,
         })),
       },
@@ -365,7 +366,7 @@ export default function Page({}) {
                                 value={type}
                                 className="flex items-center justify-between w-full"
                               >
-                                {type}
+                                {getFieldTypeLabel(type)}
                               </SelectItem>
                             ))}
                           </SelectContent>

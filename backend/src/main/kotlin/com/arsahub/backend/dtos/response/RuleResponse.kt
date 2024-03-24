@@ -17,6 +17,7 @@ data class RuleResponse(
     val id: Long? = null,
     val repeatability: String? = null,
     val conditionExpression: String? = null,
+    val accumulatedFields: Array<String>? = null,
 ) {
     companion object {
         fun fromEntity(rule: com.arsahub.backend.models.Rule): RuleResponse {
@@ -32,6 +33,7 @@ data class RuleResponse(
                 id = rule.id,
                 repeatability = rule.repeatability,
                 conditionExpression = rule.conditionExpression,
+                accumulatedFields = rule.accumulatedFields,
             )
         }
     }

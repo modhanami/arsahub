@@ -25,10 +25,11 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
 import { Link as NextUILink } from "@nextui-org/react";
-import React, { useMemo } from "react";
+import React from "react";
 import { Input } from "@/components/ui/input";
 import {
   RuleCreateRequest,
+  TriggerResponse,
   ValidationLengths,
   ValidationMessages,
 } from "@/types/generated-types";
@@ -45,6 +46,7 @@ import {
   QueryBuilder,
   RuleGroupType,
   RuleGroupTypeAny,
+  RuleType,
 } from "react-querybuilder";
 import "react-querybuilder/dist/query-builder.css";
 import { QueryBuilderDnD } from "@react-querybuilder/dnd";
@@ -120,6 +122,7 @@ const FormSchema = z.object({
   repeatability: z.string({
     required_error: "Please select a repeatability",
   }), // TODO: add validation, or change to enum
+  accumulatedFields: z.array(z.string()).optional(),
 });
 
 type FormData = z.infer<typeof FormSchema>;
@@ -150,16 +153,24 @@ export default function Page() {
 
   const isRepeatabilityDisabled = isPointsReachedTrigger;
 
-  const fields: Field[] = useMemo(() => {
+  const fields: Field[] = React.useMemo(() => {
     return (
-      selectedTrigger?.fields?.map((field) => ({
-        name: field.key!,
-        label: field.label || field.key!,
-        dataType: field.type!,
-        inputType: field.type === "integer" ? "number" : "text",
-      })) || []
+      selectedTrigger?.fields?.map((field) => {
+        const _field = {
+          name: field.key!,
+          label: field.key!,
+          dataType: field.type!,
+          inputType: field.type === "integer" ? "number" : "text",
+          operators: getOperators(field.key!, field.type!, {
+            isPointsReachedTrigger,
+          }),
+          defaultOperator: getDefaultOperator(field.type!),
+        };
+        console.log("_field", _field);
+        return _field;
+      }) || []
     );
-  }, [selectedTrigger]);
+  }, [isPointsReachedTrigger, selectedTrigger?.fields]);
 
   React.useEffect(() => {
     // if select points_reached, force repeatability as once_per_user
@@ -173,10 +184,6 @@ export default function Page() {
     }
   }, [form, isPointsReachedTrigger, selectedTrigger]);
 
-  const operatorFactory = isPointsReachedTrigger
-    ? () => defaultOperators.filter((op) => ["="].includes(op.name))
-    : getOperators;
-
   function onSubmit(data: FormData) {
     const payload: RuleCreateRequest = {
       ...data,
@@ -186,7 +193,15 @@ export default function Page() {
       },
       title: data.title.trim(),
       description: data.description?.trim() || null,
-      conditionExpression: getFormattedCELExpression(query, fields),
+      conditionExpression:
+        query.rules.length === 0
+          ? null
+          : getFormattedCELExpression(query, fields),
+      accumulatedFields:
+        data.accumulatedFields === undefined ||
+        data.accumulatedFields.length === 0
+          ? null
+          : data.accumulatedFields,
     };
 
     createRule.mutate(payload);
@@ -208,6 +223,15 @@ export default function Page() {
 
   const rulesModificationDisabled =
     isPointsReachedTrigger && query.rules.length === 1;
+
+  const accumulatableFields = (
+    (selectedTrigger && getAccumulatableFields(selectedTrigger)) ||
+    []
+  ).filter((field) => {
+    return query.rules.some((rule) => {
+      return (rule as RuleType).field === field.key;
+    });
+  });
   return (
     <Card>
       <CardHeader>
@@ -271,7 +295,15 @@ export default function Page() {
                     <FormItem>
                       <FormLabel>Trigger</FormLabel>
                       <Select
-                        onValueChange={field.onChange}
+                        onValueChange={(value) => {
+                          if (
+                            query.rules.length > 0 &&
+                            !confirm("You have unsaved changes. Continue?")
+                          ) {
+                            return;
+                          }
+                          field.onChange(value);
+                        }}
                         defaultValue={field.value}
                       >
                         <FormControl>
@@ -321,14 +353,15 @@ export default function Page() {
               <h3 className="text-lg font-semibold">If</h3>
               <QueryBuilderDnD dnd={{ ...ReactDnD, ...ReactDndHtml5Backend }}>
                 <QueryBuilder
+                  resetOnOperatorChange
+                  resetOnFieldChange
+                  debugMode
                   disabled={
                     !selectedTrigger || selectedTrigger.fields?.length === 0
                   }
                   fields={fields}
                   query={query}
-                  getOperators={operatorFactory}
                   onQueryChange={setQuery}
-                  resetOnFieldChange={false}
                   controlElements={
                     rulesModificationDisabled
                       ? {
@@ -362,6 +395,63 @@ export default function Page() {
                   </pre>
                 </>
               )}
+              {/*{accumulatableFields.length > 0 && (*/}
+              {/*  <FormField*/}
+              {/*    control={form.control}*/}
+              {/*    name="accumulatedFields"*/}
+              {/*    render={() => (*/}
+              {/*      <FormItem>*/}
+              {/*        <div className="m-4">*/}
+              {/*          <FormLabel className="text-base">*/}
+              {/*            Accumulated Fields*/}
+              {/*          </FormLabel>*/}
+              {/*          <FormDescription>*/}
+              {/*            Select the fields you want to accumulate when this*/}
+              {/*            rule is triggered.*/}
+              {/*          </FormDescription>*/}
+              {/*          {accumulatableFields.map((item) => (*/}
+              {/*            <FormField*/}
+              {/*              key={item.key}*/}
+              {/*              control={form.control}*/}
+              {/*              name="accumulatedFields"*/}
+              {/*              render={({ field }) => {*/}
+              {/*                return (*/}
+              {/*                  <FormItem*/}
+              {/*                    key={item.key}*/}
+              {/*                    className="flex flex-row items-start space-x-3 space-y-0 my-2"*/}
+              {/*                  >*/}
+              {/*                    <FormControl>*/}
+              {/*                      <Checkbox*/}
+              {/*                        checked={field.value?.includes(item.key!)}*/}
+              {/*                        onCheckedChange={(checked) => {*/}
+              {/*                          return checked*/}
+              {/*                            ? field.onChange([*/}
+              {/*                                ...(field.value || []),*/}
+              {/*                                item.key!,*/}
+              {/*                              ])*/}
+              {/*                            : field.onChange(*/}
+              {/*                                field.value?.filter(*/}
+              {/*                                  (value) => value !== item.key,*/}
+              {/*                                ),*/}
+              {/*                              );*/}
+              {/*                        }}*/}
+              {/*                      />*/}
+              {/*                    </FormControl>*/}
+              {/*                    <FormLabel className="font-normal">*/}
+              {/*                      {item.key}*/}
+              {/*                    </FormLabel>*/}
+              {/*                  </FormItem>*/}
+              {/*                );*/}
+              {/*              }}*/}
+              {/*            />*/}
+              {/*          ))}*/}
+              {/*        </div>*/}
+
+              {/*        <FormMessage />*/}
+              {/*      </FormItem>*/}
+              {/*    )}*/}
+              {/*  />*/}
+              {/*)}*/}
             </div>
             <Separator />
 
@@ -508,26 +598,55 @@ export default function Page() {
   );
 }
 
+interface GetOperatorsOptions {
+  isPointsReachedTrigger: boolean;
+}
+
 function getOperators(
   fieldName: string,
-  { fieldData }: { fieldData: Field },
+  fieldType: string,
+  options: GetOperatorsOptions,
 ): FlexibleOptionList<FullOperator> {
-  switch (fieldData.dataType) {
+  console.log("getOperators", fieldName, fieldType, options);
+  const { isPointsReachedTrigger } = options;
+  if (isPointsReachedTrigger) {
+    return [{ name: "=", label: "equals" }];
+  }
+
+  switch (fieldType) {
     case "text":
       return [
         { name: "=", label: "equals" },
         ...defaultOperators.filter((op) =>
-          ["contains", "beginsWith", "endsWith"].includes(op.name),
+          ["contains", "beginsWith", "endsWith", "in"].includes(op.name),
         ),
       ];
     case "integer":
       return [
         ...defaultOperators.filter((op) =>
-          ["=", ">", ">=", "<", "<="].includes(op.name),
+          ["=", ">", ">=", "<", "<=", "in"].includes(op.name),
         ),
+      ];
+    case "integerSet":
+      return [
+        { name: "containsAll", value: "containsAll", label: "contains all" },
+      ];
+    case "textSet":
+      return [
+        { name: "containsAll", value: "containsAll", label: "contains all" },
       ];
   }
   return [];
+}
+
+function getDefaultOperator(fieldType: string): string {
+  switch (fieldType) {
+    case "integerSet":
+      return "containsAll";
+    case "textSet":
+      return "containsAll";
+  }
+  return "";
 }
 
 function getFormattedCELExpression(query: RuleGroupTypeAny, fields: Field[]) {
@@ -557,4 +676,10 @@ function SectionTitle({ number, title, isOptional }: SectionTitleProps) {
       {isOptional && <span className="text-muted-foreground">(Optional)</span>}
     </div>
   );
+}
+
+function getAccumulatableFields(trigger: TriggerResponse) {
+  return trigger.fields?.filter((field) => {
+    return ["integerSet"].includes(field.type!);
+  });
 }
