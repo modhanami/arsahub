@@ -61,6 +61,10 @@ class CelTest {
                 Arguments.of("logical_or", "26 > 27 || 'Test'.startsWith('Te')", true),
                 Arguments.of("logical_group", "(26 > 27 || 25 > 0) || 'Test'.startsWith('Te')", true),
                 // list (used as set)
+                Arguments.of("int: in", "10 in [10, 20, 30]", true),
+                Arguments.of("int: in", "40 in [10, 20, 30]", false),
+                Arguments.of("string: in", "'one' in ['test', 'one', 'two']", true),
+                Arguments.of("string: in", "'three' in ['test', 'one', 'two']", false),
                 Arguments.of("int list: containsAll", "[10, 20, 30].containsAll([20])", true),
                 Arguments.of("int list: containsAll", "[10, 20, 30].containsAll([20, 10])", true),
                 Arguments.of("int list: containsAll", "[10, 20, 30].containsAll([20, 40])", false),

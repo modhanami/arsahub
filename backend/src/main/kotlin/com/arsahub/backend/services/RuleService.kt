@@ -130,7 +130,7 @@ class RuleService(
         val varDecls = trigger.fields.getCelVarDecls()
         logger.debug { "Variable declarations: $varDecls" }
         val validationResult = RuleEngine.getProgramValidationResult(conditionExpression, varDecls)
-        logger.debug { "Validation result: $validationResult" }
+        logger.debug { "Validation result issues: ${validationResult.issueString}" }
         val invalidFieldsMessage = "Invalid fields in condition expression"
         require(!validationResult.hasError()) {
             // TODO: distinct error messages

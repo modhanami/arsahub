@@ -618,7 +618,7 @@ function getOperators(
     case "integer":
       return [
         ...defaultOperators.filter((op) =>
-          ["=", ">", ">=", "<", "<="].includes(op.name),
+          ["=", ">", ">=", "<", "<=", "in"].includes(op.name),
         ),
       ];
     case "integerSet":
