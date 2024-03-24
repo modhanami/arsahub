@@ -12,6 +12,7 @@ import com.arsahub.backend.models.App
 import com.arsahub.backend.models.Rule
 import com.arsahub.backend.models.RuleRepeatability
 import com.arsahub.backend.models.Trigger
+import com.arsahub.backend.models.TriggerField
 import com.arsahub.backend.repositories.RuleProgressRepository
 import com.arsahub.backend.repositories.RuleRepository
 import com.arsahub.backend.services.ruleengine.RuleEngine
@@ -23,6 +24,10 @@ import org.springframework.stereotype.Service
 class RuleNotFoundException : NotFoundException("Rule not found")
 
 class RuleInUseException : ConflictException("Rule is in use")
+
+fun MutableSet<TriggerField>.getAccumulatableFields(): List<TriggerField> {
+    return this.filter { it.type == "integerSet" }
+}
 
 @Service
 class RuleService(
@@ -48,6 +53,7 @@ class RuleService(
         app: App,
         request: RuleCreateRequest,
     ): Rule {
+        // TODO: evaluate built-in triggers fallback
         val trigger =
             runCatching {
                 triggerService.getTriggerOrThrow(request.trigger.key!!, app)
@@ -62,6 +68,9 @@ class RuleService(
         val ruleRepeatability = RuleRepeatability.valueOf(request.repeatability!!)
         validateRepeatabilityForBuiltInTrigger(ruleRepeatability, trigger)
 
+        // validate accumulated fields
+        validateAccumulatedFields(trigger, request.accumulatedFields)
+
         if (request.conditionExpression != null) {
             validateConditionExpression(trigger, request.conditionExpression)
         }
@@ -75,6 +84,7 @@ class RuleService(
                 triggerParams = request.trigger.params?.toMutableMap(),
                 repeatability = ruleRepeatability.key,
                 conditionExpression = request.conditionExpression,
+                accumulatedFields = request.accumulatedFields?.toTypedArray(),
             )
 
         rule.action = parsedAction.key
@@ -93,6 +103,23 @@ class RuleService(
         return ruleRepository.save(rule)
     }
 
+    private fun validateAccumulatedFields(
+        trigger: Trigger,
+        accumulatedFields: List<String>?,
+    ) {
+        if (accumulatedFields.isNullOrEmpty()) {
+            return
+        }
+
+        val accumulateFields = trigger.fields.getAccumulatableFields()
+        val triggerFieldKeys = accumulateFields.map { it.key!! }
+        val invalidFields = accumulatedFields.filterNot { triggerFieldKeys.contains(it) }
+
+        require(invalidFields.isEmpty()) {
+            "Invalid accumulated fields: $invalidFields"
+        }
+    }
+
     private fun validateConditionExpression(
         trigger: Trigger,
         conditionExpression: String,
@@ -103,7 +130,7 @@ class RuleService(
         val varDecls = trigger.fields.getCelVarDecls()
         logger.debug { "Variable declarations: $varDecls" }
         val validationResult = RuleEngine.getProgramValidationResult(conditionExpression, varDecls)
-        logger.debug { "Validation result: $validationResult" }
+        logger.debug { "Validation result issues: ${validationResult.issueString}" }
         val invalidFieldsMessage = "Invalid fields in condition expression"
         require(!validationResult.hasError()) {
             // TODO: distinct error messages

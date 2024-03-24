@@ -35,23 +35,21 @@ class TriggerField(
 enum class TriggerFieldType(val key: String) {
     INTEGER("integer"),
     TEXT("text"),
+    INTEGER_SET("integerSet"),
+    TEXT_SET("textSet"),
     ;
 
     override fun toString(): String {
         return key
     }
 
-    fun matchesKey(key: String): Boolean {
-        return this.key == key.lowercase()
-    }
-
     companion object {
         fun supports(key: String): Boolean {
-            return entries.any { it.matchesKey(key) }
+            return entries.any { it.key == key }
         }
 
         fun fromString(key: String): TriggerFieldType? {
-            return entries.firstOrNull { it.matchesKey(key) }
+            return entries.firstOrNull { it.key == key }
         }
     }
 }

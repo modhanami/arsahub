@@ -15,6 +15,7 @@ class RuleCreateRequest(
     val action: ActionDefinition,
     repeatability: String?,
     val conditionExpression: String? = null,
+    accumulatedFields: List<String>? = null,
 ) {
     @ValidTitle
     @RequiredTitle
@@ -25,6 +26,8 @@ class RuleCreateRequest(
 
     @NotBlank(message = ValidationMessages.Constants.REPEATABILITY_REQUIRED)
     val repeatability = repeatability?.trim()
+
+    val accumulatedFields = accumulatedFields?.map { it.trim() }
 }
 
 typealias TriggerDefinition = KeyAndParams
