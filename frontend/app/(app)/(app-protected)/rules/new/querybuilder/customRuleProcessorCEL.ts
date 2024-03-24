@@ -169,10 +169,9 @@ const shouldRenderAsNumber = (
   parseNumbers?: boolean,
   fieldData?: FullField,
 ) => {
+  console.log("parseNumbers", parseNumbers, "fieldData", fieldData);
   return (
     parseNumbers &&
-    (fieldData === undefined ||
-      fieldData?.dataType === "integer" ||
-      fieldData?.dataType === "integerSet")
+    (fieldData?.dataType === "integer" || fieldData?.dataType === "integerSet")
   );
 };

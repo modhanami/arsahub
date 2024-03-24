@@ -612,7 +612,7 @@ function getOperators(
       return [
         { name: "=", label: "equals" },
         ...defaultOperators.filter((op) =>
-          ["contains", "beginsWith", "endsWith"].includes(op.name),
+          ["contains", "beginsWith", "endsWith", "in"].includes(op.name),
         ),
       ];
     case "integer":
