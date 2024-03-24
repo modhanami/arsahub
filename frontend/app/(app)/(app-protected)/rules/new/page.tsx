@@ -625,6 +625,10 @@ function getOperators(
       return [
         { name: "containsAll", value: "containsAll", label: "contains all" },
       ];
+    case "textSet":
+      return [
+        { name: "containsAll", value: "containsAll", label: "contains all" },
+      ];
   }
   return [];
 }
@@ -632,6 +636,8 @@ function getOperators(
 function getDefaultOperator(fieldType: string): string {
   switch (fieldType) {
     case "integerSet":
+      return "containsAll";
+    case "textSet":
       return "containsAll";
   }
   return "";

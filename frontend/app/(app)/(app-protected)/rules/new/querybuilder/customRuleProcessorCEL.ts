@@ -58,11 +58,20 @@ export const customRuleProcessorCEL: RuleProcessor = (
     case "containsAll": {
       return `${field}.containsAll([${toArray(value)
         .map((val) => {
-          const valNum = shouldRenderAsNumber(parseNumbers, fieldData)
+          const shouldParseNumbers = shouldRenderAsNumber(
+            parseNumbers,
+            fieldData,
+          );
+          const valNum = shouldParseNumbers
             ? parseNumber(val, { parseNumbers: true })
             : NaN;
 
-          return isNaN(valNum) ? "" : valNum;
+          // return isNaN(valNum) ? "" : valNum;
+          return !isNaN(valNum)
+            ? valNum
+            : shouldParseNumbers
+              ? ""
+              : `"${escapeDoubleQuotes(val, escapeQuotes)}"`;
         })
         .filter((val) => val !== "")
         .join(", ")}])`;

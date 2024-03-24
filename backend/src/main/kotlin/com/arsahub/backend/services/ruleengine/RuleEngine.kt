@@ -52,6 +52,7 @@ fun TriggerField.getCelType(): CelType {
         TriggerFieldType.INTEGER -> SimpleType.INT
         TriggerFieldType.TEXT -> SimpleType.STRING
         TriggerFieldType.INTEGER_SET -> ListType.create(SimpleType.INT)
+        TriggerFieldType.TEXT_SET -> ListType.create(SimpleType.STRING)
         else -> throw IllegalArgumentException("Unsupported trigger field type: $type")
     }
 }
@@ -182,6 +183,7 @@ class RuleEngine(
         afterAction: (ActionResult, Rule) -> Unit?,
     ): List<ActionResult> {
         val actionResults = mutableListOf<ActionResult>()
+        logger.debug { "Found ${matchingRules.size} matching rules" }
 
         for (rule in matchingRules) {
             logger.debug { "Checking rule ${rule.title} (${rule.id})" }
@@ -322,7 +324,8 @@ class RuleEngine(
         return triggerLog
     }
 
-    private fun activateRule(
+    @Transactional
+    fun activateRule(
         rule: Rule,
         app: App,
         appUser: AppUser,
@@ -355,6 +358,7 @@ class RuleEngine(
         app: App,
         appUser: AppUser,
     ): Boolean {
+        logger.debug { "Checking repeatability" }
         if (rule.repeatability == RuleRepeatability.ONCE_PER_USER) {
             val ruleProgress = ruleProgressRepository.findByRuleAndAppAndAppUser(rule, app, appUser)
             if (ruleProgress != null && ruleProgress.activationCount!! > 0) {
@@ -362,6 +366,7 @@ class RuleEngine(
                 return false
             }
         }
+        logger.debug { "Rule ${rule.title} (${rule.id}) is repeatable" }
         return true
     }
 
