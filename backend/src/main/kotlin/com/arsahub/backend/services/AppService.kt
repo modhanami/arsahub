@@ -30,21 +30,13 @@ import com.arsahub.backend.services.actionhandlers.ActionResult
 import com.arsahub.backend.services.ruleengine.RuleEngine
 import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.validation.Valid
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
 import org.springframework.data.repository.findByIdOrNull
-import org.springframework.http.client.JdkClientHttpRequestFactory
+import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import org.springframework.web.client.RestClient
 import java.net.URI
-import java.net.http.HttpClient
-import java.time.Duration
 import java.util.*
-import kotlin.time.measureTime
 
 class AppUserNotFoundException : NotFoundException("App user not found")
 
@@ -70,24 +62,9 @@ class AppService(
     private val appInvitationRepository: AppInvitationRepository,
     private val appUserPointsHistoryRepository: AppUserPointsHistoryRepository,
     private val webhookRepository: WebhookRepository,
+    private val kafkaTemplateWebhookDelivery: KafkaTemplate<String, WebhookPayload>,
 ) {
     private val logger = KotlinLogging.logger {}
-    private val webhookTimeout = Duration.ofSeconds(WEBHOOK_TIMEOUT_SECONDS)
-
-    private val restClient =
-        RestClient
-            .builder()
-            .requestFactory(
-                JdkClientHttpRequestFactory(
-                    HttpClient.newBuilder()
-                        .version(HttpClient.Version.HTTP_1_1) // TODO: evaluate HTTP/2 (this is hotfix for EOFException)
-                        .build(),
-                ).apply {
-
-                    setReadTimeout(webhookTimeout)
-                },
-            )
-            .build()
 
     fun getAppOrThrow(id: Long): App {
         return appRepository.findById(id).orElseThrow { AppNotFoundException(id) }
@@ -192,29 +169,33 @@ class AppService(
                 }
 
                 val appWebhooks = webhookRepository.findByApp(app).map { URI(it.url!!) }
-                launch { publishWebhookEvents(app, appWebhooks, appUser, actionResult) }
+                publishWebhookEvents(app, appWebhooks, appUser, actionResult)
                 broadcastActionResult(actionResult, app, request.userId)
             }
         }
     }
 
-    private suspend fun publishWebhookEvents(
+    private fun publishWebhookEvents(
         app: App,
         appWebhooks: List<URI>,
         appUser: AppUser,
         actionResult: ActionResult,
     ) {
-        coroutineScope {
-            if (appWebhooks.isEmpty()) {
-                return@coroutineScope
-            }
+        logger.debug { "Publishing webhook events for app ${app.title}" }
+        if (appWebhooks.isEmpty()) {
+            return
+        }
 
-            // TODO: more events. e.g. rule activated, etc.
+        // TODO: more events. e.g. rule activated, etc.
+        appWebhooks.forEach { webhook ->
+
             val payload =
                 when (actionResult) {
                     is ActionResult.AchievementUpdate -> {
                         WebhookPayload(
                             id = UUID.randomUUID(),
+                            appId = app.id!!,
+                            webhookUrl = webhook.toString(),
                             event = "achievement_unlocked",
                             appUserId = appUser.userId!!,
                             payload =
@@ -227,6 +208,8 @@ class AppService(
                     is ActionResult.PointsUpdate -> {
                         WebhookPayload(
                             id = UUID.randomUUID(),
+                            appId = app.id!!,
+                            webhookUrl = webhook.toString(),
                             event = "points_updated",
                             appUserId = appUser.userId!!,
                             payload =
@@ -238,51 +221,14 @@ class AppService(
                     }
 
                     else -> {
-                        return@coroutineScope
+                        logger.warn { "Unsupported action result: $actionResult" }
+                        return
                     }
                 }
 
-            appWebhooks.forEach { webhook ->
-                logger.debug { "Launching coroutine for webhook: $webhook" }
-                launch { publishWebhookEvent(webhook, app, payload) }
-            }
+            kafkaTemplateWebhookDelivery.send("webhookDeliveries", payload)
+            logger.debug { "Sent webhook payload to Kafka: $payload" }
         }
-    }
-
-    private suspend fun publishWebhookEvent(
-        webhook: URI,
-        app: App,
-        payload: WebhookPayload,
-    ) {
-        // TODO: retry?
-        val duration =
-            measureTime {
-                try {
-                    logger.debug { "Publishing webhook for app ${app.title}: $webhook" }
-                    val response =
-                        // the underlying rest client is blocking, so we need to switch to IO dispatcher
-                        withContext(Dispatchers.IO) {
-                            restClient.post()
-                                .uri(webhook)
-                                .body(
-                                    payload,
-                                )
-                                .retrieve()
-                                .toBodilessEntity()
-                        }
-
-                    if (response.statusCode.isError) {
-                        logger.error { "Webhook $webhook failed for app ${app.title}: ${response.statusCode}" }
-                        // TODO: handle webhook failure
-                    } else {
-                        logger.debug { "Webhook $webhook succeeded for app ${app.title}: ${response.statusCode}" }
-                    }
-                } catch (e: Exception) {
-                    logger.error(e) { "Webhook $webhook failed for app ${app.title}" }
-                    // TODO: handle webhook failure
-                }
-            }
-        logger.debug { "Webhook $webhook took $duration for app ${app.title} " }
     }
 
     fun dryTrigger(
