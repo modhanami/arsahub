@@ -32,6 +32,14 @@ export const customRuleProcessorCEL: RuleProcessor = (
     typeof value === "bigint" ||
     shouldRenderAsNumber(parseNumbers, fieldData);
 
+  console.log("[customRuleProcessorCEL] inputs", {
+    rule,
+    options,
+    valueIsField,
+    operatorTL,
+    useBareValue,
+  });
+
   switch (operatorTL) {
     case "<":
     case "<=":
