@@ -33,6 +33,8 @@ import { resolveBasePath } from "@/lib/base-path";
 import { useRouter } from "next/navigation";
 import { DashboardHeader } from "@/components/header";
 import { DashboardShell } from "@/components/shell";
+import { Separator } from "@/components/ui/separator";
+import { SectionTitle } from "@/app/(app)/(app-protected)/rules/shared";
 
 const FormSchema = z.object({
   title: z
@@ -143,100 +145,118 @@ function UpdateRuleForm({ rule }: UpdateRuleFormProps) {
           onSubmit={form.handleSubmit(onSubmit)}
           className="max-w-2xl space-y-6"
         >
-          {/*Title*/}
-          <FormField
-            control={form.control}
-            name="title"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Title</FormLabel>
-                <FormControl>
-                  <InputWithCounter
-                    placeholder="Title"
-                    maxLength={ValidationLengths.TITLE_MAX_LENGTH}
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {/*Description*/}
-          <FormField
-            control={form.control}
-            name="description"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Description</FormLabel>
-                <FormControl>
-                  <TextareaWithCounter
-                    placeholder="Description"
-                    maxLength={ValidationLengths.DESCRIPTION_MAX_LENGTH}
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <h3 className="text-lg font-semibold">When</h3>
-          <FormItem>
-            <FormLabel>Trigger</FormLabel>
-            <Input
-              className="flex items-center justify-between w-full"
-              disabled
-              value={rule.trigger?.title ?? "-"}
+          <div className="space-y-4">
+            {/*Title*/}
+            <FormField
+              control={form.control}
+              name="title"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Title</FormLabel>
+                  <FormControl>
+                    <InputWithCounter
+                      placeholder="Title"
+                      maxLength={ValidationLengths.TITLE_MAX_LENGTH}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </FormItem>
 
-          {/*  Config Condition */}
-          <h3 className="text-lg font-semibold">If</h3>
-          <div className="space-y-4">TODO: Display conditions</div>
+            {/*Description*/}
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Description</FormLabel>
+                  <FormControl>
+                    <TextareaWithCounter
+                      placeholder="Description"
+                      maxLength={ValidationLengths.DESCRIPTION_MAX_LENGTH}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          <Separator />
 
-          {/*  Config Action */}
-          <h3 className="text-lg font-semibold">Then</h3>
-          <FormItem>
-            <FormLabel>Action</FormLabel>
-            <Select>
-              <SelectTrigger disabled>
-                <SelectValue placeholder={rule.action ?? "-"} />
-              </SelectTrigger>
-            </Select>
-            <FormMessage />
-          </FormItem>
-
-          {rule.action == "add_points" && (
+          <div className="space-y-4">
+            <SectionTitle number={1} title="When" />
             <FormItem>
-              <FormLabel>Points</FormLabel>
+              <FormLabel>Trigger</FormLabel>
               <Input
-                placeholder="Points"
-                type="number"
+                className="flex items-center justify-between w-full"
                 disabled
-                value={rule.actionPoints ?? 0}
+                value={rule.trigger?.title ?? "-"}
               />
             </FormItem>
-          )}
+          </div>
+          <Separator />
 
-          {rule.action == "unlock_achievement" && (
+          {/*  Config Condition */}
+          <div className="space-y-4">
+            <SectionTitle number={2} title="If" isOptional />
+            <p className="text-muted-foreground">
+              {rule.conditionExpression ?? "-"}
+            </p>
+          </div>
+          <Separator />
+
+          <div className="space-y-4">
+            {/*  Config Action */}
+            <SectionTitle number={3} title="Then" />
             <FormItem>
-              <FormLabel>Achievement</FormLabel>
-              TODO: Display achievement
+              <FormLabel>Action</FormLabel>
+              <Select>
+                <SelectTrigger disabled>
+                  <SelectValue placeholder={rule.action ?? "-"} />
+                </SelectTrigger>
+              </Select>
+              <FormMessage />
             </FormItem>
-          )}
 
-          {/*Repeatability*/}
-          <FormItem>
-            <FormLabel>Repeatability</FormLabel>
-            <Select disabled>
-              <SelectTrigger>
-                <SelectValue
-                  className="flex items-center justify-between w-full"
-                  placeholder={rule.repeatability ?? "-"}
+            {rule.action == "add_points" && (
+              <FormItem>
+                <FormLabel>Points</FormLabel>
+                <Input
+                  placeholder="Points"
+                  type="number"
+                  disabled
+                  value={rule.actionPoints ?? 0}
                 />
-              </SelectTrigger>
-            </Select>
-          </FormItem>
+              </FormItem>
+            )}
+
+            {rule.action == "unlock_achievement" && (
+              <FormItem>
+                <FormLabel>Achievement</FormLabel>
+                TODO: Display achievement
+              </FormItem>
+            )}
+          </div>
+          <Separator />
+
+          <div className="space-y-4">
+            <SectionTitle title="More settings" />
+            {/*Repeatability*/}
+            <FormItem>
+              <FormLabel>Repeatability</FormLabel>
+              <Select disabled>
+                <SelectTrigger>
+                  <SelectValue
+                    className="flex items-center justify-between w-full"
+                    placeholder={rule.repeatability ?? "-"}
+                  />
+                </SelectTrigger>
+              </Select>
+            </FormItem>
+          </div>
 
           <Button
             type="submit"
