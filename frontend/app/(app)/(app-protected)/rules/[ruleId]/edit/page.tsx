@@ -1,6 +1,5 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -32,6 +31,8 @@ import { isApiError } from "@/api";
 import { HttpStatusCode } from "axios";
 import { resolveBasePath } from "@/lib/base-path";
 import { useRouter } from "next/navigation";
+import { DashboardHeader } from "@/components/header";
+import { DashboardShell } from "@/components/shell";
 
 const FormSchema = z.object({
   title: z
@@ -107,122 +108,145 @@ function UpdateRuleForm({ rule }: UpdateRuleFormProps) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Update Rule</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {/*  Config Trigger */}
-        <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="w-2/3 space-y-6"
-          >
-            {/*Title*/}
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Title</FormLabel>
-                  <FormControl>
-                    <InputWithCounter
-                      placeholder="Title"
-                      maxLength={ValidationLengths.TITLE_MAX_LENGTH}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+    <DashboardShell>
+      <Button
+        type="button"
+        onClick={() => router.push(resolveBasePath(`/rules`))}
+        variant="outline"
+        className="h-8 self-start px-2 group"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="mr-1 h-4 w-4 transition-transform group-hover:-translate-x-1"
+        >
+          <polyline points="15 18 9 12 15 6" />
+        </svg>{" "}
+        Back
+      </Button>
 
-            {/*Description*/}
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <TextareaWithCounter
-                      placeholder="Description"
-                      maxLength={ValidationLengths.DESCRIPTION_MAX_LENGTH}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+      <DashboardHeader
+        heading="Update Rule"
+        text="Update the rule details"
+        separator
+      ></DashboardHeader>
+      {/*  Config Trigger */}
+      <Form {...form}>
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="max-w-2xl space-y-6"
+        >
+          {/*Title*/}
+          <FormField
+            control={form.control}
+            name="title"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Title</FormLabel>
+                <FormControl>
+                  <InputWithCounter
+                    placeholder="Title"
+                    maxLength={ValidationLengths.TITLE_MAX_LENGTH}
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/*Description*/}
+          <FormField
+            control={form.control}
+            name="description"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Description</FormLabel>
+                <FormControl>
+                  <TextareaWithCounter
+                    placeholder="Description"
+                    maxLength={ValidationLengths.DESCRIPTION_MAX_LENGTH}
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <h3 className="text-lg font-semibold">When</h3>
+          <FormItem>
+            <FormLabel>Trigger</FormLabel>
+            <Input
+              className="flex items-center justify-between w-full"
+              disabled
+              value={rule.trigger?.title ?? "-"}
             />
-            <h3 className="text-lg font-semibold">When</h3>
+          </FormItem>
+
+          {/*  Config Condition */}
+          <h3 className="text-lg font-semibold">If</h3>
+          <div className="space-y-4">TODO: Display conditions</div>
+
+          {/*  Config Action */}
+          <h3 className="text-lg font-semibold">Then</h3>
+          <FormItem>
+            <FormLabel>Action</FormLabel>
+            <Select>
+              <SelectTrigger disabled>
+                <SelectValue placeholder={rule.action ?? "-"} />
+              </SelectTrigger>
+            </Select>
+            <FormMessage />
+          </FormItem>
+
+          {rule.action == "add_points" && (
             <FormItem>
-              <FormLabel>Trigger</FormLabel>
+              <FormLabel>Points</FormLabel>
               <Input
-                className="flex items-center justify-between w-full"
+                placeholder="Points"
+                type="number"
                 disabled
-                value={rule.trigger?.title ?? "-"}
+                value={rule.actionPoints ?? 0}
               />
             </FormItem>
+          )}
 
-            {/*  Config Condition */}
-            <h3 className="text-lg font-semibold">If</h3>
-            <div className="space-y-4">TODO: Display conditions</div>
-
-            {/*  Config Action */}
-            <h3 className="text-lg font-semibold">Then</h3>
+          {rule.action == "unlock_achievement" && (
             <FormItem>
-              <FormLabel>Action</FormLabel>
-              <Select>
-                <SelectTrigger disabled>
-                  <SelectValue placeholder={rule.action ?? "-"} />
-                </SelectTrigger>
-              </Select>
-              <FormMessage />
+              <FormLabel>Achievement</FormLabel>
+              TODO: Display achievement
             </FormItem>
+          )}
 
-            {rule.action == "add_points" && (
-              <FormItem>
-                <FormLabel>Points</FormLabel>
-                <Input
-                  placeholder="Points"
-                  type="number"
-                  disabled
-                  value={rule.actionPoints ?? 0}
+          {/*Repeatability*/}
+          <FormItem>
+            <FormLabel>Repeatability</FormLabel>
+            <Select disabled>
+              <SelectTrigger>
+                <SelectValue
+                  className="flex items-center justify-between w-full"
+                  placeholder={rule.repeatability ?? "-"}
                 />
-              </FormItem>
-            )}
+              </SelectTrigger>
+            </Select>
+          </FormItem>
 
-            {rule.action == "unlock_achievement" && (
-              <FormItem>
-                <FormLabel>Achievement</FormLabel>
-                TODO: Display achievement
-              </FormItem>
-            )}
-
-            {/*Repeatability*/}
-            <FormItem>
-              <FormLabel>Repeatability</FormLabel>
-              <Select disabled>
-                <SelectTrigger>
-                  <SelectValue
-                    className="flex items-center justify-between w-full"
-                    placeholder={rule.repeatability ?? "-"}
-                  />
-                </SelectTrigger>
-              </Select>
-            </FormItem>
-
-            <Button
-              type="submit"
-              disabled={updateRule.isPending || !form.formState.isDirty}
-            >
-              Submit
-            </Button>
-          </form>
-        </Form>
-      </CardContent>
-    </Card>
+          <Button
+            type="submit"
+            disabled={updateRule.isPending || !form.formState.isDirty}
+          >
+            Update
+          </Button>
+        </form>
+      </Form>
+    </DashboardShell>
   );
 }
 
