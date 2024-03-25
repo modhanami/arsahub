@@ -14,7 +14,7 @@ export default function Page() {
   const { currentApp, isLoading: isAppLoading } = useCurrentApp();
   const { data: users, isLoading } = useAppUsers();
   const [selectedAppUser, setSelectedAppUser] =
-    React.useState<AppUserResponse>(null);
+    React.useState<AppUserResponse | null>(null);
 
   if (isLoading || !users || isAppLoading || !currentApp) return "Loading...";
 
