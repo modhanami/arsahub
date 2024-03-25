@@ -35,6 +35,8 @@ import { DashboardHeader } from "@/components/header";
 import { DashboardShell } from "@/components/shell";
 import { Separator } from "@/components/ui/separator";
 import { SectionTitle } from "@/app/(app)/(app-protected)/rules/shared";
+import { Image } from "@nextui-org/react";
+import { getImageUrlFromKey } from "@/lib/image";
 
 const FormSchema = z.object({
   title: z
@@ -236,7 +238,28 @@ function UpdateRuleForm({ rule }: UpdateRuleFormProps) {
             {rule.action == "unlock_achievement" && (
               <FormItem>
                 <FormLabel>Achievement</FormLabel>
-                TODO: Display achievement
+                <li
+                  className="font-medium flex gap-4"
+                  key={rule.actionAchievement?.achievementId}
+                >
+                  <Image
+                    src={
+                      (rule.actionAchievement?.imageKey &&
+                        getImageUrlFromKey(rule.actionAchievement?.imageKey)) ||
+                      ""
+                    }
+                    width={100}
+                    height={100}
+                    alt={rule.actionAchievement?.title}
+                    radius="full"
+                  />
+                  <div>
+                    <p>{rule.actionAchievement?.title}</p>
+                    <p className="text-muted-foreground text-sm">
+                      {rule.actionAchievement?.description}
+                    </p>
+                  </div>
+                </li>
               </FormItem>
             )}
           </div>
