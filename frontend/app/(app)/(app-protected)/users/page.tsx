@@ -31,8 +31,10 @@ export default function Page() {
           columns={columns}
           data={users}
           onRowClick={(row) => {
-            setSelectedAppUser(row);
+            setSelectedAppUser(row.original);
+            row.toggleSelected(true);
           }}
+          enableMultiSelect={false}
         />
         {selectedAppUser && (
           <iframe

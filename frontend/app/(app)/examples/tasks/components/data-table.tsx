@@ -11,6 +11,7 @@ import {
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
+  Row,
   SortingState,
   useReactTable,
   VisibilityState,
@@ -33,7 +34,8 @@ interface DataTableProps<TData, TValue> {
   data: TData[];
   withPagination?: boolean;
   withToolbar?: boolean;
-  onRowClick?: (row: TData) => void;
+  onRowClick?: (row: Row<TData>) => void;
+  enableMultiSelect?: boolean;
 }
 
 export function DataTable<TData, TValue>({
@@ -42,6 +44,7 @@ export function DataTable<TData, TValue>({
   withPagination = false,
   withToolbar = false,
   onRowClick,
+  enableMultiSelect = true,
 }: DataTableProps<TData, TValue>) {
   const [rowSelection, setRowSelection] = React.useState({});
   const [columnVisibility, setColumnVisibility] =
@@ -66,6 +69,7 @@ export function DataTable<TData, TValue>({
       },
     },
     enableRowSelection: true,
+    enableMultiRowSelection: enableMultiSelect,
     onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -107,7 +111,9 @@ export function DataTable<TData, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
-                  onClick={() => onRowClick(row.original)}
+                  onClick={() => {
+                    onRowClick(row);
+                  }}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
