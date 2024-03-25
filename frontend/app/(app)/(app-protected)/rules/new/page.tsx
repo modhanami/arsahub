@@ -560,15 +560,17 @@ export default function Page() {
                           />
                         </SelectTrigger>
                         <SelectContent className="w-full">
-                          {achievements?.map((achievement) => (
-                            <SelectItem
-                              key={achievement.achievementId}
-                              value={achievement.achievementId?.toString()}
-                              className="flex items-center justify-between w-full"
-                            >
-                              {achievement.title}
-                            </SelectItem>
-                          ))}
+                          <SelectGroup className="overflow-y-auto max-h-[20rem]">
+                            {achievements?.map((achievement) => (
+                              <SelectItem
+                                key={achievement.achievementId}
+                                value={achievement.achievementId?.toString()}
+                                className="flex items-center justify-between w-full"
+                              >
+                                {achievement.title}
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
                         </SelectContent>
                       </Select>
                     </FormControl>
