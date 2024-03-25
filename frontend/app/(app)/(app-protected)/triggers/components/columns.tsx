@@ -93,12 +93,12 @@ export const columns: ColumnDef<TriggerResponse>[] = [
       const title = row.getValue("title") as string;
       return (
         <div className="flex flex-col max-w-[500px] gap-2">
-          <span className="truncate font-medium" title={title}>
+          <span className="truncate" title={title}>
             {title}
           </span>
 
           <span
-            className="max-w-[500px] truncate text-muted-foreground"
+            className="truncate text-muted-foreground"
             title={row.original.description || undefined}
           >
             {row.original.description}
