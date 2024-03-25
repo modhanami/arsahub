@@ -18,6 +18,7 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -339,15 +340,17 @@ export default function Page() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {triggers?.map((trigger) => (
-                          <SelectItem
-                            key={trigger.id}
-                            value={trigger.key!!}
-                            className="flex items-center justify-between w-full"
-                          >
-                            {trigger.title}
-                          </SelectItem>
-                        ))}
+                        <SelectGroup className="overflow-y-auto max-h-[20rem]">
+                          {triggers?.map((trigger) => (
+                            <SelectItem
+                              key={trigger.id}
+                              value={trigger.key!!}
+                              className="flex items-center justify-between w-full"
+                            >
+                              {trigger.title}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
                       </SelectContent>
                     </Select>
                     <FormDescription>
