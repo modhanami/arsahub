@@ -9,6 +9,7 @@ import { columns } from "@/app/(app)/(app-protected)/users/components/columns";
 import { AppUserResponse } from "@/types/generated-types";
 import { resolveBasePath } from "@/lib/base-path";
 import { useCurrentApp } from "@/lib/current-app";
+import { cn } from "@/lib/utils";
 
 export default function Page() {
   const { currentApp, isLoading: isAppLoading } = useCurrentApp();
@@ -26,7 +27,13 @@ export default function Page() {
       >
         <UserCreateForm />
       </DashboardHeader>
-      <div className="grid lg:grid-cols-[1fr_400px] gap-8">
+      {/*<div className="grid lg:grid-cols-[1fr_400px] gap-8">*/}
+      <div
+        className={cn("grid gap-8", {
+          "lg:grid-cols-[1fr_400px]": selectedAppUser !== null,
+          "lg:grid-cols-1": selectedAppUser === null,
+        })}
+      >
         <DataTable
           columns={columns}
           data={users}
