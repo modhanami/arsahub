@@ -1,4 +1,5 @@
 "use client";
+import { Image, Link as NextUILink } from "@nextui-org/react";
 
 import { useAchievements, useCreateRule, useTriggers } from "@/hooks"; // import Link from "next/link";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -24,7 +25,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
-import { Link as NextUILink } from "@nextui-org/react";
 import React from "react";
 import { Input } from "@/components/ui/input";
 import {
@@ -59,6 +59,7 @@ import { useRouter } from "next/navigation";
 import { DashboardShell } from "@/components/shell";
 import { DashboardHeader } from "@/components/header";
 import { SectionTitle } from "@/app/(app)/(app-protected)/rules/shared";
+import { getImageUrlFromKey } from "@/lib/image";
 
 const actions = [
   {
@@ -559,15 +560,36 @@ export default function Page() {
                             placeholder="Select an achievement"
                           />
                         </SelectTrigger>
-                        <SelectContent className="w-full">
-                          <SelectGroup className="overflow-y-auto max-h-[20rem]">
+                        <SelectContent className="w-full whatthefuck">
+                          <SelectGroup className="overflow-y-auto max-h-[20rem] whatthefuck">
                             {achievements?.map((achievement) => (
                               <SelectItem
                                 key={achievement.achievementId}
                                 value={achievement.achievementId?.toString()}
-                                className="flex items-center justify-between w-full"
                               >
-                                {achievement.title}
+                                <div className="flex items-center gap-4 w-full">
+                                  <Image
+                                    src={
+                                      (achievement?.imageKey &&
+                                        getImageUrlFromKey(
+                                          achievement?.imageKey,
+                                        )) ||
+                                      ""
+                                    }
+                                    width={60}
+                                    height={60}
+                                    alt={achievement?.title}
+                                    radius="none"
+                                  />
+                                  <div className="flex flex-col">
+                                    <span className="font-medium">
+                                      {achievement.title}
+                                    </span>
+                                    <span className="text-muted-foreground">
+                                      {achievement.description}
+                                    </span>
+                                  </div>
+                                </div>
                               </SelectItem>
                             ))}
                           </SelectGroup>
