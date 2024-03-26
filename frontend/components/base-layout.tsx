@@ -27,7 +27,7 @@ export default function BaseLayout({
         </div>
       </header>
       <div className="grid flex-1 gap-4 md:grid-cols-[240px_1fr]">
-        <aside className="hidden w-[240px] flex-col md:flex h-full">
+        <aside className="hidden w-[240px] md:flex sticky top-[65px] left-0 max-h-[calc(100vh-65px)]">
           {/*<aside className="hidden w-[240px] flex-col md:flex max-h-[calc(100vh-64px)]">*/}
           <DashboardNav items={sideNavItems}></DashboardNav>
         </aside>

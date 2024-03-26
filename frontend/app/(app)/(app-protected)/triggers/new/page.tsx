@@ -193,9 +193,9 @@ export default function Page({}) {
             description: "Your trigger was created successfully.",
           });
           setIsOpen(false);
-          router.push(resolveBasePath(`/triggers/new`));
 
           form.reset(getEmptyDefaultValues());
+          router.push(resolveBasePath(`/triggers`));
         },
         onError: (error, b, c) => {
           console.log("error", error);
@@ -217,10 +217,11 @@ export default function Page({}) {
 
   return (
     <DashboardShell>
-      <button
+      <Button
         type="button"
         onClick={() => router.push(resolveBasePath(`/triggers`))}
-        className="py-2 px-4 rounded-md no-underline text-foreground bg-muted/10 hover:bg-muted/40 flex items-center group text-sm"
+        variant="outline"
+        className="h-8 self-start px-2 group"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -232,12 +233,12 @@ export default function Page({}) {
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1"
+          className="mr-1 h-4 w-4 transition-transform group-hover:-translate-x-1"
         >
           <polyline points="15 18 9 12 15 6" />
         </svg>{" "}
         Back
-      </button>
+      </Button>
 
       <DashboardHeader
         heading="New Trigger"
@@ -301,7 +302,8 @@ export default function Page({}) {
               <FormLabel>Auto-generated key</FormLabel>
               <p className="text-gray-500 text-sm">
                 This is the key that you will use for sending triggers for your
-                app users. It will be auto-generated from the title.
+                app users. It will be auto-generated from the title. Does not
+                change once set.
               </p>
               <Input
                 value={

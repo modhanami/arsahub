@@ -10,6 +10,7 @@ import {
   Crown,
   Cuboid,
   Dices,
+  Eye,
   File,
   FileText,
   FlaskConical,
@@ -102,4 +103,5 @@ export const Icons = {
   pointsShop: ShoppingCartIcon,
   edit: PencilIcon,
   webhook: WebhookIcon,
+  eye: Eye,
 };

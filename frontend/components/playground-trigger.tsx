@@ -12,6 +12,7 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -309,15 +310,17 @@ export function PlaygroundTriggerForm() {
                                 />
                               </SelectTrigger>
                               <SelectContent className="w-full">
-                                {users.map((member) => (
-                                  <SelectItem
-                                    key={member.userId}
-                                    value={String(member.userId) || ""}
-                                    className="flex items-center justify-between w-full"
-                                  >
-                                    {member.displayName}
-                                  </SelectItem>
-                                ))}
+                                <SelectGroup className="overflow-y-auto max-h-[20rem]">
+                                  {users.map((member) => (
+                                    <SelectItem
+                                      key={member.userId}
+                                      value={String(member.userId) || ""}
+                                      className="flex items-center justify-between w-full"
+                                    >
+                                      {member.displayName}
+                                    </SelectItem>
+                                  ))}
+                                </SelectGroup>
                               </SelectContent>
                             </Select>
                           </FormControl>
@@ -344,15 +347,17 @@ export function PlaygroundTriggerForm() {
                                 />
                               </SelectTrigger>
                               <SelectContent className="w-full">
-                                {triggers.map((trigger) => (
-                                  <SelectItem
-                                    key={trigger.id}
-                                    value={trigger.key?.toString() || ""}
-                                    className="flex items-center justify-between w-full"
-                                  >
-                                    {trigger.title}
-                                  </SelectItem>
-                                ))}
+                                <SelectGroup className="overflow-y-auto max-h-[20rem]">
+                                  {triggers.map((trigger) => (
+                                    <SelectItem
+                                      key={trigger.id}
+                                      value={trigger.key?.toString() || ""}
+                                      className="flex items-center justify-between w-full"
+                                    >
+                                      {trigger.title}
+                                    </SelectItem>
+                                  ))}
+                                </SelectGroup>
                               </SelectContent>
                             </Select>
                           </FormControl>
