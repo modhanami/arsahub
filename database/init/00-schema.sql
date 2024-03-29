@@ -349,7 +349,8 @@ create table webhook
             references app,
     url        text                                   not null,
     created_at timestamp with time zone default now() not null,
-    updated_at timestamp with time zone
+    updated_at timestamp with time zone,
+    secret_key text                                   not null
 );
 
 create table leaderboard_type
