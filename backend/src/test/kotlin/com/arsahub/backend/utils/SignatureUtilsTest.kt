@@ -18,5 +18,4 @@ class SignatureUtilsTest {
         Assertions.assertEquals("OZs273u52OR+y0VJsduSq7itUXzlxn7yhIvr9TCjf44=", signature1)
         Assertions.assertEquals(signature1, signature2)
     }
-
 }
