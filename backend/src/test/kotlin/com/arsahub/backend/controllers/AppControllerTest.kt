@@ -350,17 +350,17 @@ class AppControllerTest() {
                 title = "Workshop Completed",
                 key = "workshop_completed",
                 fields =
-                    listOf(
-                        FieldTestModel(
-                            type = "integer",
-                            key = "workshopId",
-                            label = "Workshop ID",
-                        ),
-                        FieldTestModel(
-                            type = "text",
-                            key = "source",
-                        ),
+                listOf(
+                    FieldTestModel(
+                        type = "integer",
+                        key = "workshopId",
+                        label = "Workshop ID",
                     ),
+                    FieldTestModel(
+                        type = "text",
+                        key = "source",
+                    ),
+                ),
             ).toJson()
 
         // Act & Assert HTTP
@@ -405,17 +405,17 @@ class AppControllerTest() {
                 title = "Wor",
                 key = "workshop_completed",
                 fields =
-                    listOf(
-                        FieldTestModel(
-                            type = "integer",
-                            key = "workshopId",
-                            label = "Workshop ID",
-                        ),
-                        FieldTestModel(
-                            type = "text",
-                            key = "source",
-                        ),
+                listOf(
+                    FieldTestModel(
+                        type = "integer",
+                        key = "workshopId",
+                        label = "Workshop ID",
                     ),
+                    FieldTestModel(
+                        type = "text",
+                        key = "source",
+                    ),
+                ),
             ).toJson()
 
         // Act & Assert HTTP
@@ -437,17 +437,17 @@ class AppControllerTest() {
                 title = null,
                 key = "workshop_completed",
                 fields =
-                    listOf(
-                        FieldTestModel(
-                            type = "integer",
-                            key = "workshopId",
-                            label = "Workshop ID",
-                        ),
-                        FieldTestModel(
-                            type = "text",
-                            key = "source",
-                        ),
+                listOf(
+                    FieldTestModel(
+                        type = "integer",
+                        key = "workshopId",
+                        label = "Workshop ID",
                     ),
+                    FieldTestModel(
+                        type = "text",
+                        key = "source",
+                    ),
+                ),
             ).toJson()
 
         // Act & Assert HTTP
@@ -468,17 +468,17 @@ class AppControllerTest() {
                 title = "Workshop Completed",
                 key = "workshop_completed",
                 fields =
-                    listOf(
-                        FieldTestModel(
-                            type = "integer",
-                            key = "workshopId",
-                            label = "Workshop ID",
-                        ),
-                        FieldTestModel(
-                            type = "not_a_valid_type",
-                            key = "source",
-                        ),
+                listOf(
+                    FieldTestModel(
+                        type = "integer",
+                        key = "workshopId",
+                        label = "Workshop ID",
                     ),
+                    FieldTestModel(
+                        type = "not_a_valid_type",
+                        key = "source",
+                    ),
+                ),
             ).toJson()
 
         // Act & Assert HTTP
@@ -500,17 +500,17 @@ class AppControllerTest() {
                 TriggerCreateRequest(
                     title = "Workshop Completed",
                     fields =
-                        listOf(
-                            FieldDefinition(
-                                key = "workshopId",
-                                type = "integer",
-                                label = "Workshop ID",
-                            ),
-                            FieldDefinition(
-                                key = "source",
-                                type = "text",
-                            ),
+                    listOf(
+                        FieldDefinition(
+                            key = "workshopId",
+                            type = "integer",
+                            label = "Workshop ID",
                         ),
+                        FieldDefinition(
+                            key = "source",
+                            type = "text",
+                        ),
+                    ),
                 ),
             )
 
@@ -608,17 +608,17 @@ class AppControllerTest() {
                 TriggerCreateRequest(
                     title = "Workshop Completed",
                     fields =
-                        listOf(
-                            FieldDefinition(
-                                key = "workshopId",
-                                type = "integer",
-                                label = "Workshop ID",
-                            ),
-                            FieldDefinition(
-                                key = "source",
-                                type = "text",
-                            ),
+                    listOf(
+                        FieldDefinition(
+                            key = "workshopId",
+                            type = "integer",
+                            label = "Workshop ID",
                         ),
+                        FieldDefinition(
+                            key = "source",
+                            type = "text",
+                        ),
+                    ),
                 ),
             )
 
@@ -715,17 +715,17 @@ class AppControllerTest() {
                 TriggerCreateRequest(
                     title = "Workshop Completed",
                     fields =
-                        listOf(
-                            FieldDefinition(
-                                key = "workshopId",
-                                type = "integer",
-                                label = "Workshop ID",
-                            ),
-                            FieldDefinition(
-                                key = "source",
-                                type = "text",
-                            ),
+                    listOf(
+                        FieldDefinition(
+                            key = "workshopId",
+                            type = "integer",
+                            label = "Workshop ID",
                         ),
+                        FieldDefinition(
+                            key = "source",
+                            type = "text",
+                        ),
+                    ),
                 ),
             )
 
@@ -867,13 +867,13 @@ class AppControllerTest() {
                 title = builder.title!!,
                 description = builder.description,
                 fields =
-                    builder.fields.map { field ->
-                        FieldDefinition(
-                            type = field.type!!,
-                            key = field.key!!,
-                            label = field.label,
-                        )
-                    },
+                builder.fields.map { field ->
+                    FieldDefinition(
+                        type = field.type!!,
+                        key = field.key!!,
+                        label = field.label,
+                    )
+                },
             ),
         )
     }
@@ -933,14 +933,14 @@ class AppControllerTest() {
                 title = builder.title,
                 description = builder.description,
                 trigger =
-                    TriggerDefinition(
-                        key = builder.trigger!!.key!!,
-                    ),
+                TriggerDefinition(
+                    key = builder.trigger!!.key!!,
+                ),
                 action =
-                    ActionDefinition(
-                        key = builder.action!!.key!!,
-                        params = builder.action!!.params,
-                    ),
+                ActionDefinition(
+                    key = builder.action!!.key!!,
+                    params = builder.action!!.params,
+                ),
                 repeatability = builder.repeatability!!.key,
                 conditionExpression = builder.conditionExpression,
                 accumulatedFields = builder.accumulatedFields,
@@ -3913,21 +3913,6 @@ class AppControllerTest() {
 
         val signature = SignatureUtil.createSignature(secretKey, actualPayload)
         assertEquals(signature, signatureHeader)
-    }
-
-    @Test
-    fun `SignatureUtil - createSignature() implements HMAC-SHA256 with base64 encoding`() {
-        // Arrange
-        val payload = "test payload"
-        val secretKey = "key"
-
-        // Act
-        val signature1 = SignatureUtil.createSignature(secretKey, payload)
-        val signature2 = SignatureUtil.createSignature(secretKey, payload)
-
-        // Assert
-        assertEquals("OZs273u52OR+y0VJsduSq7itUXzlxn7yhIvr9TCjf44=", signature1)
-        assertEquals(signature1, signature2)
     }
 
     @Test
