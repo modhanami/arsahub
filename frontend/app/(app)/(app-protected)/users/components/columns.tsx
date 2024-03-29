@@ -27,6 +27,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Dialog } from "@/components/ui/dialog";
+import { AppUserEditForm } from "@/app/(app)/(app-protected)/users/app-user-edit-form";
 
 export const columns: ColumnDef<AppUserResponse>[] = [
   {
@@ -83,7 +85,7 @@ export const columns: ColumnDef<AppUserResponse>[] = [
       return (
         <div
           className="max-w-[100px]"
-          title={row.original.achievements?.length}
+          title={row.original.achievements?.length.toString()}
         >
           <span className="truncate">{row.original.achievements?.length}</span>
         </div>
@@ -166,7 +168,15 @@ function AppUserRowActions({ row }: DataTableRowActionsProps<AppUserResponse>) {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {/*<Dialog open={showEditDialog} onOpenChange={setShowEditDialog}></Dialog>*/}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <AppUserEditForm
+          userId={row.original.userId}
+          displayName={row.original.displayName}
+          onUpdated={() => {
+            setShowEditDialog(false);
+          }}
+        />
+      </Dialog>
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>

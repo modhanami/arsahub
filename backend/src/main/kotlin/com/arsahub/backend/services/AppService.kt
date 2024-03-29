@@ -3,6 +3,7 @@ package com.arsahub.backend.services
 import com.arsahub.backend.SocketIOService
 import com.arsahub.backend.controllers.AppController
 import com.arsahub.backend.dtos.request.AppUserCreateRequest
+import com.arsahub.backend.dtos.request.AppUserUpdateRequest
 import com.arsahub.backend.dtos.request.TriggerSendRequest
 import com.arsahub.backend.dtos.request.WebhookCreateRequest
 import com.arsahub.backend.dtos.response.AchievementResponse
@@ -552,6 +553,16 @@ class AppService(
     ) {
         val webhook = webhookRepository.findByAppAndId(app, webhookId) ?: throw NotFoundException("Webhook not found")
         webhookRepository.delete(webhook)
+    }
+
+    fun updateAppUser(
+        app: App,
+        userId: String,
+        request: AppUserUpdateRequest,
+    ): AppUser {
+        val appUser = getAppUserOrThrow(app, userId)
+        appUser.displayName = request.displayName
+        return appUserRepository.save(appUser)
     }
 
     companion object {
