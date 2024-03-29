@@ -3,6 +3,7 @@ package com.arsahub.backend.controllers
 import com.arsahub.backend.dtos.request.AchievementCreateRequest
 import com.arsahub.backend.dtos.request.AchievementSetImageRequest
 import com.arsahub.backend.dtos.request.AppUserCreateRequest
+import com.arsahub.backend.dtos.request.AppUserUpdateRequest
 import com.arsahub.backend.dtos.request.RewardCreateRequest
 import com.arsahub.backend.dtos.request.RewardRedeemRequest
 import com.arsahub.backend.dtos.request.RewardSetImageRequest
@@ -268,6 +269,15 @@ class AppController(
         @CurrentApp app: App,
     ): List<AppUserResponse> {
         return appService.listUsers(app).map { AppUserResponse.fromEntity(it) }
+    }
+
+    @PatchMapping("/users/{userId}")
+    fun updateAppUser(
+        @PathVariable userId: String,
+        @Valid @RequestBody request: AppUserUpdateRequest,
+        @CurrentApp app: App,
+    ): AppUserResponse {
+        return appService.updateAppUser(app, userId, request).let { AppUserResponse.fromEntity(it) }
     }
 
     @DeleteMapping("/users/{userId}")

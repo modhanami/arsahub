@@ -6,6 +6,7 @@ import {
   AppResponse,
   AppUserCreateRequest,
   AppUserResponse,
+  AppUserUpdateRequest,
   LeaderboardResponse,
   LoginResponse,
   RewardCreateRequest,
@@ -413,6 +414,23 @@ export async function createAppUser(
   const { data } = await instance.post<AppUserResponse>(
     `${API_URL}/apps/users`,
     newUser,
+    {
+      headers: {
+        ...makeAppAuthHeader(app),
+      },
+    },
+  );
+  return data;
+}
+
+export async function updateAppUser(
+  app: AppResponse,
+  userId: string,
+  updateRequest: AppUserUpdateRequest,
+) {
+  const { data } = await instance.patch<AppUserResponse>(
+    `${API_URL}/apps/users/${userId}`,
+    updateRequest,
     {
       headers: {
         ...makeAppAuthHeader(app),

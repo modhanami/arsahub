@@ -1,7 +1,7 @@
 /* tslint:disable */
 /* eslint-disable */
 
-// Generated using typescript-generator version 3.2.1263 on 2024-03-23 14:02:01.
+// Generated using typescript-generator version 3.2.1263 on 2024-03-30 00:08:03.
 
 export interface AchievementCreateRequest {
   title: string;
@@ -23,6 +23,10 @@ export interface AddPointsAction extends Action {
 
 export interface AppUserCreateRequest {
   uniqueId: string;
+  displayName: string;
+}
+
+export interface AppUserUpdateRequest {
   displayName: string;
 }
 
@@ -222,6 +226,7 @@ export interface WebhookPayload {
 export interface WebhookResponse {
   id: number;
   url: string;
+  secretKey: string | null;
 }
 
 export interface AchievementUnlock extends AppUpdate {
@@ -289,8 +294,8 @@ export interface Resource extends InputStreamSource {
   file: any;
   readable: boolean;
   url: URL;
-  filename: string;
   description: string;
+  filename: string;
   contentAsByteArray: any;
   uri: URI;
 }
