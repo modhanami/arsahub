@@ -11,6 +11,7 @@ import {
   Cuboid,
   Dices,
   Eye,
+  EyeOffIcon,
   File,
   FileText,
   FlaskConical,
@@ -104,4 +105,5 @@ export const Icons = {
   edit: PencilIcon,
   webhook: WebhookIcon,
   eye: Eye,
+  eyeOff: EyeOffIcon,
 };
