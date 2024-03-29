@@ -21,6 +21,9 @@ class Webhook(
     @NotNull
     @Column(name = "url", nullable = false, length = Integer.MAX_VALUE)
     var url: String? = null,
+    @NotNull
+    @Column(name = "secret_key", nullable = false, length = Integer.MAX_VALUE)
+    var secretKey: String? = null,
 ) : AuditedEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

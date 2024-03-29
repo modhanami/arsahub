@@ -28,6 +28,8 @@ import com.arsahub.backend.repositories.AppUserRepository
 import com.arsahub.backend.repositories.UserRepository
 import com.arsahub.backend.services.actionhandlers.ActionResult
 import com.arsahub.backend.services.ruleengine.RuleEngine
+import com.arsahub.backend.utils.SignatureUtil
+import com.fasterxml.jackson.databind.ObjectMapper
 import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.validation.Valid
 import kotlinx.coroutines.Dispatchers
@@ -191,7 +193,7 @@ class AppService(
                     appUserPointsHistoryRepository.save(pointsHistory)
                 }
 
-                val appWebhooks = webhookRepository.findByApp(app).map { URI(it.url!!) }
+                val appWebhooks = webhookRepository.findByApp(app)
                 launch { publishWebhookEvents(app, appWebhooks, appUser, actionResult) }
                 broadcastActionResult(actionResult, app, request.userId)
             }
@@ -200,7 +202,7 @@ class AppService(
 
     private suspend fun publishWebhookEvents(
         app: App,
-        appWebhooks: List<URI>,
+        appWebhooks: List<Webhook>,
         appUser: AppUser,
         actionResult: ActionResult,
     ) {
@@ -250,39 +252,52 @@ class AppService(
     }
 
     private suspend fun publishWebhookEvent(
-        webhook: URI,
+        webhook: Webhook,
         app: App,
         payload: WebhookPayload,
     ) {
         // TODO: retry?
+        val objectMapper = ObjectMapper()
+        val stringPayload = objectMapper.writeValueAsString(payload)
+        logger.debug { "Payload: $stringPayload" }
+        val webhookURI = URI(webhook.url!!)
+        val signature = SignatureUtil.createSignature(webhook.secretKey!!, stringPayload)
         val duration =
             measureTime {
                 try {
-                    logger.debug { "Publishing webhook for app ${app.title}: $webhook" }
+                    logger.debug { "Publishing webhook for app ${app.title}: $webhookURI" }
                     val response =
                         // the underlying rest client is blocking, so we need to switch to IO dispatcher
                         withContext(Dispatchers.IO) {
                             restClient.post()
-                                .uri(webhook)
+                                .uri(webhookURI)
                                 .body(
-                                    payload,
+                                    stringPayload,
+                                )
+                                .header(
+                                    "X-Webhook-Signature",
+                                    signature,
+                                )
+                                .header(
+                                    "Content-Type",
+                                    "application/json",
                                 )
                                 .retrieve()
                                 .toBodilessEntity()
                         }
 
                     if (response.statusCode.isError) {
-                        logger.error { "Webhook $webhook failed for app ${app.title}: ${response.statusCode}" }
+                        logger.error { "Webhook $webhookURI failed for app ${app.title}: ${response.statusCode}" }
                         // TODO: handle webhook failure
                     } else {
-                        logger.debug { "Webhook $webhook succeeded for app ${app.title}: ${response.statusCode}" }
+                        logger.debug { "Webhook $webhookURI succeeded for app ${app.title}: ${response.statusCode}" }
                     }
                 } catch (e: Exception) {
-                    logger.error(e) { "Webhook $webhook failed for app ${app.title}" }
+                    logger.error(e) { "Webhook $webhookURI failed for app ${app.title}" }
                     // TODO: handle webhook failure
                 }
             }
-        logger.debug { "Webhook $webhook took $duration for app ${app.title} " }
+        logger.debug { "Webhook $webhookURI took $duration for app ${app.title} " }
     }
 
     fun dryTrigger(
@@ -509,7 +524,8 @@ class AppService(
             }
         }
 
-        val webhook = Webhook(app = app, url = request.url)
+        val secretKey = UUID.randomUUID().toString()
+        val webhook = Webhook(app = app, url = request.url, secretKey = secretKey)
         logger.debug { "Creating webhook for app ${app.title}: ${webhook.url}" }
 
         return webhookRepository.save(webhook)
