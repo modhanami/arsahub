@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  async basePath() {
+    return process.env.NEXT_PUBLIC_BASE_PATH || "";
+  },
   async redirects() {
     return [
       {
