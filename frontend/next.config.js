@@ -1,8 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  async basePath() {
-    return process.env.NEXT_PUBLIC_BASE_PATH || "";
-  },
+  basePath: process.env.NEXT_PUBLIC_BASE_PATH || "",
   async redirects() {
     return [
       {
@@ -35,7 +33,7 @@ const nextConfig = {
       return [];
     }
   },
-  webpack: (config, { isServer }) => {
+  webpack: (config) => {
     config.resolve.fallback = { fs: false, tls: false };
     return config;
   },
