@@ -92,12 +92,14 @@ jobs:
           echo "NEXT_PUBLIC_IMAGE_BASE_URL=${{ vars.NEXT_PUBLIC_IMAGE_BASE_URL }}" >> frontend/.env
           echo "NEXT_PUBLIC_SUPABASE_URL=${{ vars.NEXT_PUBLIC_SUPABASE_URL }}" >> frontend/.env
           echo "NEXT_PUBLIC_SUPABASE_KEY=${{ vars.NEXT_PUBLIC_SUPABASE_KEY }}" >> frontend/.env
-          echo "NEXT_PUBLIC_BASE_PATH=/or1 >> frontend/.env
+          echo "NEXT_PUBLIC_BASE_PATH=/or1" >> frontend/.env
           cat frontend/.env
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
           context: ./${{ matrix.component }}
+          # for reverse-proxy, use ./${{ matrix.component }}/Dockerfile.prod, otherwise use ./${{ matrix.component }}/Dockerfile
+          file: ./${{ matrix.component }}/Dockerfile${{ matrix.component == 'reverse-proxy' && '.prod' || '' }}
           push: true
           tags: ${{ steps.prepare.outputs.image-names }}
           cache-from: type=gha
