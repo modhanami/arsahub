@@ -1,11 +1,13 @@
+// TODO: use .mts and import resolveBasePath
 /** @type {import('next').NextConfig} */
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
 const nextConfig = {
-  basePath: process.env.NEXT_PUBLIC_BASE_PATH || "",
+  assetPrefix: basePath,
   async redirects() {
     return [
       {
         source: "/",
-        destination: "/overview",
+        destination: `${basePath}/overview`,
         permanent: false,
       },
     ];
