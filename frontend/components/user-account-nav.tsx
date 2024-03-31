@@ -12,6 +12,7 @@ import { Button } from "./ui/button";
 import { useCurrentUser } from "@/lib/current-user";
 import { getReturnTo } from "@/lib/utils";
 import { usePathname, useRouter } from "next/navigation";
+import { resolveBasePath } from "../lib/base-path";
 
 export function UserAccountNav() {
   const { currentUser, session, isLoading, startLoginFlow, startLogoutFlow } =
@@ -32,7 +33,9 @@ export function UserAccountNav() {
           // startLoginFlow({
           //   returnTo: getReturnTo(window.location.pathname),
           // })
-          router.push(`/login?redirect=${getReturnTo(pathname)}`)
+          router.push(
+            resolveBasePath(`/login?redirect=${getReturnTo(pathname)}`),
+          )
         }
       >
         Login

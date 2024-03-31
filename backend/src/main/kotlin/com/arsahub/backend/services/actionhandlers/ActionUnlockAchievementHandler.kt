@@ -12,6 +12,7 @@ class ActionUnlockAchievementHandler(
     override fun handleAction(
         rule: Rule,
         appUser: AppUser,
+        params: Map<String, Any>?,
     ): ActionResult {
         val achievement =
             rule.actionAchievement

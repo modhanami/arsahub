@@ -3,6 +3,7 @@ package com.arsahub.backend.services
 import com.arsahub.backend.dtos.request.Action
 import com.arsahub.backend.dtos.request.ActionDefinition
 import com.arsahub.backend.dtos.request.AddPointsAction
+import com.arsahub.backend.dtos.request.AddPointsExpressionAction
 import com.arsahub.backend.dtos.request.RuleCreateRequest
 import com.arsahub.backend.dtos.request.RuleUpdateRequest
 import com.arsahub.backend.dtos.request.UnlockAchievementAction
@@ -17,6 +18,7 @@ import com.arsahub.backend.repositories.RuleProgressRepository
 import com.arsahub.backend.repositories.RuleRepository
 import com.arsahub.backend.services.ruleengine.RuleEngine
 import com.arsahub.backend.services.ruleengine.getCelVarDecls
+import dev.cel.common.types.SimpleType
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
@@ -94,6 +96,12 @@ class RuleService(
                 rule.actionPoints = parsedAction.points
             }
 
+            is AddPointsExpressionAction -> {
+                // validate expression using CEL without standard library (no functions, only substitutions)
+                validateAddPointsExpression(parsedAction.pointsExpression, trigger)
+                rule.actionPointsExpression = parsedAction.pointsExpression
+            }
+
             is UnlockAchievementAction -> {
                 val achievement = achievementService.getAchievementOrThrow(parsedAction.achievementId, app)
                 rule.actionAchievement = achievement
@@ -101,6 +109,20 @@ class RuleService(
         }
 
         return ruleRepository.save(rule)
+    }
+
+    private fun validateAddPointsExpression(
+        pointsExpression: String,
+        trigger: Trigger,
+    ) {
+        logger.info { "Validating points expression: $pointsExpression" }
+        val varDecls = trigger.fields.getCelVarDecls()
+        logger.debug { "Variable declarations: $varDecls" }
+        val validationResult = TemplateEngine.getProgramValidationResult(pointsExpression, varDecls, SimpleType.INT)
+        logger.debug { "Validation result issues: ${validationResult.issueString}" }
+        require(!validationResult.hasError()) {
+            "Invalid points expression"
+        }
     }
 
     private fun validateAccumulatedFields(
@@ -194,8 +216,17 @@ class RuleService(
     }
 
     private fun parseActionAddPointsParams(params: Map<String, Any>): Action {
-        val points = params["points"] as? Int ?: throw IllegalArgumentException("Points is invalid")
-        return AddPointsAction(points)
+        val points = params["points"] as? Int
+        if (points != null) {
+            return AddPointsAction(points)
+        }
+
+        val pointsExpression = params["pointsExpression"] as? String
+        if (pointsExpression != null) {
+            return AddPointsExpressionAction(pointsExpression)
+        }
+
+        throw IllegalArgumentException("Invalid action params: $params, must have either points (integer) or pointsExpression (string)")
     }
 
     private fun parseActionUnlockAchievementParams(params: Map<String, Any>): Action {

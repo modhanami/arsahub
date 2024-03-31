@@ -43,16 +43,19 @@ import com.arsahub.backend.services.AppService
 import com.arsahub.backend.services.AuthService
 import com.arsahub.backend.services.RuleService
 import com.arsahub.backend.services.TriggerService
+import com.arsahub.backend.utils.SignatureUtil
 import com.corundumstudio.socketio.SocketIOServer
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.github.tomakehurst.wiremock.WireMockServer
+import com.github.tomakehurst.wiremock.admin.model.ServeEventQuery
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.equalToJson
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.stubFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
+import com.jayway.jsonpath.JsonPath
 import org.hamcrest.Matchers.containsInAnyOrder
 import org.hamcrest.Matchers.hasEntry
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -945,7 +948,10 @@ class AppControllerTest() {
         )
     }
 
-    fun createWorkshopCompletedTrigger(app: App): Trigger {
+    fun createWorkshopCompletedTrigger(
+        app: App,
+        customizer: TriggerBuilder.() -> Unit = {},
+    ): Trigger {
         return createTrigger(app) {
             key = "workshop_completed"
             title = "Workshop Completed"
@@ -954,6 +960,7 @@ class AppControllerTest() {
                 integer("workshopId", "Workshop ID")
                 text("source")
             }
+            apply(customizer)
         }
     }
 
@@ -3844,6 +3851,217 @@ class AppControllerTest() {
         // Assert DB
         val rules = ruleRepository.findById(rule.id!!)
         assertTrue(rules.isPresent)
+    }
+
+    @Test
+    fun `webhook signature - signature is valid`() {
+        // Arrange
+        // Arrange webhook
+        val stubUUID = UUID.randomUUID()
+        stubFor(
+            WireMock.post(urlEqualTo("/webhook")).willReturn(
+                aResponse()
+                    .withHeader("Content-Type", "text/plain")
+                    .withBody("Well received"),
+            ).withId(stubUUID),
+        )
+
+        val webhookCreateResult =
+            mockMvc.performWithAppAuth(
+                post("/api/apps/webhooks")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        """
+                        {
+                            "url": "http://localhost:${wireMockServer.port()}/webhook"
+                        }
+                        """.trimIndent(),
+                    ),
+            )
+                .andExpect(status().isCreated)
+
+        val secretKey = JsonPath.read<String>(webhookCreateResult.andReturn().response.contentAsString, "$.secretKey")
+        assertNotNull(secretKey)
+
+        // create user, trigger, rule, send trigger to activate rule to add points, which will be sent in webhook
+        val user = createAppUser(authSetup.app)
+        val rule =
+            createRule(authSetup.app) {
+                title = "When workshop completed then add 100 points"
+                trigger = createWorkshopCompletedTrigger(authSetup.app)
+                action {
+                    addPoints(100)
+                }
+                repeatability = OncePerUserRuleRepeatability
+            }
+
+        mockMvc.performWithAppAuth(
+            post("/api/apps/trigger")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "key": "workshop_completed",
+                        "userId": "${user.userId}"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+
+        // Act & Assert
+        val request = WireMock.getAllServeEvents(ServeEventQuery.forStubMapping(stubUUID)).first().request
+        val signatureHeader = request.getHeader("X-Webhook-Signature")
+        val actualPayload =
+            request.bodyAsString
+
+        val signature = SignatureUtil.createSignature(secretKey, actualPayload)
+        assertEquals(signature, signatureHeader)
+    }
+
+    // Dynamic points addition based on a sent trigger field.
+    // For example, field of points_earned in a trigger can be used to add points to the user
+    // , using template substitution.
+
+    @Test
+    fun `dynamic points addition - success`() {
+        // Arrange
+        val user = createAppUser(authSetup.app)
+
+        val trigger =
+            createWorkshopCompletedTrigger(authSetup.app) {
+                fields {
+                    integer("points_earned")
+                }
+            }
+
+        // create rule
+        mockMvc.performWithAppAuth(
+            post("/api/apps/rules")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "title": "Rule",
+                      "trigger": {
+                        "key": "${trigger.key}"
+                      },
+                      "action": {
+                        "key": "add_points",
+                        "params": {
+                          "pointsExpression": "points_earned"
+                        }
+                      },
+                      "conditionExpression": "workshopId == 1",
+                      "repeatability": "unlimited"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isCreated)
+
+        // Act & Assert
+        repeat(2) {
+            mockMvc.performWithAppAuth(
+                post("/api/apps/trigger")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        """
+                        {
+                            "key": "workshop_completed",
+                            "params": {
+                                "workshopId": 1,
+                                "source": "trust me",
+                                "points_earned": 100
+                            },
+                            "userId": "${user.userId}"
+                        }
+                        """.trimIndent(),
+                    ),
+            )
+                .andExpect(status().isOk)
+        }
+
+        val userAfter = appUserRepository.findById(user.id!!).get()
+        assertEquals(200, userAfter.points)
+    }
+
+    @Test
+    fun `dynamic points addition - unsupported expression - failed`() {
+        // Arrange
+        val user = createAppUser(authSetup.app)
+
+        val trigger =
+            createWorkshopCompletedTrigger(authSetup.app) {
+                fields {
+                    integer("points_earned")
+                }
+            }
+
+        // create rule
+        mockMvc.performWithAppAuth(
+            post("/api/apps/rules")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "title": "Rule",
+                      "trigger": {
+                        "key": "${trigger.key}"
+                      },
+                      "action": {
+                        "key": "add_points",
+                        "params": {
+                          "pointsExpression": "points_earned + 100"
+                        }
+                      },
+                      "conditionExpression": "workshopId == 1",
+                      "repeatability": "unlimited"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.message").value("Invalid points expression"))
+    }
+
+    @Test
+    fun `dynamic points addition - non-integer field - failed`() {
+        // Arrange
+        val user = createAppUser(authSetup.app)
+
+        val trigger =
+            createWorkshopCompletedTrigger(authSetup.app) {
+                fields {
+                    text("points_earned")
+                }
+            }
+
+        // create rule
+        mockMvc.performWithAppAuth(
+            post("/api/apps/rules")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "title": "Rule",
+                      "trigger": {
+                        "key": "${trigger.key}"
+                      },
+                      "action": {
+                        "key": "add_points",
+                        "params": {
+                          "pointsExpression": "points_earned"
+                        }
+                      },
+                      "conditionExpression": "workshopId == 1",
+                      "repeatability": "unlimited"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.message").value("Invalid points expression"))
     }
 
     @Test

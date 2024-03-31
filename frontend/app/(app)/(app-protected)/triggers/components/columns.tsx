@@ -2,8 +2,6 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import { TriggerResponse } from "@/types/generated-types";
-import dayjs from "dayjs";
-import RelativeTime from "dayjs/plugin/relativeTime";
 import { DataTableColumnHeader } from "@/app/(app)/(app-protected)/triggers/components/data-table-column-header";
 import {
   DropdownMenu,
@@ -30,6 +28,20 @@ import { isApiError } from "@/api";
 import { DataTableRowActionsProps } from "@/app/(app)/examples/tasks/components/data-table-row-actions";
 import { resolveBasePath } from "@/lib/base-path";
 import { useRouter } from "next/navigation";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export const columns: ColumnDef<TriggerResponse>[] = [
   // {
@@ -61,7 +73,14 @@ export const columns: ColumnDef<TriggerResponse>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Key" />
     ),
-    cell: ({ row }) => <div className="w-[80px]">{row.getValue("key")}</div>,
+    cell: ({ row }) => {
+      const key = (row.getValue("key") as TriggerResponse["key"]) || undefined;
+      return (
+        <div className="flex flex-col max-w-[400px] gap-2" title={key}>
+          <span className=" truncate font-medium">{key}</span>
+        </div>
+      );
+    },
     // enableSorting: false,
     // enableHiding: false,
   },
@@ -71,50 +90,107 @@ export const columns: ColumnDef<TriggerResponse>[] = [
       <DataTableColumnHeader column={column} title="Title" />
     ),
     cell: ({ row }) => {
+      const title = row.getValue("title") as string;
       return (
-        <div className="flex space-x-2">
-          <span className="max-w-[500px] truncate font-medium">
-            {row.getValue("title")}
+        <div className="flex flex-col max-w-[500px] gap-2">
+          <span className="truncate" title={title}>
+            {title}
           </span>
-        </div>
-      );
-    },
-  },
-  {
-    accessorKey: "description",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Description" />
-    ),
-    cell: ({ row }) => {
-      return (
-        <div className="flex space-x-2">
-          <span className="max-w-[500px] truncate font-medium">
-            {row.getValue("description")
-              ? row.getValue("description")
-              : "No Description."}
-          </span>
-        </div>
-      );
-    },
-  },
 
-  {
-    accessorKey: "createdAt",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Created At" />
-    ),
-    cell: ({ row }) => {
-      dayjs.extend(RelativeTime);
-      const createdAt = dayjs(row.getValue("createdAt"));
-      const formatted = createdAt.format("YYYY-MM-DD HH:mm:ss");
-      const relative = createdAt.fromNow();
-      return (
-        <div className="font-medium" title={formatted}>
-          {relative}
+          <span
+            className="truncate text-muted-foreground"
+            title={row.original.description || undefined}
+          >
+            {row.original.description}
+          </span>
         </div>
       );
     },
   },
+  {
+    accessorKey: "fields",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Fields" />
+    ),
+    cell: ({ row }) => {
+      const fields = row.getValue("fields") as TriggerResponse["fields"];
+      if (!fields) return null;
+
+      const firstTwoFields = fields.slice(0, 2);
+      const moreFields = fields.slice(2);
+      const showMoreFields = moreFields.length > 0;
+      return (
+        <div className="flex flex-col max-w-[300px] gap-2">
+          {/*  Should group of field name to field type */}
+          {/* Should first two fields. If more than that, show eye icon to show full fields using dialog */}
+          {firstTwoFields.map((field) => (
+            <div key={field.key} className="flex gap-2">
+              <span className="truncate font-medium">{field.key}</span>
+              <span className="truncate text-muted-foreground">
+                {field.type}
+              </span>
+            </div>
+          ))}
+          {showMoreFields && (
+            <Dialog>
+              <DialogTrigger className="text-left" asChild>
+                {/*<span className="text-left">+{moreFields.length}</span>*/}
+                <Button
+                  variant="outline"
+                  className="text-left h-4 self-start p-3"
+                  type="button"
+                >
+                  +{moreFields.length}
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-[500px]">
+                <DialogTitle>{row.original.title}&apos; Fields</DialogTitle>
+                <div className="flex flex-col gap-2">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Field</TableHead>
+                        <TableHead>Type</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {fields.map((field) => (
+                        <TableRow key={field.key}>
+                          <TableCell className="font-medium p-2">
+                            {field.key}
+                          </TableCell>
+                          <TableCell className="p-2 text-muted-foreground">
+                            {field.type}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
+        </div>
+      );
+    },
+  },
+  // {
+  //   accessorKey: "createdAt",
+  //   header: ({ column }) => (
+  //     <DataTableColumnHeader column={column} title="Created At" />
+  //   ),
+  //   cell: ({ row }) => {
+  //     dayjs.extend(RelativeTime);
+  //     const createdAt = dayjs(row.getValue("createdAt"));
+  //     const formatted = createdAt.format("YYYY-MM-DD HH:mm:ss");
+  //     const relative = createdAt.fromNow();
+  //     return (
+  //       <div className="text-right font-medium" title={formatted}>
+  //         {relative}
+  //       </div>
+  //     );
+  //   },
+  // },
   {
     id: "actions",
     cell: ({ row }) => <TriggerRowActions row={row} />,

@@ -13,6 +13,10 @@ data class AddPointsAction(
     val points: Int,
 ) : Action(ADD_POINTS)
 
+data class AddPointsExpressionAction(
+    val pointsExpression: String,
+) : Action(ADD_POINTS)
+
 data class UnlockAchievementAction(
     val achievementId: Long,
 ) : Action(

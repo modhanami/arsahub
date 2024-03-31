@@ -189,7 +189,7 @@ class RuleEngine(
             logger.debug { "Checking rule ${rule.title} (${rule.id})" }
 
             // handle action
-            val actionResult = activateRule(rule, app, appUser)
+            val actionResult = activateRule(rule, app, appUser, params)
             actionResults.add(actionResult)
 
             afterAction(actionResult, rule)
@@ -324,13 +324,13 @@ class RuleEngine(
         return triggerLog
     }
 
-    @Transactional
     fun activateRule(
         rule: Rule,
         app: App,
         appUser: AppUser,
+        params: Map<String, Any>?,
     ): ActionResult {
-        val actionResult = actionHandlerRegistry.handleAction(rule, appUser)
+        val actionResult = actionHandlerRegistry.handleAction(rule, appUser, params)
 
         // update rule progress
         progressRule(rule, app, appUser)
