@@ -37,8 +37,9 @@ class ActionAddPointsHandler(private val appUserRepository: AppUserRepository) :
             appUser.addPoints(evaluatedPoints)
             appUserRepository.save(appUser)
             logger.info {
-                "User ${appUser.displayName}` (${appUser.userId}) received `$pointsExpression` points from " +
-                    "rule `${rule.title}` (${rule.id}), previous points: $previousPoints, new points: $newPoints"
+                "User ${appUser.displayName}` (${appUser.userId}) received `$evaluatedPoints` points from " +
+                    "rule `${rule.title}` (${rule.id}), previous points: $previousPoints, new points: $newPoints, " +
+                    "points expression: $pointsExpression"
             }
             return ActionResult.PointsUpdate(previousPoints, newPoints, evaluatedPoints)
         }
