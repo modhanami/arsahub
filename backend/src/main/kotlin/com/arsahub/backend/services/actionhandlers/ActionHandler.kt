@@ -7,5 +7,6 @@ interface ActionHandler {
     fun handleAction(
         rule: Rule,
         appUser: AppUser,
+        params: Map<String, Any>?,
     ): ActionResult
 }

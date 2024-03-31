@@ -1,12 +1,12 @@
 "use client";
 import { Image, Link as NextUILink } from "@nextui-org/react";
-
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAchievements, useCreateRule, useTriggers } from "@/hooks"; // import Link from "next/link";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-
-import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -26,7 +26,6 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
 import React from "react";
-import { Input } from "@/components/ui/input";
 import {
   RuleCreateRequest,
   TriggerResponse,
@@ -60,6 +59,7 @@ import { DashboardShell } from "@/components/shell";
 import { DashboardHeader } from "@/components/header";
 import { SectionTitle } from "@/app/(app)/(app-protected)/rules/shared";
 import { getImageUrlFromKey } from "@/lib/image";
+import { DevTool } from "@hookform/devtools";
 
 const actions = [
   {
@@ -86,7 +86,8 @@ const repeatability = [
 const addPointsSchema = z.object({
   key: z.literal("add_points"),
   params: z.object({
-    points: z.coerce.number(),
+    points: z.coerce.number().optional(),
+    pointsExpression: z.string().optional(),
   }),
 });
 
@@ -128,6 +129,7 @@ const FormSchema = z.object({
     required_error: "Please select a repeatability",
   }), // TODO: add validation, or change to enum
   accumulatedFields: z.array(z.string()).optional(),
+  actionAddPointsMode: z.enum(["fixed", "dynamic"]).optional(),
 });
 
 type FormData = z.infer<typeof FormSchema>;
@@ -135,6 +137,9 @@ type FormData = z.infer<typeof FormSchema>;
 export default function Page() {
   const form = useForm<FormData>({
     resolver: zodResolver(FormSchema),
+    defaultValues: {
+      actionAddPointsMode: "fixed",
+    },
   });
   const router = useRouter();
   const { data: triggers } = useTriggers({ withBuiltIn: true });
@@ -178,6 +183,10 @@ export default function Page() {
     );
   }, [isPointsReachedTrigger, selectedTrigger?.fields]);
 
+  const integerFields =
+    selectedTrigger?.fields?.filter((field) => field.type === "integer") || [];
+  const ifBuilderErrorsRootKey = `ifBuilder`;
+
   React.useEffect(() => {
     // if select points_reached, force repeatability as once_per_user
     // TODO: handle built-in triggers more gracefully and maybe migrate to useFieldArray for conditions
@@ -191,12 +200,51 @@ export default function Page() {
   }, [form, isPointsReachedTrigger, selectedTrigger]);
 
   function onSubmit(data: FormData) {
+    console.log("data", data);
+    const action = {
+      key: data.action.key,
+      params:
+        data.action.key === "add_points"
+          ? form.watch("actionAddPointsMode") === "fixed"
+            ? { points: data.action.params.points }
+            : { pointsExpression: data.action.params.pointsExpression }
+          : { achievementId: data.action.params.achievementId },
+    };
+
+    // points_reached require a single rule
+    if (isPointsReachedTrigger && query.rules.length !== 1) {
+      form.setError(`root.${ifBuilderErrorsRootKey}`, {
+        message: "Points reached trigger requires a points threshold.",
+        type: "manual",
+      });
+      return;
+    }
+
+    // query builder rule values must not be empty
+    if (
+      query.rules.some((rule) => {
+        const _rule = rule as RuleType;
+        if (_rule.value === undefined) {
+          return true;
+        }
+
+        return !_rule.value || _rule.value === "";
+      })
+    ) {
+      form.setError(`root.${ifBuilderErrorsRootKey}`, {
+        message: "Rule values must not be empty",
+        type: "manual",
+      });
+      return;
+    }
+
     const payload: RuleCreateRequest = {
       ...data,
       trigger: {
         key: data.trigger.key,
         params: null, // TODO: support trigger params or remove
       },
+      action,
       title: data.title.trim(),
       description: data.description?.trim() || null,
       conditionExpression:
@@ -382,6 +430,11 @@ export default function Page() {
             <SectionTitle number={2} title="If" isOptional />
 
             <h3 className="text-lg font-semibold">If</h3>
+            {form.formState.errors?.root?.[ifBuilderErrorsRootKey] && (
+              <div className="bg-red-100 text-red-600 text-sm px-4 py-2 rounded-md">
+                {form.formState.errors.root[ifBuilderErrorsRootKey].message}
+              </div>
+            )}
             <QueryBuilderDnD dnd={{ ...ReactDnD, ...ReactDndHtml5Backend }}>
               <QueryBuilder
                 resetOnOperatorChange
@@ -522,24 +575,89 @@ export default function Page() {
 
             {/*Action params*/}
             {form.watch("action.key") == "add_points" && (
-              <FormField
-                control={form.control}
-                name="action.params.points"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Points</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Points"
-                        type="number"
-                        {...field}
-                        step={1}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <Tabs
+                defaultValue="fixed"
+                className="w-[400px]"
+                onValueChange={(mode) => {
+                  // @ts-ignore
+                  form.setValue("actionAddPointsMode", mode);
+                }}
+              >
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="fixed">Fixed</TabsTrigger>
+                  <TabsTrigger
+                    value="dynamic"
+                    disabled={
+                      integerFields.length === 0 || isPointsReachedTrigger
+                    }
+                  >
+                    Dynamic
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="fixed">
+                  <FormField
+                    control={form.control}
+                    name="action.params.points"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Points</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Points"
+                            type="number"
+                            {...field}
+                            step={1}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </TabsContent>
+                <TabsContent value="dynamic">
+                  {/*  Select from integer trigger fields: action.params.pointsExpression */}
+                  <FormField
+                    control={form.control}
+                    name="action.params.pointsExpression"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Points Source</FormLabel>
+                        <FormDescription>
+                          Select a field from the trigger to use as the points
+                          to add
+                        </FormDescription>
+                        <FormControl>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value?.toString()}
+                          >
+                            <SelectTrigger>
+                              <SelectValue
+                                className="flex items-center justify-between w-full"
+                                placeholder="Select a field"
+                              />
+                            </SelectTrigger>
+                            <SelectContent className="w-full">
+                              <SelectGroup className="overflow-y-auto max-h-[20rem]">
+                                {integerFields.map((field) => (
+                                  <SelectItem
+                                    key={field.key}
+                                    value={field.key ?? ""}
+                                    className="flex items-center justify-between w-full"
+                                  >
+                                    {field.key}
+                                  </SelectItem>
+                                ))}
+                              </SelectGroup>
+                            </SelectContent>
+                          </Select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </TabsContent>
+              </Tabs>
             )}
 
             {form.watch("action.key") == "unlock_achievement" && (
@@ -646,6 +764,7 @@ export default function Page() {
 
           <Button type="submit">Submit</Button>
         </form>
+        <DevTool control={form.control} />
       </Form>
     </DashboardShell>
   );

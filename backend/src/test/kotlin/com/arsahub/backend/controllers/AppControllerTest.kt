@@ -948,7 +948,10 @@ class AppControllerTest() {
         )
     }
 
-    fun createWorkshopCompletedTrigger(app: App): Trigger {
+    fun createWorkshopCompletedTrigger(
+        app: App,
+        customizer: TriggerBuilder.() -> Unit = {},
+    ): Trigger {
         return createTrigger(app) {
             key = "workshop_completed"
             title = "Workshop Completed"
@@ -957,6 +960,7 @@ class AppControllerTest() {
                 integer("workshopId", "Workshop ID")
                 text("source")
             }
+            apply(customizer)
         }
     }
 
@@ -3913,6 +3917,151 @@ class AppControllerTest() {
 
         val signature = SignatureUtil.createSignature(secretKey, actualPayload)
         assertEquals(signature, signatureHeader)
+    }
+
+    // Dynamic points addition based on a sent trigger field.
+    // For example, field of points_earned in a trigger can be used to add points to the user
+    // , using template substitution.
+
+    @Test
+    fun `dynamic points addition - success`() {
+        // Arrange
+        val user = createAppUser(authSetup.app)
+
+        val trigger =
+            createWorkshopCompletedTrigger(authSetup.app) {
+                fields {
+                    integer("points_earned")
+                }
+            }
+
+        // create rule
+        mockMvc.performWithAppAuth(
+            post("/api/apps/rules")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "title": "Rule",
+                      "trigger": {
+                        "key": "${trigger.key}"
+                      },
+                      "action": {
+                        "key": "add_points",
+                        "params": {
+                          "pointsExpression": "points_earned"
+                        }
+                      },
+                      "conditionExpression": "workshopId == 1",
+                      "repeatability": "unlimited"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isCreated)
+
+        // Act & Assert
+        repeat(2) {
+            mockMvc.performWithAppAuth(
+                post("/api/apps/trigger")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        """
+                        {
+                            "key": "workshop_completed",
+                            "params": {
+                                "workshopId": 1,
+                                "source": "trust me",
+                                "points_earned": 100
+                            },
+                            "userId": "${user.userId}"
+                        }
+                        """.trimIndent(),
+                    ),
+            )
+                .andExpect(status().isOk)
+        }
+
+        val userAfter = appUserRepository.findById(user.id!!).get()
+        assertEquals(200, userAfter.points)
+    }
+
+    @Test
+    fun `dynamic points addition - unsupported expression - failed`() {
+        // Arrange
+        val user = createAppUser(authSetup.app)
+
+        val trigger =
+            createWorkshopCompletedTrigger(authSetup.app) {
+                fields {
+                    integer("points_earned")
+                }
+            }
+
+        // create rule
+        mockMvc.performWithAppAuth(
+            post("/api/apps/rules")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "title": "Rule",
+                      "trigger": {
+                        "key": "${trigger.key}"
+                      },
+                      "action": {
+                        "key": "add_points",
+                        "params": {
+                          "pointsExpression": "points_earned + 100"
+                        }
+                      },
+                      "conditionExpression": "workshopId == 1",
+                      "repeatability": "unlimited"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.message").value("Invalid points expression"))
+    }
+
+    @Test
+    fun `dynamic points addition - non-integer field - failed`() {
+        // Arrange
+        val user = createAppUser(authSetup.app)
+
+        val trigger =
+            createWorkshopCompletedTrigger(authSetup.app) {
+                fields {
+                    text("points_earned")
+                }
+            }
+
+        // create rule
+        mockMvc.performWithAppAuth(
+            post("/api/apps/rules")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "title": "Rule",
+                      "trigger": {
+                        "key": "${trigger.key}"
+                      },
+                      "action": {
+                        "key": "add_points",
+                        "params": {
+                          "pointsExpression": "points_earned"
+                        }
+                      },
+                      "conditionExpression": "workshopId == 1",
+                      "repeatability": "unlimited"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.message").value("Invalid points expression"))
     }
 
     @Test
