@@ -20,7 +20,7 @@ export function UserProtectedPage({ children }: { children: React.ReactNode }) {
 
     if (!session) {
       console.log("[UserProtectedPage] No currentUser, redirecting to login");
-      router.push(`/login?redirect=${getReturnTo(pathname)}`);
+      router.push(resolveBasePath(`/login?redirect=${getReturnTo(pathname)}`));
       return;
     }
   }, [isLoading, pathname, router, session]);
