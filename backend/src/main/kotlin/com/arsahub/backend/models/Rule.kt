@@ -57,6 +57,8 @@ class Rule(
     @Type(StringArrayType::class)
     @Column(name = "accumulatedfields")
     var accumulatedFields: Array<String>? = null,
+    @Column(name = "action_points_expression", length = Integer.MAX_VALUE)
+    var actionPointsExpression: String? = null,
 ) : AuditedEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
