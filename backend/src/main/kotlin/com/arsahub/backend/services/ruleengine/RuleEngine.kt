@@ -379,7 +379,7 @@ class RuleEngine(
         val conditionExpression = rule.conditionExpression
         if (conditionExpression.isNullOrEmpty()) {
             logger.debug { "No condition expression, params=$params" }
-            return params.isNullOrEmpty()
+            return true
         }
 
         val isPointsReachedTrigger = rule.trigger?.key == "points_reached"
