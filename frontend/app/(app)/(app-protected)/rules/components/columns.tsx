@@ -94,8 +94,9 @@ export const columns: ColumnDef<RuleResponse>[] = [
 
       if (isAddPoints) {
         actionLabel = "Add";
-        actionParam = row.original.actionPoints;
-        actionSuffix = `point${row.original.actionPoints ?? 0 > 1 ? "s" : ""}`;
+        actionParam =
+          row.original.actionPoints || row.original.actionPointsExpression;
+        actionSuffix = row.original.actionPoints === 1 ? "point" : "points";
       }
       if (isUnlockAchievement) {
         actionLabel = "Unlock";

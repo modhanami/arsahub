@@ -96,7 +96,7 @@ export function AppUserEditForm({
     <>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <CardTitle>Edit Webhook</CardTitle>
+          <CardTitle>Edit App User</CardTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>

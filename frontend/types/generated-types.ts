@@ -1,7 +1,7 @@
 /* tslint:disable */
 /* eslint-disable */
 
-// Generated using typescript-generator version 3.2.1263 on 2024-03-30 00:08:03.
+// Generated using typescript-generator version 3.2.1263 on 2024-04-01 17:54:46.
 
 export interface AchievementCreateRequest {
   title: string;
@@ -19,6 +19,10 @@ export interface Action {
 
 export interface AddPointsAction extends Action {
   points: number;
+}
+
+export interface AddPointsExpressionAction extends Action {
+  pointsExpression: string;
 }
 
 export interface AppUserCreateRequest {
@@ -179,6 +183,7 @@ export interface RuleResponse {
   trigger: TriggerResponse | null;
   action: string | null;
   actionPoints: number | null;
+  actionPointsExpression: string | null;
   actionAchievement: AchievementResponse | null;
   id: number | null;
   repeatability: string | null;
@@ -292,12 +297,12 @@ export interface Entry {
 export interface Resource extends InputStreamSource {
   open: boolean;
   file: any;
-  readable: boolean;
   url: URL;
+  readable: boolean;
   description: string;
   filename: string;
-  contentAsByteArray: any;
   uri: URI;
+  contentAsByteArray: any;
 }
 
 export interface InputStreamSource {

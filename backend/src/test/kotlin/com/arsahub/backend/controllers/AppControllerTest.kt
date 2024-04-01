@@ -1771,7 +1771,7 @@ class AppControllerTest() {
     }
 
     @Test
-    fun `does not fire non-matching rules - empty rule conditions but non-empty trigger params`() {
+    fun `fires matching rules - empty rule conditions but non-empty trigger params`() {
         // Arrange
         val workShopCompletedTrigger = createWorkshopCompletedTrigger(authSetup.app)
 
@@ -1809,7 +1809,7 @@ class AppControllerTest() {
         // Assert DB
         val userAfter = appUserRepository.findById(user.id!!)
         assertNotNull(userAfter)
-        assertEquals(0, userAfter.get().points)
+        assertEquals(100, userAfter.get().points)
     }
 
     @Test
