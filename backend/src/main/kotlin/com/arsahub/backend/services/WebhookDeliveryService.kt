@@ -1,6 +1,10 @@
 package com.arsahub.backend.services
 
+import com.arsahub.backend.dtos.response.AchievementResponse
 import com.arsahub.backend.dtos.response.WebhookPayload
+import com.arsahub.backend.models.App
+import com.arsahub.backend.models.AppUser
+import com.arsahub.backend.services.actionhandlers.ActionResult
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
@@ -9,16 +13,18 @@ import org.apache.kafka.clients.admin.NewTopic
 import org.springframework.context.annotation.Bean
 import org.springframework.http.client.JdkClientHttpRequestFactory
 import org.springframework.kafka.annotation.KafkaListener
+import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.kafka.support.Acknowledgment
 import org.springframework.stereotype.Service
 import org.springframework.web.client.RestClient
 import java.net.URI
 import java.net.http.HttpClient
 import java.time.Duration
+import java.util.*
 import kotlin.time.measureTime
 
 @Service
-class WebhookDeliveryService {
+class WebhookDeliveryService(private val kafkaTemplate: KafkaTemplate<String, WebhookPayload>) {
     private val logger = KotlinLogging.logger {}
 
     private val webhookTimeout = Duration.ofSeconds(AppService.WEBHOOK_TIMEOUT_SECONDS)
@@ -100,5 +106,61 @@ class WebhookDeliveryService {
                 }
             }
         logger.debug { "Webhook $webhookUrl took $duration for app ID $appId " }
+    }
+
+    fun publishWebhookEvents(
+        app: App,
+        appWebhooks: List<URI>,
+        appUser: AppUser,
+        actionResult: ActionResult,
+    ) {
+        logger.debug { "Publishing webhook events for app ${app.title}" }
+        if (appWebhooks.isEmpty()) {
+            return
+        }
+
+        // TODO: more events. e.g. rule activated, etc.
+        appWebhooks.forEach { webhook ->
+
+            val payload =
+                when (actionResult) {
+                    is ActionResult.AchievementUpdate -> {
+                        WebhookPayload(
+                            id = UUID.randomUUID(),
+                            appId = app.id!!,
+                            webhookUrl = webhook.toString(),
+                            event = "achievement_unlocked",
+                            appUserId = appUser.userId!!,
+                            payload =
+                                mapOf(
+                                    "achievement" to AchievementResponse.fromEntity(actionResult.achievement),
+                                ),
+                        )
+                    }
+
+                    is ActionResult.PointsUpdate -> {
+                        WebhookPayload(
+                            id = UUID.randomUUID(),
+                            appId = app.id!!,
+                            webhookUrl = webhook.toString(),
+                            event = "points_updated",
+                            appUserId = appUser.userId!!,
+                            payload =
+                                mapOf(
+                                    "points" to actionResult.newPoints,
+                                    "pointsChange" to actionResult.pointsAdded,
+                                ),
+                        )
+                    }
+
+                    else -> {
+                        logger.warn { "Unsupported action result: $actionResult" }
+                        return
+                    }
+                }
+
+            kafkaTemplate.send("webhookDeliveries", payload)
+            logger.debug { "Sent webhook payload to Kafka: $payload" }
+        }
     }
 }

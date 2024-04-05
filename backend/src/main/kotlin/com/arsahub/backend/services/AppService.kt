@@ -36,7 +36,6 @@ import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.net.URI
-import java.util.*
 
 class AppUserNotFoundException : NotFoundException("App user not found")
 
@@ -63,6 +62,7 @@ class AppService(
     private val appUserPointsHistoryRepository: AppUserPointsHistoryRepository,
     private val webhookRepository: WebhookRepository,
     private val kafkaTemplateWebhookDelivery: KafkaTemplate<String, WebhookPayload>,
+    private val webhookDeliveryService: WebhookDeliveryService,
 ) {
     private val logger = KotlinLogging.logger {}
 
@@ -169,65 +169,9 @@ class AppService(
                 }
 
                 val appWebhooks = webhookRepository.findByApp(app).map { URI(it.url!!) }
-                publishWebhookEvents(app, appWebhooks, appUser, actionResult)
+                webhookDeliveryService.publishWebhookEvents(app, appWebhooks, appUser, actionResult)
                 broadcastActionResult(actionResult, app, request.userId)
             }
-        }
-    }
-
-    private fun publishWebhookEvents(
-        app: App,
-        appWebhooks: List<URI>,
-        appUser: AppUser,
-        actionResult: ActionResult,
-    ) {
-        logger.debug { "Publishing webhook events for app ${app.title}" }
-        if (appWebhooks.isEmpty()) {
-            return
-        }
-
-        // TODO: more events. e.g. rule activated, etc.
-        appWebhooks.forEach { webhook ->
-
-            val payload =
-                when (actionResult) {
-                    is ActionResult.AchievementUpdate -> {
-                        WebhookPayload(
-                            id = UUID.randomUUID(),
-                            appId = app.id!!,
-                            webhookUrl = webhook.toString(),
-                            event = "achievement_unlocked",
-                            appUserId = appUser.userId!!,
-                            payload =
-                                mapOf(
-                                    "achievement" to AchievementResponse.fromEntity(actionResult.achievement),
-                                ),
-                        )
-                    }
-
-                    is ActionResult.PointsUpdate -> {
-                        WebhookPayload(
-                            id = UUID.randomUUID(),
-                            appId = app.id!!,
-                            webhookUrl = webhook.toString(),
-                            event = "points_updated",
-                            appUserId = appUser.userId!!,
-                            payload =
-                                mapOf(
-                                    "points" to actionResult.newPoints,
-                                    "pointsChange" to actionResult.pointsAdded,
-                                ),
-                        )
-                    }
-
-                    else -> {
-                        logger.warn { "Unsupported action result: $actionResult" }
-                        return
-                    }
-                }
-
-            kafkaTemplateWebhookDelivery.send("webhookDeliveries", payload)
-            logger.debug { "Sent webhook payload to Kafka: $payload" }
         }
     }
 
