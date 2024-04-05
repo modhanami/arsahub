@@ -205,3 +205,7 @@ detekt {
 tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
     autoCorrect = true
 }
+
+if ("detekt" !in gradle.startParameter.taskNames) {
+    tasks.detekt { enabled = false }
+}

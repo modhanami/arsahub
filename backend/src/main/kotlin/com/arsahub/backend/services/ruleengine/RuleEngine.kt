@@ -28,6 +28,7 @@ import dev.cel.common.CelVarDecl
 import dev.cel.common.types.CelType
 import dev.cel.common.types.ListType
 import dev.cel.common.types.SimpleType
+import dev.cel.common.types.TypeParamType
 import dev.cel.compiler.CelCompiler
 import dev.cel.compiler.CelCompilerImpl
 import dev.cel.parser.CelParserImpl
@@ -51,6 +52,7 @@ fun TriggerField.getCelType(): CelType {
         TriggerFieldType.INTEGER -> SimpleType.INT
         TriggerFieldType.TEXT -> SimpleType.STRING
         TriggerFieldType.INTEGER_SET -> ListType.create(SimpleType.INT)
+        TriggerFieldType.TEXT_SET -> ListType.create(SimpleType.STRING)
         else -> throw IllegalArgumentException("Unsupported trigger field type: $type")
     }
 }
@@ -83,7 +85,7 @@ class RuleEngine(
 
         val referencingRules = ruleService.getRulesByReferencedTrigger(app, trigger)
         val matchingRules =
-            getMatchingRules(referencingRules, appUser, request.params) { rule, params ->
+            getMatchingRules(referencingRules, app, appUser, request.params) { rule, params ->
 //                val updatedRuleTriggerFieldStates =
 //                    updateRuleTriggerFieldStateForRule(app, appUser, rule, trigger, params)
 //                if (updatedRuleTriggerFieldStates.isEmpty()) {
@@ -139,7 +141,7 @@ class RuleEngine(
         triggerService.validateParamsAgainstTriggerFields(request.params, trigger.fields)
 
         val referencingRules = ruleService.getRulesByReferencedTrigger(app, trigger)
-        val matchingRules = getMatchingRules(referencingRules, appUser, request.params)
+        val matchingRules = getMatchingRules(referencingRules, app, appUser, request.params)
 
         return matchingRules
 
@@ -148,6 +150,7 @@ class RuleEngine(
 
     private fun getMatchingRules(
         rules: List<Rule>,
+        app: App,
         appUser: AppUser,
         params: Map<String, Any>?,
         preprocessParams: (
@@ -164,7 +167,7 @@ class RuleEngine(
 
             return@filter (
                 // check repeatability
-                validateRepeatability(rule, appUser) &&
+                validateRepeatability(rule, app, appUser) &&
                     // check the condition expression, if any
                     validateConditionExpression(rule, preprocessedParams, appUser)
             )
@@ -180,12 +183,13 @@ class RuleEngine(
         afterAction: (ActionResult, Rule) -> Unit?,
     ): List<ActionResult> {
         val actionResults = mutableListOf<ActionResult>()
+        logger.debug { "Found ${matchingRules.size} matching rules" }
 
         for (rule in matchingRules) {
             logger.debug { "Checking rule ${rule.title} (${rule.id})" }
 
             // handle action
-            val actionResult = activateRule(rule, app, appUser)
+            val actionResult = activateRule(rule, app, appUser, params)
             actionResults.add(actionResult)
 
             afterAction(actionResult, rule)
@@ -261,7 +265,10 @@ class RuleEngine(
                             .toIntArray()
 
                     state.stateIntSet = newState
-                    logger.debug { "${TriggerFieldType.INTEGER_SET}: value: $value, prevState: ${prevState.toList()}, newState: ${newState.toList()}" }
+                    logger.debug {
+                        "${TriggerFieldType.INTEGER_SET}: value: $value, " +
+                            "prevState: ${prevState.toList()}, newState: ${newState.toList()}"
+                    }
                     return@map ruleTriggerFieldStateRepository.save(state)
                 }
 
@@ -289,7 +296,7 @@ class RuleEngine(
 
         val pointsReachedTrigger = triggerService.getBuiltInTriggerOrThrow("points_reached")
         val referencingRules = ruleService.getRulesByReferencedTrigger(app, pointsReachedTrigger)
-        val matchingRules = getMatchingRules(referencingRules, appUser, emptyMap())
+        val matchingRules = getMatchingRules(referencingRules, app, appUser, emptyMap())
 
         logger.debug { "Found ${matchingRules.size} matching rules for points_reached trigger" }
         processMatchingRules(matchingRules, app, appUser, trigger, emptyMap(), afterAction)
@@ -317,12 +324,13 @@ class RuleEngine(
         return triggerLog
     }
 
-    private fun activateRule(
+    fun activateRule(
         rule: Rule,
         app: App,
         appUser: AppUser,
+        params: Map<String, Any>?,
     ): ActionResult {
-        val actionResult = actionHandlerRegistry.handleAction(rule, appUser)
+        val actionResult = actionHandlerRegistry.handleAction(rule, appUser, params)
 
         // update rule progress
         progressRule(rule, app, appUser)
@@ -336,7 +344,7 @@ class RuleEngine(
         appUser: AppUser,
     ): RuleProgress {
         val ruleProgress =
-            ruleProgressRepository.findByRuleAndAppUser(rule, appUser) ?: RuleProgress(
+            ruleProgressRepository.findByRuleAndAppAndAppUser(rule, app, appUser) ?: RuleProgress(
                 rule = rule,
                 app = app,
                 appUser = appUser,
@@ -347,15 +355,18 @@ class RuleEngine(
 
     private fun validateRepeatability(
         rule: Rule,
+        app: App,
         appUser: AppUser,
     ): Boolean {
+        logger.debug { "Checking repeatability" }
         if (rule.repeatability == RuleRepeatability.ONCE_PER_USER) {
-            val ruleProgress = ruleProgressRepository.findByRuleAndAppUser(rule, appUser)
+            val ruleProgress = ruleProgressRepository.findByRuleAndAppAndAppUser(rule, app, appUser)
             if (ruleProgress != null && ruleProgress.activationCount!! > 0) {
                 logger.debug { "Rule ${rule.title} (${rule.id}) has already been activated for user ${appUser.userId}" }
                 return false
             }
         }
+        logger.debug { "Rule ${rule.title} (${rule.id}) is repeatable" }
         return true
     }
 
@@ -368,7 +379,7 @@ class RuleEngine(
         val conditionExpression = rule.conditionExpression
         if (conditionExpression.isNullOrEmpty()) {
             logger.debug { "No condition expression, params=$params" }
-            return params.isNullOrEmpty()
+            return true
         }
 
         val isPointsReachedTrigger = rule.trigger?.key == "points_reached"
@@ -417,6 +428,9 @@ class RuleEngine(
         private val logger = KotlinLogging.logger {}
 
         private const val OPERATOR_CONTAINS = "contains"
+
+        private val typeParamA: TypeParamType = TypeParamType.create("A")
+        private val listOfA: ListType = ListType.create(typeParamA)
 
         private val celFunctionDecls =
             listOf<CelFunctionDecl>(
@@ -544,6 +558,26 @@ class RuleEngine(
                         ListType.create(SimpleType.STRING),
                     ),
                 ),
+                CelFunctionDecl.newFunctionDeclaration(
+                    Operator.OLD_IN.function,
+                    CelOverloadDecl.newGlobalOverload(
+                        "in_list",
+                        "list membership",
+                        SimpleType.BOOL,
+                        typeParamA,
+                        listOfA,
+                    ),
+                ),
+                CelFunctionDecl.newFunctionDeclaration(
+                    Operator.IN.function,
+                    CelOverloadDecl.newGlobalOverload(
+                        "in_list",
+                        "list membership",
+                        SimpleType.BOOL,
+                        typeParamA,
+                        listOfA,
+                    ),
+                ),
             )
         private val celFunctionBindings =
             listOf(
@@ -601,6 +635,11 @@ class RuleEngine(
                     List::class.javaObjectType,
                     List::class.javaObjectType,
                 ) { x, y -> (x as List<*>).containsAll(y as List<*>) },
+                CelRuntime.CelFunctionBinding.from(
+                    "in_list",
+                    Any::class.javaObjectType,
+                    List::class.javaObjectType,
+                ) { x, y -> (y as List<*>).contains(x) },
             )
 
         // Construct the compilation and runtime environments.

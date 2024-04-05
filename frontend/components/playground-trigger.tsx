@@ -12,6 +12,7 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -22,6 +23,7 @@ import { useFieldArray, useForm } from "react-hook-form";
 import * as z from "zod";
 import {
   parseArrayOfStringIntegers,
+  parseArrayOfStrings,
   playgroundTriggerSchema,
 } from "../lib/validations/playground";
 import {
@@ -45,6 +47,8 @@ import { resolveBasePath } from "@/lib/base-path";
 import { useDebounceCallback } from "usehooks-ts";
 
 type FormData = z.infer<typeof playgroundTriggerSchema>;
+
+type SendTriggerParams = Record<string, string | string[] | number | number[]>;
 
 export function PlaygroundTriggerForm() {
   const form = useForm<FormData>({
@@ -93,37 +97,40 @@ export function PlaygroundTriggerForm() {
       const dryTriggerRequest = {
         key: data.trigger.key,
         userId: data.userId,
-        params: data.params.reduce(
-          (acc, param) => {
-            const triggerField = triggerFields.find(
-              (field) => field.key === param.key,
-            );
+        params: data.params.reduce((acc, param) => {
+          const triggerField = triggerFields.find(
+            (field) => field.key === param.key,
+          );
 
-            if (!triggerField) {
-              return acc;
-            }
-
-            if (
-              triggerField.type === "text" &&
-              typeof param.value === "string" &&
-              param.value.length !== 0
-            ) {
-              acc[param.key] = param.value;
-            } else if (
-              triggerField.type === "integer" &&
-              typeof param.value !== "string"
-            ) {
-              acc[param.key] = param.value;
-            } else if (
-              triggerField.type === "integerSet" &&
-              typeof param.value === "string"
-            ) {
-              acc[param.key] = parseArrayOfStringIntegers(param.value);
-            }
+          if (!triggerField) {
             return acc;
-          },
-          {} as Record<string, string | number | number[]>,
-        ),
+          }
+
+          if (
+            triggerField.type === "text" &&
+            typeof param.value === "string" &&
+            param.value.length !== 0
+          ) {
+            acc[param.key] = param.value;
+          } else if (
+            triggerField.type === "textSet" &&
+            typeof param.value === "string" &&
+            param.value.length !== 0
+          ) {
+            acc[param.key] = parseArrayOfStrings(param.value);
+          } else if (
+            triggerField.type === "integer" &&
+            typeof param.value !== "string"
+          ) {
+            acc[param.key] = param.value;
+          } else if (
+            triggerField.type === "integerSet" &&
+            typeof param.value === "string"
+          ) {
+            acc[param.key] = parseArrayOfStringIntegers(param.value);
+          }
+          return acc;
+        }, {} as SendTriggerParams),
       };
 
       if (
@@ -167,37 +174,40 @@ export function PlaygroundTriggerForm() {
       {
         key: values.trigger.key,
         userId: values.userId,
-        params: values.params.reduce(
-          (acc, param) => {
-            const triggerField = triggerFields.find(
-              (field) => field.key === param.key,
-            );
+        params: values.params.reduce((acc, param) => {
+          const triggerField = triggerFields.find(
+            (field) => field.key === param.key,
+          );
 
-            if (!triggerField) {
-              return acc;
-            }
-
-            if (
-              triggerField.type === "text" &&
-              typeof param.value === "string" &&
-              param.value.length !== 0
-            ) {
-              acc[param.key] = param.value;
-            } else if (
-              triggerField.type === "integer" &&
-              typeof param.value !== "string"
-            ) {
-              acc[param.key] = param.value;
-            } else if (
-              triggerField.type === "integerSet" &&
-              typeof param.value === "string"
-            ) {
-              acc[param.key] = parseArrayOfStringIntegers(param.value);
-            }
+          if (!triggerField) {
             return acc;
-          },
-          {} as Record<string, string | number | number[]>,
-        ),
+          }
+
+          if (
+            triggerField.type === "text" &&
+            typeof param.value === "string" &&
+            param.value.length !== 0
+          ) {
+            acc[param.key] = param.value;
+          } else if (
+            triggerField.type === "textSet" &&
+            typeof param.value === "string" &&
+            param.value.length !== 0
+          ) {
+            acc[param.key] = parseArrayOfStrings(param.value);
+          } else if (
+            triggerField.type === "integer" &&
+            typeof param.value !== "string"
+          ) {
+            acc[param.key] = param.value;
+          } else if (
+            triggerField.type === "integerSet" &&
+            typeof param.value === "string"
+          ) {
+            acc[param.key] = parseArrayOfStringIntegers(param.value);
+          }
+          return acc;
+        }, {} as SendTriggerParams),
       },
       {
         onSuccess: () => {
@@ -233,6 +243,14 @@ export function PlaygroundTriggerForm() {
     }
 
     if (triggerField.type === "integerSet") {
+      triggerParams.append({
+        key: triggerField.key,
+        type: triggerField.type,
+        value: "",
+      });
+    }
+
+    if (triggerField.type === "textSet") {
       triggerParams.append({
         key: triggerField.key,
         type: triggerField.type,
@@ -292,15 +310,17 @@ export function PlaygroundTriggerForm() {
                                 />
                               </SelectTrigger>
                               <SelectContent className="w-full">
-                                {users.map((member) => (
-                                  <SelectItem
-                                    key={member.userId}
-                                    value={String(member.userId) || ""}
-                                    className="flex items-center justify-between w-full"
-                                  >
-                                    {member.displayName}
-                                  </SelectItem>
-                                ))}
+                                <SelectGroup className="overflow-y-auto max-h-[20rem]">
+                                  {users.map((member) => (
+                                    <SelectItem
+                                      key={member.userId}
+                                      value={String(member.userId) || ""}
+                                      className="flex items-center justify-between w-full"
+                                    >
+                                      {member.displayName}
+                                    </SelectItem>
+                                  ))}
+                                </SelectGroup>
                               </SelectContent>
                             </Select>
                           </FormControl>
@@ -327,15 +347,17 @@ export function PlaygroundTriggerForm() {
                                 />
                               </SelectTrigger>
                               <SelectContent className="w-full">
-                                {triggers.map((trigger) => (
-                                  <SelectItem
-                                    key={trigger.id}
-                                    value={trigger.key?.toString() || ""}
-                                    className="flex items-center justify-between w-full"
-                                  >
-                                    {trigger.title}
-                                  </SelectItem>
-                                ))}
+                                <SelectGroup className="overflow-y-auto max-h-[20rem]">
+                                  {triggers.map((trigger) => (
+                                    <SelectItem
+                                      key={trigger.id}
+                                      value={trigger.key?.toString() || ""}
+                                      className="flex items-center justify-between w-full"
+                                    >
+                                      {trigger.title}
+                                    </SelectItem>
+                                  ))}
+                                </SelectGroup>
                               </SelectContent>
                             </Select>
                           </FormControl>

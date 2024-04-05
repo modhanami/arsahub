@@ -1,6 +1,5 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -30,6 +29,14 @@ import { TextareaWithCounter } from "@/components/ui/textarea-with-counter";
 import { useRule, useUpdateRule } from "@/hooks";
 import { isApiError } from "@/api";
 import { HttpStatusCode } from "axios";
+import { resolveBasePath } from "@/lib/base-path";
+import { useRouter } from "next/navigation";
+import { DashboardHeader } from "@/components/header";
+import { DashboardShell } from "@/components/shell";
+import { Separator } from "@/components/ui/separator";
+import { SectionTitle } from "@/app/(app)/(app-protected)/rules/shared";
+import { Image } from "@nextui-org/react";
+import { getImageUrlFromKey } from "@/lib/image";
 
 const FormSchema = z.object({
   title: z
@@ -76,6 +83,7 @@ function UpdateRuleForm({ rule }: UpdateRuleFormProps) {
     resolver: zodResolver(FormSchema),
     defaultValues: getDefaultValues(rule),
   });
+  const router = useRouter();
   const selectedTriggerKey = rule.trigger?.key;
   const updateRule = useUpdateRule();
 
@@ -100,20 +108,46 @@ function UpdateRuleForm({ rule }: UpdateRuleFormProps) {
     });
 
     form.reset(getDefaultValues(updatedRule));
+    router.push(resolveBasePath(`/rules`));
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Update Rule</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {/*  Config Trigger */}
-        <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="w-2/3 space-y-6"
-          >
+    <DashboardShell>
+      <Button
+        type="button"
+        onClick={() => router.push(resolveBasePath(`/rules`))}
+        variant="outline"
+        className="h-8 self-start px-2 group"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="mr-1 h-4 w-4 transition-transform group-hover:-translate-x-1"
+        >
+          <polyline points="15 18 9 12 15 6" />
+        </svg>{" "}
+        Back
+      </Button>
+
+      <DashboardHeader
+        heading="Update Rule"
+        text="Update the rule details"
+        separator
+      ></DashboardHeader>
+      {/*  Config Trigger */}
+      <Form {...form}>
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="max-w-2xl space-y-6"
+        >
+          <div className="space-y-4">
             {/*Title*/}
             <FormField
               control={form.control}
@@ -151,7 +185,11 @@ function UpdateRuleForm({ rule }: UpdateRuleFormProps) {
                 </FormItem>
               )}
             />
-            <h3 className="text-lg font-semibold">When</h3>
+          </div>
+          <Separator />
+
+          <div className="space-y-4">
+            <SectionTitle number={1} title="When" />
             <FormItem>
               <FormLabel>Trigger</FormLabel>
               <Input
@@ -160,13 +198,21 @@ function UpdateRuleForm({ rule }: UpdateRuleFormProps) {
                 value={rule.trigger?.title ?? "-"}
               />
             </FormItem>
+          </div>
+          <Separator />
 
-            {/*  Config Condition */}
-            <h3 className="text-lg font-semibold">If</h3>
-            <div className="space-y-4">TODO: Display conditions</div>
+          {/*  Config Condition */}
+          <div className="space-y-4">
+            <SectionTitle number={2} title="If" isOptional />
+            <p className="text-muted-foreground">
+              {rule.conditionExpression ?? "-"}
+            </p>
+          </div>
+          <Separator />
 
+          <div className="space-y-4">
             {/*  Config Action */}
-            <h3 className="text-lg font-semibold">Then</h3>
+            <SectionTitle number={3} title="Then" />
             <FormItem>
               <FormLabel>Action</FormLabel>
               <Select>
@@ -192,10 +238,35 @@ function UpdateRuleForm({ rule }: UpdateRuleFormProps) {
             {rule.action == "unlock_achievement" && (
               <FormItem>
                 <FormLabel>Achievement</FormLabel>
-                TODO: Display achievement
+                <li
+                  className="font-medium flex gap-4"
+                  key={rule.actionAchievement?.achievementId}
+                >
+                  <Image
+                    src={
+                      (rule.actionAchievement?.imageKey &&
+                        getImageUrlFromKey(rule.actionAchievement?.imageKey)) ||
+                      ""
+                    }
+                    width={100}
+                    height={100}
+                    alt={rule.actionAchievement?.title}
+                    radius="full"
+                  />
+                  <div>
+                    <p>{rule.actionAchievement?.title}</p>
+                    <p className="text-muted-foreground text-sm">
+                      {rule.actionAchievement?.description}
+                    </p>
+                  </div>
+                </li>
               </FormItem>
             )}
+          </div>
+          <Separator />
 
+          <div className="space-y-4">
+            <SectionTitle title="More settings" />
             {/*Repeatability*/}
             <FormItem>
               <FormLabel>Repeatability</FormLabel>
@@ -208,17 +279,17 @@ function UpdateRuleForm({ rule }: UpdateRuleFormProps) {
                 </SelectTrigger>
               </Select>
             </FormItem>
+          </div>
 
-            <Button
-              type="submit"
-              disabled={updateRule.isPending || !form.formState.isDirty}
-            >
-              Submit
-            </Button>
-          </form>
-        </Form>
-      </CardContent>
-    </Card>
+          <Button
+            type="submit"
+            disabled={updateRule.isPending || !form.formState.isDirty}
+          >
+            Update
+          </Button>
+        </form>
+      </Form>
+    </DashboardShell>
   );
 }
 

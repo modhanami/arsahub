@@ -36,6 +36,7 @@ enum class TriggerFieldType(val key: String) {
     INTEGER("integer"),
     TEXT("text"),
     INTEGER_SET("integerSet"),
+    TEXT_SET("textSet"),
     ;
 
     override fun toString(): String {

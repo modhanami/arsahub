@@ -32,6 +32,14 @@ export const customRuleProcessorCEL: RuleProcessor = (
     typeof value === "bigint" ||
     shouldRenderAsNumber(parseNumbers, fieldData);
 
+  console.log("[customRuleProcessorCEL] inputs", {
+    rule,
+    options,
+    valueIsField,
+    operatorTL,
+    useBareValue,
+  });
+
   switch (operatorTL) {
     case "<":
     case "<=":
@@ -58,11 +66,20 @@ export const customRuleProcessorCEL: RuleProcessor = (
     case "containsAll": {
       return `${field}.containsAll([${toArray(value)
         .map((val) => {
-          const valNum = shouldRenderAsNumber(parseNumbers, fieldData)
+          const shouldParseNumbers = shouldRenderAsNumber(
+            parseNumbers,
+            fieldData,
+          );
+          const valNum = shouldParseNumbers
             ? parseNumber(val, { parseNumbers: true })
             : NaN;
 
-          return isNaN(valNum) ? "" : valNum;
+          // return isNaN(valNum) ? "" : valNum;
+          return !isNaN(valNum)
+            ? valNum
+            : shouldParseNumbers
+              ? ""
+              : `"${escapeDoubleQuotes(val, escapeQuotes)}"`;
         })
         .filter((val) => val !== "")
         .join(", ")}])`;
@@ -160,10 +177,9 @@ const shouldRenderAsNumber = (
   parseNumbers?: boolean,
   fieldData?: FullField,
 ) => {
+  console.log("parseNumbers", parseNumbers, "fieldData", fieldData);
   return (
     parseNumbers &&
-    (fieldData === undefined ||
-      fieldData?.dataType === "integer" ||
-      fieldData?.dataType === "integerSet")
+    (fieldData?.dataType === "integer" || fieldData?.dataType === "integerSet")
   );
 };

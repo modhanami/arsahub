@@ -7,8 +7,9 @@ import com.arsahub.backend.models.RuleProgress
 import org.springframework.data.jpa.repository.JpaRepository
 
 interface RuleProgressRepository : JpaRepository<RuleProgress, Long> {
-    fun findByRuleAndAppUser(
+    fun findByRuleAndAppAndAppUser(
         rule: Rule,
+        app: App,
         appUser: AppUser,
     ): RuleProgress?
 

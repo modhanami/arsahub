@@ -3,8 +3,6 @@
 import { ColumnDef } from "@tanstack/react-table";
 
 import { RuleResponse } from "@/types/generated-types";
-import dayjs from "dayjs";
-import RelativeTime from "dayjs/plugin/relativeTime";
 import { DataTableColumnHeader } from "@/app/(app)/(app-protected)/triggers/components/data-table-column-header";
 import { DataTableRowActionsProps } from "@/app/(app)/examples/tasks/components/data-table-row-actions";
 import React from "react";
@@ -39,25 +37,18 @@ export const columns: ColumnDef<RuleResponse>[] = [
       <DataTableColumnHeader column={column} title="Title" />
     ),
     cell: ({ row }) => {
+      const title = row.getValue("title") as string;
       return (
-        <div className="flex space-x-2">
-          <span className="max-w-[500px] truncate font-medium">
-            {row.getValue("title")}
+        <div className="flex flex-col max-w-[500px] gap-2">
+          <span className="truncate" title={title}>
+            {title}
           </span>
-        </div>
-      );
-    },
-  },
-  {
-    accessorKey: "description",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Description" />
-    ),
-    cell: ({ row }) => {
-      return (
-        <div className="flex space-x-2">
-          <span className="max-w-[500px] truncate font-medium">
-            {row.getValue("description")}
+
+          <span
+            className="truncate text-muted-foreground"
+            title={row.original.description || undefined}
+          >
+            {row.original.description}
           </span>
         </div>
       );
@@ -72,11 +63,17 @@ export const columns: ColumnDef<RuleResponse>[] = [
       const formattedConditions = row.original.conditionExpression;
 
       return (
-        <div className="flex flex-col space-y-2">
-          <span className="max-w-[500px] truncate">
+        <div className="max-w-[300px] flex flex-col space-y-2">
+          <span
+            className="truncate"
+            title={row.original.trigger?.title || undefined}
+          >
             {row.original.trigger?.title}
           </span>
-          <span className="max-w-[500px] truncate font-medium text-muted-foreground">
+          <span
+            className="truncate  text-muted-foreground"
+            title={formattedConditions || undefined}
+          >
             {formattedConditions}
           </span>
         </div>
@@ -97,8 +94,9 @@ export const columns: ColumnDef<RuleResponse>[] = [
 
       if (isAddPoints) {
         actionLabel = "Add";
-        actionParam = row.original.actionPoints;
-        actionSuffix = `point${row.original.actionPoints ?? 0 > 1 ? "s" : ""}`;
+        actionParam =
+          row.original.actionPoints || row.original.actionPointsExpression;
+        actionSuffix = row.original.actionPoints === 1 ? "point" : "points";
       }
       if (isUnlockAchievement) {
         actionLabel = "Unlock";
@@ -106,30 +104,45 @@ export const columns: ColumnDef<RuleResponse>[] = [
       }
 
       return (
-        <div className="flex space-x-1 max-w-[500px] truncate">
+        <div className="flex space-x-1 max-w-[300px] truncate">
           <span>{actionLabel}</span>
-          <span className="text-muted-foreground font-medium">
-            {actionParam}
-          </span>
+          <span className="text-muted-foreground truncate">{actionParam}</span>
           <span>{actionSuffix}</span>
         </div>
       );
     },
   },
+  // {
+  //   accessorKey: "createdAt",
+  //   header: ({ column }) => (
+  //     <DataTableColumnHeader column={column} title="Created At" />
+  //   ),
+  //   cell: ({ row }) => {
+  //     dayjs.extend(RelativeTime);
+  //     const createdAt = dayjs(row.getValue("createdAt"));
+  //     const formatted = createdAt.format("YYYY-MM-DD HH:mm:ss");
+  //     const relative = createdAt.fromNow();
+  //     return (
+  //       <div className="text-right " title={formatted}>
+  //         {relative}
+  //       </div>
+  //     );
+  //   },
+  // },
+  // More settings
   {
-    accessorKey: "createdAt",
+    accessorKey: "repeatability",
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Created At" />
+      <DataTableColumnHeader column={column} title="Repeatability" />
     ),
     cell: ({ row }) => {
-      dayjs.extend(RelativeTime);
-      const createdAt = dayjs(row.getValue("createdAt"));
-      const formatted = createdAt.format("YYYY-MM-DD HH:mm:ss");
-      const relative = createdAt.fromNow();
       return (
-        <div className="text-right " title={formatted}>
-          {relative}
-        </div>
+        <span
+          className="truncate max-w-[100px]"
+          title={row.original.repeatability || undefined}
+        >
+          {row.original.repeatability}
+        </span>
       );
     },
   },

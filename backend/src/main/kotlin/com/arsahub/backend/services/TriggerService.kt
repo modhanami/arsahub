@@ -154,6 +154,11 @@ class TriggerService(
                     require(
                         conditionValue is List<*> && conditionValue.all { it is Int },
                     ) { "Field ${targetField.key} is not an integer set, got $conditionValue" }
+
+                TriggerFieldType.TEXT_SET ->
+                    require(
+                        conditionValue is List<*> && conditionValue.all { it is String },
+                    ) { "Field ${targetField.key} is not a text set, got $conditionValue" }
             }
         }
     }

@@ -1,7 +1,7 @@
 /* tslint:disable */
 /* eslint-disable */
 
-// Generated using typescript-generator version 3.2.1263 on 2024-03-23 14:02:01.
+// Generated using typescript-generator version 3.2.1263 on 2024-04-01 17:54:46.
 
 export interface AchievementCreateRequest {
   title: string;
@@ -21,8 +21,16 @@ export interface AddPointsAction extends Action {
   points: number;
 }
 
+export interface AddPointsExpressionAction extends Action {
+  pointsExpression: string;
+}
+
 export interface AppUserCreateRequest {
   uniqueId: string;
+  displayName: string;
+}
+
+export interface AppUserUpdateRequest {
   displayName: string;
 }
 
@@ -175,6 +183,7 @@ export interface RuleResponse {
   trigger: TriggerResponse | null;
   action: string | null;
   actionPoints: number | null;
+  actionPointsExpression: string | null;
   actionAchievement: AchievementResponse | null;
   id: number | null;
   repeatability: string | null;
@@ -222,6 +231,7 @@ export interface WebhookPayload {
 export interface WebhookResponse {
   id: number;
   url: string;
+  secretKey: string | null;
 }
 
 export interface AchievementUnlock extends AppUpdate {
@@ -287,12 +297,12 @@ export interface Entry {
 export interface Resource extends InputStreamSource {
   open: boolean;
   file: any;
-  readable: boolean;
   url: URL;
-  filename: string;
+  readable: boolean;
   description: string;
-  contentAsByteArray: any;
+  filename: string;
   uri: URI;
+  contentAsByteArray: any;
 }
 
 export interface InputStreamSource {
