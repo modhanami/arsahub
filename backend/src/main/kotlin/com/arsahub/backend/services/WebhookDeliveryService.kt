@@ -4,6 +4,7 @@ import com.arsahub.backend.dtos.response.AchievementResponse
 import com.arsahub.backend.dtos.response.WebhookPayload
 import com.arsahub.backend.models.App
 import com.arsahub.backend.models.AppUser
+import com.arsahub.backend.models.Webhook
 import com.arsahub.backend.services.actionhandlers.ActionResult
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.Dispatchers
@@ -60,7 +61,7 @@ class WebhookDeliveryService(private val kafkaTemplate: KafkaTemplate<String, We
 
         // TODO: evaluate runBlocking
         runBlocking {
-            publishWebhookEvent(
+            deliverWebhookEvent(
                 URI.create(value.webhookUrl),
                 value.appId,
                 value,
@@ -70,7 +71,7 @@ class WebhookDeliveryService(private val kafkaTemplate: KafkaTemplate<String, We
         }
     }
 
-    private suspend fun publishWebhookEvent(
+    private suspend fun deliverWebhookEvent(
         webhookUrl: URI,
         appId: Long,
         payload: WebhookPayload,
@@ -110,7 +111,7 @@ class WebhookDeliveryService(private val kafkaTemplate: KafkaTemplate<String, We
 
     fun publishWebhookEvents(
         app: App,
-        appWebhooks: List<URI>,
+        appWebhooks: List<Webhook>,
         appUser: AppUser,
         actionResult: ActionResult,
     ) {
@@ -121,14 +122,13 @@ class WebhookDeliveryService(private val kafkaTemplate: KafkaTemplate<String, We
 
         // TODO: more events. e.g. rule activated, etc.
         appWebhooks.forEach { webhook ->
-
             val payload =
                 when (actionResult) {
                     is ActionResult.AchievementUpdate -> {
                         WebhookPayload(
                             id = UUID.randomUUID(),
                             appId = app.id!!,
-                            webhookUrl = webhook.toString(),
+                            webhookUrl = webhook.url!!,
                             event = "achievement_unlocked",
                             appUserId = appUser.userId!!,
                             payload =
@@ -142,7 +142,7 @@ class WebhookDeliveryService(private val kafkaTemplate: KafkaTemplate<String, We
                         WebhookPayload(
                             id = UUID.randomUUID(),
                             appId = app.id!!,
-                            webhookUrl = webhook.toString(),
+                            webhookUrl = webhook.url!!,
                             event = "points_updated",
                             appUserId = appUser.userId!!,
                             payload =

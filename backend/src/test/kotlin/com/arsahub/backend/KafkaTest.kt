@@ -3,6 +3,7 @@ package com.arsahub.backend
 import com.arsahub.backend.models.App
 import com.arsahub.backend.models.AppUser
 import com.arsahub.backend.models.User
+import com.arsahub.backend.models.Webhook
 import com.arsahub.backend.services.WebhookDeliveryService
 import com.arsahub.backend.services.actionhandlers.ActionResult
 import com.github.tomakehurst.wiremock.WireMockServer
@@ -74,10 +75,26 @@ class KafkaTest {
         stubWebhook("/webhook2")
         stubWebhook("/webhook3")
 
+        fun createWebhook(path: String): Webhook {
+            return Webhook(
+                app = app,
+                url = "http://localhost:${wireMockServer.port()}$path",
+                secretKey = UUID.randomUUID().toString(),
+            )
+        }
         // Act
-        val webhook1 = URI("http://localhost:${wireMockServer.port()}/webhook1")
-        val webhook2 = URI("http://localhost:${wireMockServer.port()}/webhook2")
-        val webhook3 = URI("http://localhost:${wireMockServer.port()}/webhook3")
+        val webhook1 =
+            createWebhook("/webhook1").apply {
+                id = 1
+            }
+        val webhook2 =
+            createWebhook("/webhook2").apply {
+                id = 2
+            }
+        val webhook3 =
+            createWebhook("/webhook3").apply {
+                id = 3
+            }
         webhookDeliveryService.publishWebhookEvents(
             app,
             listOf(
@@ -91,15 +108,15 @@ class KafkaTest {
 
         // Assert webhook
         // TODO: find a way to wait for the webhook to be called from the consumer
-        Thread.sleep(1000)
+        Thread.sleep(3000)
 
         fun verifyWebhook(
-            webhook: URI,
+            webhook: Webhook,
             points: Int,
             pointsChange: Int,
         ) {
             wireMockServer.verify(
-                WireMock.postRequestedFor(WireMock.urlEqualTo(webhook.path))
+                WireMock.postRequestedFor(WireMock.urlEqualTo(URI(webhook.url!!).path))
                     .withRequestBody(
                         WireMock.equalToJson(
                             // id is an escaped wiremock placeholder
@@ -107,7 +124,7 @@ class KafkaTest {
                             {
                                 "id": "${"\${"}json-unit.any-string${"}"}",
                                 "appId": ${app.id},
-                                "webhookUrl": "$webhook",
+                                "webhookUrl": "${webhook.url}",
                                 "event": "points_updated",
                                 "appUserId": "${appUser.userId}",
                                 "payload": {

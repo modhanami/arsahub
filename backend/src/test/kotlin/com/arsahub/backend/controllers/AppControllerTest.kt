@@ -44,6 +44,7 @@ import com.arsahub.backend.services.AppService
 import com.arsahub.backend.services.AuthService
 import com.arsahub.backend.services.RuleService
 import com.arsahub.backend.services.TriggerService
+import com.arsahub.backend.services.WebhookDeliveryService
 import com.arsahub.backend.utils.SignatureUtil
 import com.corundumstudio.socketio.SocketIOServer
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -75,6 +76,7 @@ import org.springframework.boot.testcontainers.service.connection.ServiceConnect
 import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock
 import org.springframework.http.MediaType
 import org.springframework.kafka.core.KafkaTemplate
+import org.springframework.kafka.test.context.EmbeddedKafka
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
@@ -101,6 +103,10 @@ import java.util.*
 @Transactional
 @AutoConfigureMockMvc
 @AutoConfigureWireMock(port = 0)
+@EmbeddedKafka(
+    topics = [WebhookDeliveryService.Topics.WEBHOOK_DELIVERIES],
+    partitions = 1,
+)
 class AppControllerTest() {
     @Autowired
     private lateinit var ruleTriggerFieldStateRepository: RuleTriggerFieldStateRepository
@@ -3802,7 +3808,10 @@ class AppControllerTest() {
             .andExpect(status().isOk)
 
         // Act & Assert
-        val request = WireMock.getAllServeEvents(ServeEventQuery.forStubMapping(stubUUID)).first().request
+        val allServeEvents = WireMock.getAllServeEvents(ServeEventQuery.forStubMapping(stubUUID))
+        val request =
+            allServeEvents
+                .first().request
         val signatureHeader = request.getHeader("X-Webhook-Signature")
         val actualPayload =
             request.bodyAsString
