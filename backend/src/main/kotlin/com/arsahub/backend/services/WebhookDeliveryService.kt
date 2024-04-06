@@ -101,9 +101,6 @@ class WebhookDeliveryService(
     ) {
         logger.info { "Received WebhookPayload: $value" }
 
-        printTransactionStatus("listenTriggerRequests")
-        println("App count: ${appRepository.count()}")
-
         // TODO: evaluate runBlocking
         runBlocking {
             deliverWebhookEvent(
