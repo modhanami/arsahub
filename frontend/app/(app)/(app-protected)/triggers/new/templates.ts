@@ -19,8 +19,8 @@ export const triggerTemplates: TriggerTemplate[] = [
     fields: [
       {
         key: "workshopId",
-        label: "Workshop ID",
-        type: "Integer",
+        type: "integer",
+        label: null,
       },
     ],
   },
@@ -31,13 +31,13 @@ export const triggerTemplates: TriggerTemplate[] = [
     fields: [
       {
         key: "workshopId",
-        label: "Workshop ID",
-        type: "Integer",
+        type: "integer",
+        label: null,
       },
       {
         key: "notes",
-        label: "Notes",
-        type: "Text",
+        type: "text",
+        label: null,
       },
     ],
   },
@@ -48,8 +48,8 @@ export const triggerTemplates: TriggerTemplate[] = [
     fields: [
       {
         key: "productId",
-        label: "Product ID",
-        type: "Integer",
+        type: "integer",
+        label: null,
       },
     ],
   },

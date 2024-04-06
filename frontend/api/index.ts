@@ -6,6 +6,7 @@ import {
   AppResponse,
   AppUserCreateRequest,
   AppUserResponse,
+  AppUserUpdateRequest,
   LeaderboardResponse,
   LoginResponse,
   RewardCreateRequest,
@@ -258,6 +259,22 @@ export async function sendTrigger(
   });
 }
 
+export async function dryTrigger(
+  currentApp: AppResponse,
+  trigger: TriggerSendRequest,
+) {
+  const { data } = await instance.post<RuleResponse[]>(
+    `${API_URL}/apps/trigger/dry`,
+    trigger,
+    {
+      headers: {
+        ...makeAppAuthHeader(currentApp),
+      },
+    },
+  );
+  return data;
+}
+
 export async function fetchRules(app: AppResponse) {
   const { data } = await instance.get<RuleResponse[]>(`${API_URL}/apps/rules`, {
     headers: {
@@ -397,6 +414,23 @@ export async function createAppUser(
   const { data } = await instance.post<AppUserResponse>(
     `${API_URL}/apps/users`,
     newUser,
+    {
+      headers: {
+        ...makeAppAuthHeader(app),
+      },
+    },
+  );
+  return data;
+}
+
+export async function updateAppUser(
+  app: AppResponse,
+  userId: string,
+  updateRequest: AppUserUpdateRequest,
+) {
+  const { data } = await instance.patch<AppUserResponse>(
+    `${API_URL}/apps/users/${userId}`,
+    updateRequest,
     {
       headers: {
         ...makeAppAuthHeader(app),

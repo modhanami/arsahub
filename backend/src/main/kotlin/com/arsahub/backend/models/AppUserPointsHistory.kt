@@ -13,6 +13,7 @@ import jakarta.persistence.Table
 import jakarta.validation.constraints.NotNull
 import org.hibernate.annotations.OnDelete
 import org.hibernate.annotations.OnDeleteAction
+import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.jpa.domain.support.AuditingEntityListener
 import java.time.Instant
 
@@ -46,6 +47,7 @@ class AppUserPointsHistory(
     @Column(name = "app_user_points_history_id", nullable = false)
     var id: Long? = null
 
+    @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     var createdAt: Instant? = null
 }

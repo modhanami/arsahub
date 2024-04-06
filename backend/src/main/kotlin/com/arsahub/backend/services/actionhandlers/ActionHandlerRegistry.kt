@@ -18,8 +18,9 @@ class ActionHandlerRegistry(
     override fun handleAction(
         rule: Rule,
         appUser: AppUser,
+        params: Map<String, Any>?,
     ): ActionResult {
         val handler = handlers[rule.action] ?: throw IllegalArgumentException("Handler not found")
-        return handler.handleAction(rule, appUser)
+        return handler.handleAction(rule, appUser, params)
     }
 }

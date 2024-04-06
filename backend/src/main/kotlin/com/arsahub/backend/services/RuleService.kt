@@ -3,6 +3,7 @@ package com.arsahub.backend.services
 import com.arsahub.backend.dtos.request.Action
 import com.arsahub.backend.dtos.request.ActionDefinition
 import com.arsahub.backend.dtos.request.AddPointsAction
+import com.arsahub.backend.dtos.request.AddPointsExpressionAction
 import com.arsahub.backend.dtos.request.RuleCreateRequest
 import com.arsahub.backend.dtos.request.RuleUpdateRequest
 import com.arsahub.backend.dtos.request.UnlockAchievementAction
@@ -12,14 +13,23 @@ import com.arsahub.backend.models.App
 import com.arsahub.backend.models.Rule
 import com.arsahub.backend.models.RuleRepeatability
 import com.arsahub.backend.models.Trigger
+import com.arsahub.backend.models.TriggerField
 import com.arsahub.backend.repositories.RuleProgressRepository
 import com.arsahub.backend.repositories.RuleRepository
+import com.arsahub.backend.services.ruleengine.RuleEngine
+import com.arsahub.backend.services.ruleengine.getCelVarDecls
+import dev.cel.common.types.SimpleType
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 
 class RuleNotFoundException : NotFoundException("Rule not found")
 
 class RuleInUseException : ConflictException("Rule is in use")
+
+fun MutableSet<TriggerField>.getAccumulatableFields(): List<TriggerField> {
+    return this.filter { it.type == "integerSet" }
+}
 
 @Service
 class RuleService(
@@ -28,11 +38,13 @@ class RuleService(
     private val ruleRepository: RuleRepository,
     private val ruleProgressRepository: RuleProgressRepository,
 ) {
+    private val logger = KotlinLogging.logger {}
+
     fun listRules(app: App): List<Rule> {
         return ruleRepository.findAllByApp(app)
     }
 
-    fun getMatchingRules(
+    fun getRulesByReferencedTrigger(
         app: App,
         trigger: Trigger,
     ): List<Rule> {
@@ -43,6 +55,7 @@ class RuleService(
         app: App,
         request: RuleCreateRequest,
     ): Rule {
+        // TODO: evaluate built-in triggers fallback
         val trigger =
             runCatching {
                 triggerService.getTriggerOrThrow(request.trigger.key!!, app)
@@ -57,9 +70,12 @@ class RuleService(
         val ruleRepeatability = RuleRepeatability.valueOf(request.repeatability!!)
         validateRepeatabilityForBuiltInTrigger(ruleRepeatability, trigger)
 
-        triggerService.validateParamsAgainstTriggerFields(request.conditions, trigger.fields)
+        // validate accumulated fields
+        validateAccumulatedFields(trigger, request.accumulatedFields)
 
-        // TODO: more validations for conditions
+        if (request.conditionExpression != null) {
+            validateConditionExpression(trigger, request.conditionExpression)
+        }
 
         val rule =
             Rule(
@@ -68,8 +84,9 @@ class RuleService(
                 description = request.description,
                 trigger = trigger,
                 triggerParams = request.trigger.params?.toMutableMap(),
-                conditions = request.conditions?.toMutableMap(),
                 repeatability = ruleRepeatability.key,
+                conditionExpression = request.conditionExpression,
+                accumulatedFields = request.accumulatedFields?.toTypedArray(),
             )
 
         rule.action = parsedAction.key
@@ -79,6 +96,12 @@ class RuleService(
                 rule.actionPoints = parsedAction.points
             }
 
+            is AddPointsExpressionAction -> {
+                // validate expression using CEL without standard library (no functions, only substitutions)
+                validateAddPointsExpression(parsedAction.pointsExpression, trigger)
+                rule.actionPointsExpression = parsedAction.pointsExpression
+            }
+
             is UnlockAchievementAction -> {
                 val achievement = achievementService.getAchievementOrThrow(parsedAction.achievementId, app)
                 rule.actionAchievement = achievement
@@ -86,6 +109,72 @@ class RuleService(
         }
 
         return ruleRepository.save(rule)
+    }
+
+    private fun validateAddPointsExpression(
+        pointsExpression: String,
+        trigger: Trigger,
+    ) {
+        logger.info { "Validating points expression: $pointsExpression" }
+        val varDecls = trigger.fields.getCelVarDecls()
+        logger.debug { "Variable declarations: $varDecls" }
+        val validationResult = TemplateEngine.getProgramValidationResult(pointsExpression, varDecls, SimpleType.INT)
+        logger.debug { "Validation result issues: ${validationResult.issueString}" }
+        require(!validationResult.hasError()) {
+            "Invalid points expression"
+        }
+    }
+
+    private fun validateAccumulatedFields(
+        trigger: Trigger,
+        accumulatedFields: List<String>?,
+    ) {
+        if (accumulatedFields.isNullOrEmpty()) {
+            return
+        }
+
+        val accumulateFields = trigger.fields.getAccumulatableFields()
+        val triggerFieldKeys = accumulateFields.map { it.key!! }
+        val invalidFields = accumulatedFields.filterNot { triggerFieldKeys.contains(it) }
+
+        require(invalidFields.isEmpty()) {
+            "Invalid accumulated fields: $invalidFields"
+        }
+    }
+
+    private fun validateConditionExpression(
+        trigger: Trigger,
+        conditionExpression: String,
+    ) {
+        // Convert CEL expression to a map of variable names to corresponding trigger field types,
+        // or throw an exception if the corresponding trigger field is not found
+        logger.info { "Validating condition expression: $conditionExpression" }
+        val varDecls = trigger.fields.getCelVarDecls()
+        logger.debug { "Variable declarations: $varDecls" }
+        val validationResult = RuleEngine.getProgramValidationResult(conditionExpression, varDecls)
+        logger.debug { "Validation result issues: ${validationResult.issueString}" }
+        val invalidFieldsMessage = "Invalid fields in condition expression"
+        require(!validationResult.hasError()) {
+            // TODO: distinct error messages
+            invalidFieldsMessage
+        }
+
+        // TODO: Strict checking like in validateParamsAgainstTriggerFields
+        val referenceNames =
+            validationResult.ast.referenceMap.values
+                .filter { it.overloadIds().isEmpty() } // only consider references to fields
+                .map { it.name() } // get the name of the reference
+                .filterNot { it.isNullOrEmpty() } // filter out empty names (e.g. a constant)
+        val triggerFieldKeys = trigger.fields.map { it.key!! }
+        val missingFields = referenceNames.filter { !triggerFieldKeys.contains(it) }
+
+        logger.info { "Reference names: $referenceNames" }
+        logger.info { "Trigger field keys: $triggerFieldKeys" }
+        logger.info { "Missing fields: $missingFields" }
+
+        require(missingFields.isEmpty()) {
+            invalidFieldsMessage
+        }
     }
 
     fun updateRule(
@@ -127,8 +216,17 @@ class RuleService(
     }
 
     private fun parseActionAddPointsParams(params: Map<String, Any>): Action {
-        val points = params["points"] as? Int ?: throw IllegalArgumentException("Points is invalid")
-        return AddPointsAction(points)
+        val points = params["points"] as? Int
+        if (points != null) {
+            return AddPointsAction(points)
+        }
+
+        val pointsExpression = params["pointsExpression"] as? String
+        if (pointsExpression != null) {
+            return AddPointsExpressionAction(pointsExpression)
+        }
+
+        throw IllegalArgumentException("Invalid action params: $params, must have either points (integer) or pointsExpression (string)")
     }
 
     private fun parseActionUnlockAchievementParams(params: Map<String, Any>): Action {

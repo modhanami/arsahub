@@ -1,8 +1,8 @@
-name: Dev CI
+name: Prod CI
 
 on:
   workflow_dispatch:
-  pull_request:
+  push:
     branches:
       - main
 
@@ -21,13 +21,13 @@ jobs:
         uses: actions/checkout@v4
       - name: Prepare
         id: prepare
-        # <CI Build Number>-<Git Commit SHA>
+        # <Git Commit SHA>
         run: |
           RELEVANT_SHA=${{ github.event.pull_request.head.sha || github.sha }}
           echo "Relevant commit SHA: $RELEVANT_SHA"
           echo "relevant-sha=$RELEVANT_SHA" >> "$GITHUB_OUTPUT"
           
-          IMAGE_TAGS=$GITHUB_RUN_NUMBER-$(git rev-parse --short $RELEVANT_SHA)
+          IMAGE_TAGS=$(git rev-parse --short $RELEVANT_SHA)
           echo "image-tags=$IMAGE_TAGS" >> "$GITHUB_OUTPUT"
           echo "Image Tags: $IMAGE_TAGS"
 
@@ -50,6 +50,7 @@ jobs:
         working-directory: ./backend
         run: |
           gradle jib \
+            -Dprod \
             -Djib.serialize=true \
             -Djib.to.tags=${{ needs.prepare.outputs.image-tags }} \
             -Djib.to.auth.username=${{ github.actor }} \
@@ -58,7 +59,7 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
     needs: prepare
-    environment: dev
+    environment: prod
     strategy:
       matrix:
         component: [ database, frontend, reverse-proxy ]
@@ -91,11 +92,14 @@ jobs:
           echo "NEXT_PUBLIC_IMAGE_BASE_URL=${{ vars.NEXT_PUBLIC_IMAGE_BASE_URL }}" >> frontend/.env
           echo "NEXT_PUBLIC_SUPABASE_URL=${{ vars.NEXT_PUBLIC_SUPABASE_URL }}" >> frontend/.env
           echo "NEXT_PUBLIC_SUPABASE_KEY=${{ vars.NEXT_PUBLIC_SUPABASE_KEY }}" >> frontend/.env
+          echo "NEXT_PUBLIC_BASE_PATH=/or1" >> frontend/.env
           cat frontend/.env
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
           context: ./${{ matrix.component }}
+          # for reverse-proxy, use ./${{ matrix.component }}/Dockerfile.prod, otherwise use ./${{ matrix.component }}/Dockerfile
+          file: ./${{ matrix.component }}/Dockerfile${{ matrix.component == 'reverse-proxy' && '.prod' || '' }}
           push: true
           tags: ${{ steps.prepare.outputs.image-names }}
           cache-from: type=gha

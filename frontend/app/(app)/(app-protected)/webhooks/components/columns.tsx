@@ -58,10 +58,41 @@ export const columns: ColumnDef<WebhookResponse>[] = [
     },
   },
   {
+    accessorKey: "secretKey",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Secret" />
+    ),
+    cell: ({ row }) => {
+      return <ShowHideReadonlyCell value={row.getValue("secretKey")} />;
+    },
+  },
+  {
     id: "actions",
     cell: ({ row }) => <WebhookRowActions row={row} />,
   },
 ];
+
+function ShowHideReadonlyCell({ value }: { value: string }) {
+  const [show, setShow] = React.useState(false);
+  return (
+    <div className="flex space-x-2 items-center">
+      <span className="w-[290px] truncate">
+        {show ? value : "•".repeat(34)}
+      </span>
+      <Button
+        variant="outline"
+        onClick={() => setShow((prev) => !prev)}
+        className="flex h-8 w-8 p-0"
+      >
+        {show ? (
+          <Icons.eye className="h-4 w-4" />
+        ) : (
+          <Icons.eyeOff className="h-4 w-4" />
+        )}
+      </Button>
+    </div>
+  );
+}
 
 function WebhookRowActions({ row }: DataTableRowActionsProps<WebhookResponse>) {
   const [showEditDialog, setShowEditDialog] = React.useState(false);

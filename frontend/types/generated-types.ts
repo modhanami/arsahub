@@ -1,7 +1,7 @@
 /* tslint:disable */
 /* eslint-disable */
 
-// Generated using typescript-generator version 3.2.1263 on 2024-03-16 21:58:32.
+// Generated using typescript-generator version 3.2.1263 on 2024-04-01 17:54:46.
 
 export interface AchievementCreateRequest {
   title: string;
@@ -21,8 +21,16 @@ export interface AddPointsAction extends Action {
   points: number;
 }
 
+export interface AddPointsExpressionAction extends Action {
+  pointsExpression: string;
+}
+
 export interface AppUserCreateRequest {
   uniqueId: string;
+  displayName: string;
+}
+
+export interface AppUserUpdateRequest {
   displayName: string;
 }
 
@@ -62,10 +70,11 @@ export interface RewardSetImageRequest {
 export interface RuleCreateRequest {
   trigger: KeyAndParams;
   action: KeyAndParams;
-  conditions: { [index: string]: any } | null;
+  conditionExpression: string | null;
   title: string | null;
   description: string | null;
   repeatability: string | null;
+  accumulatedFields: string[] | null;
 }
 
 export interface RuleCreateRequestKt {}
@@ -107,7 +116,7 @@ export interface UserSignupRequest {
 }
 
 export interface WebhookCreateRequest {
-  url: string;
+  url: string | null;
 }
 
 export interface AchievementResponse {
@@ -174,10 +183,12 @@ export interface RuleResponse {
   trigger: TriggerResponse | null;
   action: string | null;
   actionPoints: number | null;
+  actionPointsExpression: string | null;
   actionAchievement: AchievementResponse | null;
   id: number | null;
   repeatability: string | null;
-  conditions: { [index: string]: any } | null;
+  conditionExpression: string | null;
+  accumulatedFields: string[] | null;
 }
 
 export interface SignupResponse {
@@ -220,6 +231,7 @@ export interface WebhookPayload {
 export interface WebhookResponse {
   id: number;
   url: string;
+  secretKey: string | null;
 }
 
 export interface AchievementUnlock extends AppUpdate {
@@ -283,14 +295,14 @@ export interface Entry {
 }
 
 export interface Resource extends InputStreamSource {
-  uri: URI;
   open: boolean;
   file: any;
   url: URL;
   readable: boolean;
-  contentAsByteArray: any;
   description: string;
   filename: string;
+  uri: URI;
+  contentAsByteArray: any;
 }
 
 export interface InputStreamSource {
@@ -321,9 +333,9 @@ export interface PersistentAttributeInterceptable
 
 export interface SelfDirtinessTracker extends PrimeAmongSecondarySupertypes {}
 
-export interface URI extends Comparable<URI>, Serializable {}
-
 export interface URL extends Serializable {}
+
+export interface URI extends Comparable<URI>, Serializable {}
 
 export interface ManagedMappedSuperclass extends Managed {}
 

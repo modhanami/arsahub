@@ -1,5 +1,6 @@
 package com.arsahub.backend.models
 
+import io.hypersistence.utils.hibernate.type.array.StringArrayType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.FetchType
@@ -12,6 +13,7 @@ import jakarta.persistence.Table
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
 import org.hibernate.annotations.JdbcTypeCode
+import org.hibernate.annotations.Type
 import org.hibernate.annotations.Where
 import org.hibernate.type.SqlTypes
 import java.time.Instant
@@ -37,9 +39,6 @@ class Rule(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "app_id")
     var app: App? = null,
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "conditions")
-    var conditions: MutableMap<String, Any>? = null,
     @NotNull
     @Column(name = "action", nullable = false, length = Integer.MAX_VALUE)
     var action: String? = null,
@@ -51,8 +50,15 @@ class Rule(
     @NotNull
     @Column(name = "repeatability", nullable = false, length = Integer.MAX_VALUE)
     var repeatability: String? = null,
+    @Column(name = "condition_expression", length = Integer.MAX_VALUE)
+    var conditionExpression: String? = null,
     @Column(name = "deleted_at")
     var deletedAt: Instant? = null,
+    @Type(StringArrayType::class)
+    @Column(name = "accumulatedfields")
+    var accumulatedFields: Array<String>? = null,
+    @Column(name = "action_points_expression", length = Integer.MAX_VALUE)
+    var actionPointsExpression: String? = null,
 ) : AuditedEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

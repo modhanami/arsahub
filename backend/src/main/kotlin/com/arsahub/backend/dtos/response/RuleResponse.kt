@@ -13,10 +13,12 @@ data class RuleResponse(
     val trigger: TriggerResponse? = null,
     val action: String? = null,
     val actionPoints: Int? = null,
+    val actionPointsExpression: String? = null,
     val actionAchievement: AchievementResponse? = null,
     val id: Long? = null,
     val repeatability: String? = null,
-    val conditions: MutableMap<String, Any>? = null,
+    val conditionExpression: String? = null,
+    val accumulatedFields: Array<String>? = null,
 ) {
     companion object {
         fun fromEntity(rule: com.arsahub.backend.models.Rule): RuleResponse {
@@ -28,10 +30,12 @@ data class RuleResponse(
                 trigger = rule.trigger?.let { TriggerResponse.fromEntity(it) },
                 action = rule.action,
                 actionPoints = rule.actionPoints,
+                actionPointsExpression = rule.actionPointsExpression,
                 actionAchievement = rule.actionAchievement?.let { AchievementResponse.fromEntity(it) },
                 id = rule.id,
-                conditions = rule.conditions,
                 repeatability = rule.repeatability,
+                conditionExpression = rule.conditionExpression,
+                accumulatedFields = rule.accumulatedFields,
             )
         }
     }

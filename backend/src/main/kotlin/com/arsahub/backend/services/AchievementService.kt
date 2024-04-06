@@ -67,7 +67,7 @@ class AchievementService(
         request: AchievementCreateRequest,
     ): Achievement {
         // validate uniqueness of title in app
-        val existingTrigger = achievementRepository.findByTitleAndApp(request.title!!, app)
+        val existingTrigger = achievementRepository.findByTitleAndApp(request.title, app)
         if (existingTrigger != null) {
             throw AchievementConflictException(request.title)
         }

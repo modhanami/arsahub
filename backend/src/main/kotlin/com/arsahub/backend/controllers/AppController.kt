@@ -3,6 +3,7 @@ package com.arsahub.backend.controllers
 import com.arsahub.backend.dtos.request.AchievementCreateRequest
 import com.arsahub.backend.dtos.request.AchievementSetImageRequest
 import com.arsahub.backend.dtos.request.AppUserCreateRequest
+import com.arsahub.backend.dtos.request.AppUserUpdateRequest
 import com.arsahub.backend.dtos.request.RewardCreateRequest
 import com.arsahub.backend.dtos.request.RewardRedeemRequest
 import com.arsahub.backend.dtos.request.RewardSetImageRequest
@@ -160,6 +161,17 @@ class AppController(
         return appService.trigger(app, request, jsonMap)
     }
 
+    @PostMapping("/trigger/dry")
+    fun dryTrigger(
+        @RequestBody json: ObjectNode,
+        @CurrentApp app: App,
+    ): List<RuleResponse> {
+        val request = objectMapper.treeToValue(json, TriggerSendRequest::class.java)
+        val jsonMap: Map<String, Any> = objectMapper.convertValue(json, object : TypeReference<Map<String, Any>>() {})
+
+        return appService.dryTrigger(app, request, jsonMap).map { RuleResponse.fromEntity(it) }
+    }
+
     @Operation(
         summary = "Validate key",
         responses = [
@@ -257,6 +269,15 @@ class AppController(
         @CurrentApp app: App,
     ): List<AppUserResponse> {
         return appService.listUsers(app).map { AppUserResponse.fromEntity(it) }
+    }
+
+    @PatchMapping("/users/{userId}")
+    fun updateAppUser(
+        @PathVariable userId: String,
+        @Valid @RequestBody request: AppUserUpdateRequest,
+        @CurrentApp app: App,
+    ): AppUserResponse {
+        return appService.updateAppUser(app, userId, request).let { AppUserResponse.fromEntity(it) }
     }
 
     @DeleteMapping("/users/{userId}")

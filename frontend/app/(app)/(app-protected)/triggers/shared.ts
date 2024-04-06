@@ -1,15 +1,24 @@
 import * as z from "zod";
 
-export const FieldTypeEnum = z.enum(["Text", "Integer"] as const);
+export const FieldTypeEnum = z.enum([
+  "text",
+  "integer",
+  "integerSet",
+  "textSet",
+] as const);
 
 export function getFieldTypeLabel(fieldType: string): string | undefined {
-  switch (fieldType.toLowerCase()) {
+  switch (fieldType) {
     case "text":
       return "Text";
     case "integer":
       return "Integer";
+    case "integerSet":
+      return "Integer Set";
+    case "textSet":
+      return "Text Set";
     default:
-      return undefined;
+      return fieldType;
   }
 }
 

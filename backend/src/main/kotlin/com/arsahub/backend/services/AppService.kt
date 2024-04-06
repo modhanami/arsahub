@@ -3,6 +3,7 @@ package com.arsahub.backend.services
 import com.arsahub.backend.SocketIOService
 import com.arsahub.backend.controllers.AppController
 import com.arsahub.backend.dtos.request.AppUserCreateRequest
+import com.arsahub.backend.dtos.request.AppUserUpdateRequest
 import com.arsahub.backend.dtos.request.TriggerSendRequest
 import com.arsahub.backend.dtos.request.WebhookCreateRequest
 import com.arsahub.backend.dtos.response.AchievementResponse
@@ -30,21 +31,12 @@ import com.arsahub.backend.services.actionhandlers.ActionResult
 import com.arsahub.backend.services.ruleengine.RuleEngine
 import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.validation.Valid
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
 import org.springframework.data.repository.findByIdOrNull
-import org.springframework.http.client.JdkClientHttpRequestFactory
+import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import org.springframework.web.client.RestClient
-import java.net.URI
-import java.net.http.HttpClient
-import java.time.Duration
 import java.util.*
-import kotlin.time.measureTime
 
 class AppUserNotFoundException : NotFoundException("App user not found")
 
@@ -70,24 +62,10 @@ class AppService(
     private val appInvitationRepository: AppInvitationRepository,
     private val appUserPointsHistoryRepository: AppUserPointsHistoryRepository,
     private val webhookRepository: WebhookRepository,
+    private val kafkaTemplateWebhookDelivery: KafkaTemplate<String, WebhookPayload>,
+    private val webhookDeliveryService: WebhookDeliveryService,
 ) {
     private val logger = KotlinLogging.logger {}
-    private val webhookTimeout = Duration.ofSeconds(WEBHOOK_TIMEOUT_SECONDS)
-
-    private val restClient =
-        RestClient
-            .builder()
-            .requestFactory(
-                JdkClientHttpRequestFactory(
-                    HttpClient.newBuilder()
-                        .version(HttpClient.Version.HTTP_1_1) // TODO: evaluate HTTP/2 (this is hotfix for EOFException)
-                        .build(),
-                ).apply {
-
-                    setReadTimeout(webhookTimeout)
-                },
-            )
-            .build()
 
     fun getAppOrThrow(id: Long): App {
         return appRepository.findById(id).orElseThrow { AppNotFoundException(id) }
@@ -191,98 +169,20 @@ class AppService(
                     appUserPointsHistoryRepository.save(pointsHistory)
                 }
 
-                val appWebhooks = webhookRepository.findByApp(app).map { URI(it.url!!) }
-                launch { publishWebhookEvents(app, appWebhooks, appUser, actionResult) }
+                val appWebhooks = webhookRepository.findByApp(app)
+                webhookDeliveryService.publishWebhookEvents(app, appWebhooks, appUser, actionResult)
                 broadcastActionResult(actionResult, app, request.userId)
             }
         }
     }
 
-    private suspend fun publishWebhookEvents(
+    fun dryTrigger(
         app: App,
-        appWebhooks: List<URI>,
-        appUser: AppUser,
-        actionResult: ActionResult,
-    ) {
-        coroutineScope {
-            if (appWebhooks.isEmpty()) {
-                return@coroutineScope
-            }
-
-            // TODO: more events. e.g. rule activated, etc.
-            val payload =
-                when (actionResult) {
-                    is ActionResult.AchievementUpdate -> {
-                        WebhookPayload(
-                            id = UUID.randomUUID(),
-                            event = "achievement_unlocked",
-                            appUserId = appUser.userId!!,
-                            payload =
-                                mapOf(
-                                    "achievement" to AchievementResponse.fromEntity(actionResult.achievement),
-                                ),
-                        )
-                    }
-
-                    is ActionResult.PointsUpdate -> {
-                        WebhookPayload(
-                            id = UUID.randomUUID(),
-                            event = "points_updated",
-                            appUserId = appUser.userId!!,
-                            payload =
-                                mapOf(
-                                    "points" to actionResult.newPoints,
-                                    "pointsChange" to actionResult.pointsAdded,
-                                ),
-                        )
-                    }
-
-                    else -> {
-                        return@coroutineScope
-                    }
-                }
-
-            appWebhooks.forEach { webhook ->
-                logger.debug { "Launching coroutine for webhook: $webhook" }
-                launch { publishWebhookEvent(webhook, app, payload) }
-            }
-        }
-    }
-
-    private suspend fun publishWebhookEvent(
-        webhook: URI,
-        app: App,
-        payload: WebhookPayload,
-    ) {
-        // TODO: retry?
-        val duration =
-            measureTime {
-                try {
-                    logger.debug { "Publishing webhook for app ${app.title}: $webhook" }
-                    val response =
-                        // the underlying rest client is blocking, so we need to switch to IO dispatcher
-                        withContext(Dispatchers.IO) {
-                            restClient.post()
-                                .uri(webhook)
-                                .body(
-                                    payload,
-                                )
-                                .retrieve()
-                                .toBodilessEntity()
-                        }
-
-                    if (response.statusCode.isError) {
-                        logger.error { "Webhook $webhook failed for app ${app.title}: ${response.statusCode}" }
-                        // TODO: handle webhook failure
-                    } else {
-                        logger.debug { "Webhook $webhook succeeded for app ${app.title}: ${response.statusCode}" }
-                    }
-                } catch (e: Exception) {
-                    logger.error(e) { "Webhook $webhook failed for app ${app.title}" }
-                    // TODO: handle webhook failure
-                }
-            }
-        logger.debug { "Webhook $webhook took $duration for app ${app.title} " }
+        @Valid request: TriggerSendRequest,
+        rawRequestJson: Map<String, Any>,
+    ): List<Rule> {
+        val appUser = getAppUserOrThrow(app, request.userId!!)
+        return ruleEngine.dryTrigger(app, appUser, request)
     }
 
     private fun broadcastActionResult(
@@ -486,6 +386,7 @@ class AppService(
         }
     }
 
+    @Transactional
     fun createWebhook(
         app: App,
         request: WebhookCreateRequest,
@@ -500,7 +401,8 @@ class AppService(
             }
         }
 
-        val webhook = Webhook(app = app, url = request.url)
+        val secretKey = UUID.randomUUID().toString()
+        val webhook = Webhook(app = app, url = request.url, secretKey = secretKey)
         logger.debug { "Creating webhook for app ${app.title}: ${webhook.url}" }
 
         return webhookRepository.save(webhook)
@@ -527,6 +429,16 @@ class AppService(
     ) {
         val webhook = webhookRepository.findByAppAndId(app, webhookId) ?: throw NotFoundException("Webhook not found")
         webhookRepository.delete(webhook)
+    }
+
+    fun updateAppUser(
+        app: App,
+        userId: String,
+        request: AppUserUpdateRequest,
+    ): AppUser {
+        val appUser = getAppUserOrThrow(app, userId)
+        appUser.displayName = request.displayName
+        return appUserRepository.save(appUser)
     }
 
     companion object {

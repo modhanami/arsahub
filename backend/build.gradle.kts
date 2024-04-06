@@ -85,7 +85,10 @@ dependencies {
     implementation("com.jayway.jsonpath:json-path:2.8.0")
     implementation("software.amazon.awssdk:s3")
     implementation("sh.ory:ory-client:1.6.1")
+    implementation("dev.cel:cel:0.4.0")
+    implementation("com.google.api.grpc:proto-google-common-protos:2.36.0")
     implementation("io.github.jan-tennert.supabase:gotrue-kt:2.1.3")
+    implementation("org.springframework.kafka:spring-kafka")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     runtimeOnly("org.postgresql:postgresql")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
@@ -94,6 +97,7 @@ dependencies {
     testImplementation("org.springframework.security:spring-security-test")
     testImplementation("io.mockk:mockk:1.13.8")
     testImplementation("org.junit.jupiter:junit-jupiter:5.8.1")
+    testImplementation("org.junit.jupiter:junit-jupiter-params:5.8.1")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testImplementation("org.testcontainers:testcontainers:1.19.2")
     testImplementation("org.testcontainers:junit-jupiter:1.19.2")
@@ -104,6 +108,7 @@ dependencies {
     testImplementation("io.github.serpro69:kotlin-faker:1.15.0")
     testImplementation("org.springframework.cloud:spring-cloud-contract-stub-runner")
     testImplementation("org.springframework.cloud:spring-cloud-contract-wiremock")
+    testImplementation("org.springframework.kafka:spring-kafka-test")
     implementation("io.jsonwebtoken:jjwt-api:0.12.3")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.3")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.3")
@@ -199,4 +204,8 @@ detekt {
 
 tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
     autoCorrect = true
+}
+
+if ("detekt" !in gradle.startParameter.taskNames) {
+    tasks.detekt { enabled = false }
 }

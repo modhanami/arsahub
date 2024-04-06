@@ -3,8 +3,6 @@
 import { ColumnDef } from "@tanstack/react-table";
 
 import { AppUserResponse } from "@/types/generated-types";
-import dayjs from "dayjs";
-import RelativeTime from "dayjs/plugin/relativeTime";
 import { DataTableColumnHeader } from "@/app/(app)/(app-protected)/triggers/components/data-table-column-header";
 import React from "react";
 import { DataTableRowActionsProps } from "@/app/(app)/examples/tasks/components/data-table-row-actions";
@@ -29,6 +27,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Dialog } from "@/components/ui/dialog";
+import { AppUserEditForm } from "@/app/(app)/(app-protected)/users/app-user-edit-form";
 
 export const columns: ColumnDef<AppUserResponse>[] = [
   {
@@ -38,10 +38,11 @@ export const columns: ColumnDef<AppUserResponse>[] = [
     ),
     cell: ({ row }) => {
       return (
-        <div className="flex space-x-2">
-          <span className="max-w-[500px] truncate">
-            {row.getValue("userId")}
-          </span>
+        <div
+          className="flex space-x-2 max-w-[500px]"
+          title={row.getValue("userId")}
+        >
+          <span className=" truncate">{row.getValue("userId")}</span>
         </div>
       );
     },
@@ -53,10 +54,11 @@ export const columns: ColumnDef<AppUserResponse>[] = [
     ),
     cell: ({ row }) => {
       return (
-        <div className="flex space-x-2">
-          <span className="max-w-[500px] truncate">
-            {row.getValue("displayName")}
-          </span>
+        <div
+          className="max-w-[500px] flex space-x-2"
+          title={row.getValue("displayName")}
+        >
+          <span className="truncate">{row.getValue("displayName")}</span>
         </div>
       );
     },
@@ -68,7 +70,9 @@ export const columns: ColumnDef<AppUserResponse>[] = [
     ),
     cell: ({ row }) => {
       return (
-        <div className="text-right max-w-[100px]">{row.getValue("points")}</div>
+        <div className="max-w-[200px]" title={row.getValue("points")}>
+          <span className="truncate">{row.getValue("points")}</span>
+        </div>
       );
     },
   },
@@ -79,29 +83,32 @@ export const columns: ColumnDef<AppUserResponse>[] = [
     ),
     cell: ({ row }) => {
       return (
-        <div className="text-right max-w-[100px]">
-          {row.original.achievements?.length}
+        <div
+          className="max-w-[100px]"
+          title={row.original.achievements?.length.toString()}
+        >
+          <span className="truncate">{row.original.achievements?.length}</span>
         </div>
       );
     },
   },
-  {
-    accessorKey: "createdAt",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Created At" />
-    ),
-    cell: ({ row }) => {
-      dayjs.extend(RelativeTime);
-      const createdAt = dayjs(row.getValue("createdAt"));
-      const formatted = createdAt.format("YYYY-MM-DD HH:mm:ss");
-      const relative = createdAt.fromNow();
-      return (
-        <div className="text-right" title={formatted}>
-          {relative}
-        </div>
-      );
-    },
-  },
+  // {
+  //   accessorKey: "createdAt",
+  //   header: ({ column }) => (
+  //     <DataTableColumnHeader column={column} title="Created At" />
+  //   ),
+  //   cell: ({ row }) => {
+  //     dayjs.extend(RelativeTime);
+  //     const createdAt = dayjs(row.getValue("createdAt"));
+  //     const formatted = createdAt.format("YYYY-MM-DD HH:mm:ss");
+  //     const relative = createdAt.fromNow();
+  //     return (
+  //       <div className="text-right" title={formatted}>
+  //         {relative}
+  //       </div>
+  //     );
+  //   },
+  // },
   {
     id: "actions",
     cell: ({ row }) => <AppUserRowActions row={row} />,
@@ -161,7 +168,15 @@ function AppUserRowActions({ row }: DataTableRowActionsProps<AppUserResponse>) {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {/*<Dialog open={showEditDialog} onOpenChange={setShowEditDialog}></Dialog>*/}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <AppUserEditForm
+          userId={row.original.userId}
+          displayName={row.original.displayName}
+          onUpdated={() => {
+            setShowEditDialog(false);
+          }}
+        />
+      </Dialog>
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>

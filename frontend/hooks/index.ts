@@ -12,6 +12,7 @@ import {
   deleteRule,
   deleteTrigger,
   deleteWebhook,
+  dryTrigger,
   fetchAchievements,
   fetchAppByAPIKey,
   fetchAppUser,
@@ -29,6 +30,7 @@ import {
   sendTrigger,
   setAchievementImage,
   setRewardImage,
+  updateAppUser,
   updateRule,
   updateTrigger,
   updateWebhook,
@@ -37,6 +39,7 @@ import {
   AchievementCreateRequest,
   AchievementResponse,
   AppUserCreateRequest,
+  AppUserUpdateRequest,
   RewardCreateRequest,
   RewardResponse,
   RuleCreateRequest,
@@ -230,6 +233,18 @@ export function useSendTrigger() {
   });
 }
 
+export function useDryTrigger() {
+  const { currentApp } = useCurrentApp();
+  if (!currentApp) {
+    throw new Error("No current app");
+  }
+
+  return useMutation({
+    mutationFn: (request: TriggerSendRequest) =>
+      dryTrigger(currentApp, request),
+  });
+}
+
 export function useRules() {
   const { currentApp } = useCurrentApp();
 
@@ -349,6 +364,26 @@ export function useCreateAppUser() {
   return useMutation({
     mutationFn: (newUser: AppUserCreateRequest) =>
       createAppUser(currentApp, newUser),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["appUsers"] });
+    },
+  });
+}
+
+export function useUpdateAppUser() {
+  const { currentApp } = useCurrentApp();
+  const queryClient = useQueryClient();
+  if (!currentApp) {
+    throw new Error("No current app");
+  }
+
+  return useMutation({
+    mutationFn: (request: {
+      userId: string;
+      updateRequest: AppUserUpdateRequest;
+    }) =>
+      currentApp &&
+      updateAppUser(currentApp, request.userId, request.updateRequest),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["appUsers"] });
     },

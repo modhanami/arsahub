@@ -1,13 +1,12 @@
 "use client";
-
-import { Separator } from "@/components/ui/separator";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Image, Link as NextUILink } from "@nextui-org/react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAchievements, useCreateRule, useTriggers } from "@/hooks"; // import Link from "next/link";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-
-import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -20,29 +19,48 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
-import { Link as NextUILink } from "@nextui-org/react";
-import Link from "next/link";
 import React from "react";
-import { v4 as uuidv4 } from "uuid";
-import { Input } from "@/components/ui/input";
 import {
   RuleCreateRequest,
+  TriggerResponse,
   ValidationLengths,
   ValidationMessages,
 } from "@/types/generated-types";
-import { Icons } from "@/components/icons";
 import { isAlphaNumericExtended } from "@/lib/validations";
 import { InputWithCounter } from "@/components/ui/input-with-counter";
 import { TextareaWithCounter } from "@/components/ui/textarea-with-counter";
 import { resolveBasePath } from "@/lib/base-path";
-import { Condition } from "@/app/(app)/(app-protected)/rules/shared";
+import {
+  defaultOperators,
+  Field,
+  FlexibleOptionList,
+  formatQuery,
+  FullOperator,
+  QueryBuilder,
+  RuleGroupType,
+  RuleGroupTypeAny,
+  RuleType,
+} from "react-querybuilder";
+import "react-querybuilder/dist/query-builder.css";
+import { QueryBuilderDnD } from "@react-querybuilder/dnd";
+import * as ReactDnD from "react-dnd";
+import * as ReactDndHtml5Backend from "react-dnd-html5-backend";
+import { customRuleProcessorCEL } from "@/app/(app)/(app-protected)/rules/new/querybuilder/customRuleProcessorCEL";
+import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
+import { DashboardShell } from "@/components/shell";
+import { DashboardHeader } from "@/components/header";
+import { SectionTitle } from "@/app/(app)/(app-protected)/rules/shared";
+import { getImageUrlFromKey } from "@/lib/image";
+import { DevTool } from "@hookform/devtools";
 
-const operations = [{ label: "is", value: "is" }];
 const actions = [
   {
     label: "Add points",
@@ -68,7 +86,8 @@ const repeatability = [
 const addPointsSchema = z.object({
   key: z.literal("add_points"),
   params: z.object({
-    points: z.coerce.number(),
+    points: z.coerce.number().optional(),
+    pointsExpression: z.string().optional(),
   }),
 });
 
@@ -109,6 +128,8 @@ const FormSchema = z.object({
   repeatability: z.string({
     required_error: "Please select a repeatability",
   }), // TODO: add validation, or change to enum
+  accumulatedFields: z.array(z.string()).optional(),
+  actionAddPointsMode: z.enum(["fixed", "dynamic"]).optional(),
 });
 
 type FormData = z.infer<typeof FormSchema>;
@@ -116,7 +137,11 @@ type FormData = z.infer<typeof FormSchema>;
 export default function Page() {
   const form = useForm<FormData>({
     resolver: zodResolver(FormSchema),
+    defaultValues: {
+      actionAddPointsMode: "fixed",
+    },
   });
+  const router = useRouter();
   const { data: triggers } = useTriggers({ withBuiltIn: true });
   const { data: achievements } = useAchievements({
     enabled: form.watch("action.key") === "unlock_achievement",
@@ -127,160 +152,91 @@ export default function Page() {
   }, [triggers, selectedTriggerKey]);
   const createRule = useCreateRule();
 
-  const [conditions, setConditions] = React.useState<Condition<any>[]>([]);
-  const [conditionErrors, setConditionErrors] = React.useState<
-    Record<string, string>
-  >({}); // UUID -> error message
+  const [query, setQuery] = React.useState<RuleGroupType>({
+    combinator: "and",
+    rules: [],
+  });
+
   // TODO: disallow duplicate operators for a given field
   // TODO: disable field selection when no operators are available
 
-  React.useEffect(() => {
-    if (selectedTrigger) {
-      setConditions([]);
-    }
-  }, [selectedTrigger]);
-
-  React.useEffect(() => {
-    console.log("conditions", conditions);
-  }, [conditions]);
-
   const isPointsReachedTrigger = selectedTriggerKey === "points_reached";
+
+  const isRepeatabilityDisabled = isPointsReachedTrigger;
+
+  const fields: Field[] = React.useMemo(() => {
+    return (
+      selectedTrigger?.fields?.map((field) => {
+        const _field = {
+          name: field.key!,
+          label: field.key!,
+          dataType: field.type!,
+          inputType: field.type === "integer" ? "number" : "text",
+          operators: getOperators(field.key!, field.type!, {
+            isPointsReachedTrigger,
+          }),
+          defaultOperator: getDefaultOperator(field.type!),
+        };
+        console.log("_field", _field);
+        return _field;
+      }) || []
+    );
+  }, [isPointsReachedTrigger, selectedTrigger?.fields]);
+
+  const integerFields =
+    selectedTrigger?.fields?.filter((field) => field.type === "integer") || [];
+  const ifBuilderErrorsRootKey = `ifBuilder`;
+
   React.useEffect(() => {
     // if select points_reached, force repeatability as once_per_user
     // TODO: handle built-in triggers more gracefully and maybe migrate to useFieldArray for conditions
     if (isPointsReachedTrigger) {
       console.log("Force once_per_user");
       form.setValue("repeatability", "once_per_user");
-      // set to having one condition of 'points' is 'is' 'value'
-      setConditions([
-        {
-          uuid: uuidv4(),
-          field: "points",
-          operator: "is",
-          value: "",
-          fieldDefinition: {
-            key: "points",
-            label: "Points",
-            type: "integer",
-          },
-          inputType: "number",
-          inputProps: { step: 1 },
-        },
-      ]);
+      // TODO: fix blurring of input when setting query
+    } else {
+      setQuery({ combinator: "and", rules: [] });
     }
-  }, [isPointsReachedTrigger]);
-
-  const isRepeatabilityDisabled = isPointsReachedTrigger;
-
-  function addCondition() {
-    setConditions((prev) => [
-      ...prev,
-      {
-        uuid: uuidv4(),
-        field: "",
-        operator: "",
-        value: "",
-      },
-    ]);
-  }
-
-  function removeCondition(uuid: string) {
-    setConditions((prev) =>
-      prev.filter((condition) => condition.uuid !== uuid),
-    );
-  }
-
-  function setConditionField(uuid: string, field: string) {
-    const fieldDefinition = selectedTrigger?.fields?.find(
-      (f) => f.key === field,
-    )!;
-    const inputType = fieldDefinition.type === "integer" ? "number" : "text";
-    const inputProps = fieldDefinition.type === "integer" ? { step: 1 } : {};
-    setConditions((prev) =>
-      prev.map((prevCondition) =>
-        prevCondition.uuid === uuid
-          ? {
-              uuid,
-              operator: "",
-              value: "", // TODO: evaluate whether we should clear the value when the field changes
-              field,
-              fieldDefinition,
-              inputType,
-              inputProps,
-            }
-          : prevCondition,
-      ),
-    );
-  }
-
-  function setConditionOperator(uuid: string, operator: string) {
-    setConditions((prev) =>
-      prev.map((prevCondition) =>
-        prevCondition.uuid === uuid
-          ? { ...prevCondition, operator }
-          : prevCondition,
-      ),
-    );
-  }
-
-  function setConditionValue(uuid: string, value: string) {
-    setConditions((prev) =>
-      prev.map((prevCondition) =>
-        prevCondition.uuid === uuid
-          ? { ...prevCondition, value }
-          : prevCondition,
-      ),
-    );
-  }
+  }, [form, isPointsReachedTrigger, selectedTrigger]);
 
   function onSubmit(data: FormData) {
-    const currentConditionErrors = { ...conditionErrors };
-    for (const condition of conditions) {
-      try {
-        console.log("condition", condition);
-        currentConditionErrors[condition.uuid] = "";
+    console.log("data", data);
+    const action = {
+      key: data.action.key,
+      params:
+        data.action.key === "add_points"
+          ? form.watch("actionAddPointsMode") === "fixed"
+            ? { points: data.action.params.points }
+            : { pointsExpression: data.action.params.pointsExpression }
+          : { achievementId: data.action.params.achievementId },
+    };
 
-        if (condition.field === "") {
-          currentConditionErrors[condition.uuid] = "Please select a field";
-        } else if (condition.operator === "") {
-          currentConditionErrors[condition.uuid] = "Please select an operator";
-        } else if (condition.value.trim() === "") {
-          currentConditionErrors[condition.uuid] = "Please enter a value";
-        }
-
-        if (condition.fieldDefinition?.type === "integer") {
-          condition.value = parseInt(condition.value.trim());
-        }
-      } catch (e) {
-        console.error(e);
-        currentConditionErrors[condition.uuid] = "Please enter a valid value";
-
-        toast({
-          title: "Error",
-          description: "FIXME: error message",
-          variant: "destructive",
-        });
-
-        return;
-      }
-    }
-
-    if (
-      !conditions.every(
-        (condition) => currentConditionErrors[condition.uuid] === "",
-      )
-    ) {
-      setConditionErrors(currentConditionErrors);
+    // points_reached require a single rule
+    if (isPointsReachedTrigger && query.rules.length !== 1) {
+      form.setError(`root.${ifBuilderErrorsRootKey}`, {
+        message: "Points reached trigger requires a points threshold.",
+        type: "manual",
+      });
       return;
     }
 
-    const finalConditions = conditions.reduce(
-      (acc, condition) => {
-        acc[condition.field] = condition.value;
-        return acc;
-      },
-      {} as Record<string, any>,
-    );
+    // query builder rule values must not be empty
+    if (
+      query.rules.some((rule) => {
+        const _rule = rule as RuleType;
+        if (_rule.value === undefined) {
+          return true;
+        }
+
+        return !_rule.value || _rule.value === "";
+      })
+    ) {
+      form.setError(`root.${ifBuilderErrorsRootKey}`, {
+        message: "Rule values must not be empty",
+        type: "manual",
+      });
+      return;
+    }
 
     const payload: RuleCreateRequest = {
       ...data,
@@ -288,21 +244,29 @@ export default function Page() {
         key: data.trigger.key,
         params: null, // TODO: support trigger params or remove
       },
+      action,
       title: data.title.trim(),
       description: data.description?.trim() || null,
-      conditions: finalConditions,
+      conditionExpression:
+        query.rules.length === 0
+          ? null
+          : getFormattedCELExpression(query, fields),
+      accumulatedFields:
+        data.accumulatedFields === undefined ||
+        data.accumulatedFields.length === 0
+          ? null
+          : data.accumulatedFields,
     };
 
-    createRule.mutate(payload);
-    console.log("payload", payload);
+    createRule.mutate(payload, {
+      onSuccess: () => {
+        router.push(resolveBasePath(`/rules`));
+      },
+    });
 
     toast({
-      title: "You submitted the following values:",
-      description: (
-        <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-          <code className="text-white">{JSON.stringify(payload, null, 2)}</code>
-        </pre>
-      ),
+      title: "Rule created",
+      description: "Your rule was created successfully.",
     });
   }
 
@@ -310,21 +274,54 @@ export default function Page() {
     return <div>Loading...</div>;
   }
 
-  console.log("selectedTrigger", selectedTrigger);
+  const rulesModificationDisabled =
+    isPointsReachedTrigger && query.rules.length === 1;
 
+  const accumulatableFields = (
+    (selectedTrigger && getAccumulatableFields(selectedTrigger)) ||
+    []
+  ).filter((field) => {
+    return query.rules.some((rule) => {
+      return (rule as RuleType).field === field.key;
+    });
+  });
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Create Rule</CardTitle>
-        {/*<CardDescription>Create Rule</CardDescription>*/}
-      </CardHeader>
-      <CardContent>
-        {/*  Config Trigger */}
-        <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="w-2/3 space-y-6"
-          >
+    <DashboardShell>
+      <Button
+        type="button"
+        onClick={() => router.push(resolveBasePath(`/rules`))}
+        variant="outline"
+        className="h-8 self-start px-2 group"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="mr-1 h-4 w-4 transition-transform group-hover:-translate-x-1"
+        >
+          <polyline points="15 18 9 12 15 6" />
+        </svg>{" "}
+        Back
+      </Button>
+
+      <DashboardHeader
+        heading="New Rule"
+        text="Create a new rule with a trigger, optional conditions, and action."
+        separator
+      ></DashboardHeader>
+      {/*  Config Trigger */}
+      <Form {...form}>
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="max-w-2xl space-y-8"
+        >
+          <div className="space-y-4">
             {/*Title*/}
             <FormField
               control={form.control}
@@ -362,139 +359,190 @@ export default function Page() {
                 </FormItem>
               )}
             />
-            <h3 className="text-lg font-semibold">When</h3>
-            <FormField
-              control={form.control}
-              name="trigger.key"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Trigger</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a trigger" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {triggers?.map((trigger) => (
-                        <SelectItem
-                          key={trigger.id}
-                          value={trigger.key!!}
-                          className="flex items-center justify-between w-full"
-                        >
-                          {trigger.title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormDescription>
-                    You can manage triggers in{" "}
-                    <Link href={resolveBasePath("/triggers")}>
-                      <NextUILink size="sm" color={"primary"}>
+          </div>
+          <Separator />
+
+          <div className="space-y-4">
+            <div className="space-y-4">
+              <SectionTitle number={1} title="When" />
+              <FormField
+                control={form.control}
+                name="trigger.key"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Trigger</FormLabel>
+                    <Select
+                      onValueChange={(value) => {
+                        if (
+                          query.rules.length > 0 &&
+                          !confirm("You have unsaved changes. Continue?")
+                        ) {
+                          return;
+                        }
+                        field.onChange(value);
+                      }}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a trigger" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectGroup className="overflow-y-auto max-h-[20rem]">
+                          {triggers?.map((trigger) => (
+                            <SelectItem
+                              key={trigger.id}
+                              value={trigger.key!!}
+                              className="flex items-center justify-between w-full"
+                            >
+                              {trigger.title}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      You can manage triggers in{" "}
+                      <NextUILink
+                        size="sm"
+                        color={"primary"}
+                        href={resolveBasePath("/triggers")}
+                      >
                         Triggers
                       </NextUILink>
-                    </Link>
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </div>
+          <Separator />
 
+          <div
+            className={cn("space-y-4", {
+              "opacity-50 cursor-not-allowed":
+                !selectedTrigger || selectedTrigger.fields?.length === 0,
+            })}
+          >
             {/*  Config Condition */}
+            <SectionTitle number={2} title="If" isOptional />
+
             <h3 className="text-lg font-semibold">If</h3>
-            <div className="flex items-center space-x-2">
-              <Button
-                onClick={addCondition}
+            {form.formState.errors?.root?.[ifBuilderErrorsRootKey] && (
+              <div className="bg-red-100 text-red-600 text-sm px-4 py-2 rounded-md">
+                {form.formState.errors.root[ifBuilderErrorsRootKey].message}
+              </div>
+            )}
+            <QueryBuilderDnD dnd={{ ...ReactDnD, ...ReactDndHtml5Backend }}>
+              <QueryBuilder
+                resetOnOperatorChange
+                resetOnFieldChange
+                debugMode
                 disabled={
-                  !selectedTrigger ||
-                  selectedTrigger.fields?.length === 0 ||
-                  isPointsReachedTrigger
+                  !selectedTrigger || selectedTrigger.fields?.length === 0
                 }
-                type="button"
-              >
-                Add condition
-              </Button>
-              <Separator />
-            </div>
-            <div className="space-y-4">
-              {conditions.map((condition) => (
-                <div
-                  key={condition.uuid}
-                  className="flex items-center space-x-2"
-                >
-                  <Select
-                    value={condition.field}
-                    onValueChange={(value) =>
-                      setConditionField(condition.uuid, value)
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a field" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {selectedTrigger?.fields?.map((field) => {
-                        return (
-                          <SelectItem
-                            key={field.key}
-                            value={field.key!!}
-                            className="flex items-center justify-between w-full"
-                          >
-                            {field.label || field.key}
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
+                fields={fields}
+                query={query}
+                onQueryChange={setQuery}
+                controlElements={
+                  rulesModificationDisabled
+                    ? {
+                        addRuleAction: () => null,
+                        addGroupAction: () => null,
+                        combinatorSelector: () => null,
+                        removeRuleAction: () => null,
+                        removeGroupAction: () => null,
+                      }
+                    : isPointsReachedTrigger
+                      ? {
+                          addGroupAction: () => null,
+                          combinatorSelector: () => null,
+                          removeRuleAction: () => null,
+                          removeGroupAction: () => null,
+                        }
+                      : undefined
+                }
+                controlClassnames={
+                  rulesModificationDisabled
+                    ? undefined
+                    : { queryBuilder: "queryBuilder-branches" }
+                }
+              />
+            </QueryBuilderDnD>
+            {query.rules.length !== 0 && (
+              <>
+                <h4>Condition Expression</h4>
+                <pre>
+                  <code>{getFormattedCELExpression(query, fields)}</code>
+                </pre>
+              </>
+            )}
+            {/*{accumulatableFields.length > 0 && (*/}
+            {/*  <FormField*/}
+            {/*    control={form.control}*/}
+            {/*    name="accumulatedFields"*/}
+            {/*    render={() => (*/}
+            {/*      <FormItem>*/}
+            {/*        <div className="m-4">*/}
+            {/*          <FormLabel className="text-base">*/}
+            {/*            Accumulated Fields*/}
+            {/*          </FormLabel>*/}
+            {/*          <FormDescription>*/}
+            {/*            Select the fields you want to accumulate when this*/}
+            {/*            rule is triggered.*/}
+            {/*          </FormDescription>*/}
+            {/*          {accumulatableFields.map((item) => (*/}
+            {/*            <FormField*/}
+            {/*              key={item.key}*/}
+            {/*              control={form.control}*/}
+            {/*              name="accumulatedFields"*/}
+            {/*              render={({ field }) => {*/}
+            {/*                return (*/}
+            {/*                  <FormItem*/}
+            {/*                    key={item.key}*/}
+            {/*                    className="flex flex-row items-start space-x-3 space-y-0 my-2"*/}
+            {/*                  >*/}
+            {/*                    <FormControl>*/}
+            {/*                      <Checkbox*/}
+            {/*                        checked={field.value?.includes(item.key!)}*/}
+            {/*                        onCheckedChange={(checked) => {*/}
+            {/*                          return checked*/}
+            {/*                            ? field.onChange([*/}
+            {/*                                ...(field.value || []),*/}
+            {/*                                item.key!,*/}
+            {/*                              ])*/}
+            {/*                            : field.onChange(*/}
+            {/*                                field.value?.filter(*/}
+            {/*                                  (value) => value !== item.key,*/}
+            {/*                                ),*/}
+            {/*                              );*/}
+            {/*                        }}*/}
+            {/*                      />*/}
+            {/*                    </FormControl>*/}
+            {/*                    <FormLabel className="font-normal">*/}
+            {/*                      {item.key}*/}
+            {/*                    </FormLabel>*/}
+            {/*                  </FormItem>*/}
+            {/*                );*/}
+            {/*              }}*/}
+            {/*            />*/}
+            {/*          ))}*/}
+            {/*        </div>*/}
 
-                  <Select
-                    onValueChange={(value) =>
-                      setConditionOperator(condition.uuid, value)
-                    }
-                    value={condition.operator}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select an operator" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {operations.map((operation) => (
-                        <SelectItem
-                          key={operation.value}
-                          value={operation.value}
-                          className="flex items-center justify-between w-full"
-                        >
-                          {operation.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+            {/*        <FormMessage />*/}
+            {/*      </FormItem>*/}
+            {/*    )}*/}
+            {/*  />*/}
+            {/*)}*/}
+          </div>
+          <Separator />
 
-                  <Input
-                    value={condition.value}
-                    onChange={(e) =>
-                      setConditionValue(condition.uuid, e.target.value)
-                    }
-                    type={condition.inputType}
-                    {...condition.inputProps}
-                  />
-
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeCondition(condition.uuid)}
-                  >
-                    <Icons.trash className="h-4 w-4" />
-                  </Button>
-
-                  <FormMessage>{conditionErrors[condition.uuid]}</FormMessage>
-                </div>
-              ))}
-            </div>
-
+          <div className="space-y-4">
             {/*  Config Action */}
-            <h3 className="text-lg font-semibold">Then</h3>
+            <SectionTitle number={3} title="Then" />
+
             <FormField
               control={form.control}
               name="action.key"
@@ -527,24 +575,89 @@ export default function Page() {
 
             {/*Action params*/}
             {form.watch("action.key") == "add_points" && (
-              <FormField
-                control={form.control}
-                name="action.params.points"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Points</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Points"
-                        type="number"
-                        {...field}
-                        step={1}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <Tabs
+                defaultValue="fixed"
+                className="w-[400px]"
+                onValueChange={(mode) => {
+                  // @ts-ignore
+                  form.setValue("actionAddPointsMode", mode);
+                }}
+              >
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="fixed">Fixed</TabsTrigger>
+                  <TabsTrigger
+                    value="dynamic"
+                    disabled={
+                      integerFields.length === 0 || isPointsReachedTrigger
+                    }
+                  >
+                    Dynamic
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="fixed">
+                  <FormField
+                    control={form.control}
+                    name="action.params.points"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Points</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Points"
+                            type="number"
+                            {...field}
+                            step={1}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </TabsContent>
+                <TabsContent value="dynamic">
+                  {/*  Select from integer trigger fields: action.params.pointsExpression */}
+                  <FormField
+                    control={form.control}
+                    name="action.params.pointsExpression"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Points Source</FormLabel>
+                        <FormDescription>
+                          Select a field from the trigger to use as the points
+                          to add
+                        </FormDescription>
+                        <FormControl>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value?.toString()}
+                          >
+                            <SelectTrigger>
+                              <SelectValue
+                                className="flex items-center justify-between w-full"
+                                placeholder="Select a field"
+                              />
+                            </SelectTrigger>
+                            <SelectContent className="w-full">
+                              <SelectGroup className="overflow-y-auto max-h-[20rem]">
+                                {integerFields.map((field) => (
+                                  <SelectItem
+                                    key={field.key}
+                                    value={field.key ?? ""}
+                                    className="flex items-center justify-between w-full"
+                                  >
+                                    {field.key}
+                                  </SelectItem>
+                                ))}
+                              </SelectGroup>
+                            </SelectContent>
+                          </Select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </TabsContent>
+              </Tabs>
             )}
 
             {form.watch("action.key") == "unlock_achievement" && (
@@ -565,16 +678,39 @@ export default function Page() {
                             placeholder="Select an achievement"
                           />
                         </SelectTrigger>
-                        <SelectContent className="w-full">
-                          {achievements?.map((achievement) => (
-                            <SelectItem
-                              key={achievement.achievementId}
-                              value={achievement.achievementId?.toString()}
-                              className="flex items-center justify-between w-full"
-                            >
-                              {achievement.title}
-                            </SelectItem>
-                          ))}
+                        <SelectContent className="w-full whatthefuck">
+                          <SelectGroup className="overflow-y-auto max-h-[20rem] whatthefuck">
+                            {achievements?.map((achievement) => (
+                              <SelectItem
+                                key={achievement.achievementId}
+                                value={achievement.achievementId?.toString()}
+                              >
+                                <div className="flex items-center gap-4 w-full">
+                                  <Image
+                                    src={
+                                      (achievement?.imageKey &&
+                                        getImageUrlFromKey(
+                                          achievement?.imageKey,
+                                        )) ||
+                                      ""
+                                    }
+                                    width={60}
+                                    height={60}
+                                    alt={achievement?.title}
+                                    radius="none"
+                                  />
+                                  <div className="flex flex-col">
+                                    <span className="font-medium">
+                                      {achievement.title}
+                                    </span>
+                                    <span className="text-muted-foreground">
+                                      {achievement.description}
+                                    </span>
+                                  </div>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
                         </SelectContent>
                       </Select>
                     </FormControl>
@@ -583,7 +719,11 @@ export default function Page() {
                 )}
               />
             )}
+          </div>
+          <Separator />
 
+          <div className="space-y-4">
+            <SectionTitle title="More settings" />
             {/*Repeatability*/}
             <FormField
               control={form.control}
@@ -620,11 +760,78 @@ export default function Page() {
                 </FormItem>
               )}
             />
+          </div>
 
-            <Button type="submit">Submit</Button>
-          </form>
-        </Form>
-      </CardContent>
-    </Card>
+          <Button type="submit">Submit</Button>
+        </form>
+        <DevTool control={form.control} />
+      </Form>
+    </DashboardShell>
   );
+}
+
+interface GetOperatorsOptions {
+  isPointsReachedTrigger: boolean;
+}
+
+function getOperators(
+  fieldName: string,
+  fieldType: string,
+  options: GetOperatorsOptions,
+): FlexibleOptionList<FullOperator> {
+  console.log("getOperators", fieldName, fieldType, options);
+  const { isPointsReachedTrigger } = options;
+  if (isPointsReachedTrigger) {
+    return [{ name: "=", label: "equals" }];
+  }
+
+  switch (fieldType) {
+    case "text":
+      return [
+        { name: "=", label: "equals" },
+        ...defaultOperators.filter((op) =>
+          ["contains", "beginsWith", "endsWith", "in"].includes(op.name),
+        ),
+      ];
+    case "integer":
+      return [
+        ...defaultOperators.filter((op) =>
+          ["=", ">", ">=", "<", "<=", "in"].includes(op.name),
+        ),
+      ];
+    case "integerSet":
+      return [
+        { name: "containsAll", value: "containsAll", label: "contains all" },
+      ];
+    case "textSet":
+      return [
+        { name: "containsAll", value: "containsAll", label: "contains all" },
+      ];
+  }
+  return [];
+}
+
+function getDefaultOperator(fieldType: string): string {
+  switch (fieldType) {
+    case "integerSet":
+      return "containsAll";
+    case "textSet":
+      return "containsAll";
+  }
+  return "";
+}
+
+function getFormattedCELExpression(query: RuleGroupTypeAny, fields: Field[]) {
+  return formatQuery(query, {
+    format: "cel",
+    fields,
+    parseNumbers: true,
+    ruleProcessor: customRuleProcessorCEL,
+  });
+}
+
+function getAccumulatableFields(trigger: TriggerResponse) {
+  return trigger.fields?.filter((field) => {
+    return ["integerSet"].includes(field.type!);
+  });
 }
