@@ -386,6 +386,7 @@ class AppService(
         }
     }
 
+    @Transactional
     fun createWebhook(
         app: App,
         request: WebhookCreateRequest,

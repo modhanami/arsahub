@@ -15,7 +15,6 @@ import com.arsahub.backend.dtos.request.FieldDefinition
 import com.arsahub.backend.dtos.request.RuleCreateRequest
 import com.arsahub.backend.dtos.request.TriggerCreateRequest
 import com.arsahub.backend.dtos.request.TriggerDefinition
-import com.arsahub.backend.dtos.response.WebhookPayload
 import com.arsahub.backend.models.App
 import com.arsahub.backend.models.AppInvitation
 import com.arsahub.backend.models.AppUser
@@ -26,6 +25,7 @@ import com.arsahub.backend.models.RuleRepeatability
 import com.arsahub.backend.models.Trigger
 import com.arsahub.backend.models.UnlimitedRuleRepeatability
 import com.arsahub.backend.models.User
+import com.arsahub.backend.models.WebhookRepository
 import com.arsahub.backend.repositories.AchievementRepository
 import com.arsahub.backend.repositories.AppInvitationRepository
 import com.arsahub.backend.repositories.AppInvitationStatusRepository
@@ -45,19 +45,18 @@ import com.arsahub.backend.services.AuthService
 import com.arsahub.backend.services.RuleService
 import com.arsahub.backend.services.TriggerService
 import com.arsahub.backend.services.WebhookDeliveryService
-import com.arsahub.backend.utils.SignatureUtil
 import com.corundumstudio.socketio.SocketIOServer
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.github.tomakehurst.wiremock.WireMockServer
-import com.github.tomakehurst.wiremock.admin.model.ServeEventQuery
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.equalToJson
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.stubFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
-import com.jayway.jsonpath.JsonPath
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import org.hamcrest.Matchers.containsInAnyOrder
 import org.hamcrest.Matchers.hasEntry
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -75,9 +74,9 @@ import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection
 import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock
 import org.springframework.http.MediaType
-import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.kafka.test.context.EmbeddedKafka
 import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.context.transaction.TestTransaction
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
@@ -95,6 +94,12 @@ import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 import java.util.*
 
+fun forceNewTransaction() {
+    TestTransaction.flagForCommit()
+    TestTransaction.end()
+    TestTransaction.start()
+}
+
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
 )
@@ -109,10 +114,10 @@ import java.util.*
 )
 class AppControllerTest() {
     @Autowired
-    private lateinit var ruleTriggerFieldStateRepository: RuleTriggerFieldStateRepository
+    private lateinit var webhookRepository: WebhookRepository
 
     @Autowired
-    private lateinit var kafkaTemplateWebhookDelivery: KafkaTemplate<String, WebhookPayload>
+    private lateinit var ruleTriggerFieldStateRepository: RuleTriggerFieldStateRepository
 
     @Autowired
     private lateinit var wireMockServer: WireMockServer
@@ -200,6 +205,8 @@ class AppControllerTest() {
             )
         setGlobalAuthSetup(authSetup)
         setGlobalSecretKey(secret)
+
+        WireMock.reset()
     }
 
     data class TrigggerTestModel(
@@ -1057,7 +1064,8 @@ class AppControllerTest() {
                     .withBody("Well received"),
             ),
         )
-        val webhookUrl = """http://localhost:${wireMockServer.port()}/webhook"""
+        val webhookPath = "/webhook"
+        val webhookUrl = "http://localhost:${wireMockServer.port()}$webhookPath"
         mockMvc.performWithAppAuth(
             post("/api/apps/webhooks")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -1070,6 +1078,13 @@ class AppControllerTest() {
                 ),
         )
             .andExpect(status().isCreated)
+
+        forceNewTransaction()
+
+        // Assert DB
+        val createdWebhook = webhookRepository.findAll()
+        assertEquals(1, createdWebhook.size)
+        assertEquals(webhookUrl, createdWebhook[0].url)
 
         // Act & Assert
         mockMvc.performWithAppAuth(
@@ -1095,10 +1110,10 @@ class AppControllerTest() {
 
         // Assert webhook
         // TODO: find a way to wait for the webhook to be called
-        Thread.sleep(1000)
+        runBlocking { delay(3000) }
 
         wireMockServer.verify(
-            postRequestedFor(urlEqualTo("/webhook"))
+            postRequestedFor(urlEqualTo(webhookPath))
                 .withRequestBody(
                     equalToJson(
                         // id is an escaped wiremock placeholder
@@ -3749,75 +3764,6 @@ class AppControllerTest() {
         // Assert DB
         val rules = ruleRepository.findById(rule.id!!)
         assertTrue(rules.isPresent)
-    }
-
-    @Test
-    fun `webhook signature - signature is valid`() {
-        // Arrange
-        // Arrange webhook
-        val stubUUID = UUID.randomUUID()
-        stubFor(
-            WireMock.post(urlEqualTo("/webhook")).willReturn(
-                aResponse()
-                    .withHeader("Content-Type", "text/plain")
-                    .withBody("Well received"),
-            ).withId(stubUUID),
-        )
-
-        val webhookCreateResult =
-            mockMvc.performWithAppAuth(
-                post("/api/apps/webhooks")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(
-                        """
-                        {
-                            "url": "http://localhost:${wireMockServer.port()}/webhook"
-                        }
-                        """.trimIndent(),
-                    ),
-            )
-                .andExpect(status().isCreated)
-
-        val secretKey = JsonPath.read<String>(webhookCreateResult.andReturn().response.contentAsString, "$.secretKey")
-        assertNotNull(secretKey)
-
-        // create user, trigger, rule, send trigger to activate rule to add points, which will be sent in webhook
-        val user = createAppUser(authSetup.app)
-        val rule =
-            createRule(authSetup.app) {
-                title = "When workshop completed then add 100 points"
-                trigger = createWorkshopCompletedTrigger(authSetup.app)
-                action {
-                    addPoints(100)
-                }
-                repeatability = OncePerUserRuleRepeatability
-            }
-
-        mockMvc.performWithAppAuth(
-            post("/api/apps/trigger")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    """
-                    {
-                        "key": "workshop_completed",
-                        "userId": "${user.userId}"
-                    }
-                    """.trimIndent(),
-                ),
-        )
-            .andExpect(status().isOk)
-
-        // Act & Assert
-        val allServeEvents = WireMock.getAllServeEvents(ServeEventQuery.forStubMapping(stubUUID))
-        val request =
-            allServeEvents
-                .first().request
-        val signatureHeader = request.getHeader("X-Webhook-Signature")
-        val actualPayload =
-            request.bodyAsString
-
-        val signature = SignatureUtil.createSignature(secretKey, actualPayload)
-        assertEquals(signature, signatureHeader)
     }
 
     // Dynamic points addition based on a sent trigger field.

@@ -5,18 +5,24 @@ import com.arsahub.backend.dtos.response.WebhookPayload
 import com.arsahub.backend.models.App
 import com.arsahub.backend.models.AppUser
 import com.arsahub.backend.models.Webhook
+import com.arsahub.backend.models.WebhookRepository
+import com.arsahub.backend.repositories.AppRepository
 import com.arsahub.backend.services.actionhandlers.ActionResult
+import com.arsahub.backend.utils.SignatureUtil
+import com.fasterxml.jackson.databind.ObjectMapper
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.apache.kafka.clients.admin.NewTopic
 import org.springframework.context.annotation.Bean
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.http.client.JdkClientHttpRequestFactory
 import org.springframework.kafka.annotation.KafkaListener
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.kafka.support.Acknowledgment
 import org.springframework.stereotype.Service
+import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.web.client.RestClient
 import java.net.URI
 import java.net.http.HttpClient
@@ -24,8 +30,42 @@ import java.time.Duration
 import java.util.*
 import kotlin.time.measureTime
 
+fun printTransactionStatus(name: String) {
+    println(
+        """
+        Transaction status: $name
+        Transaction sync (current thread): ${Thread.currentThread().name}
+        Isolation: ${TransactionSynchronizationManager.getCurrentTransactionIsolationLevel()}
+        Active: ${TransactionSynchronizationManager.isActualTransactionActive()}
+        Transaction name: ${TransactionSynchronizationManager.getCurrentTransactionName()}
+        """.trimIndent(),
+    )
+}
+
 @Service
-class WebhookDeliveryService(private val kafkaTemplate: KafkaTemplate<String, WebhookPayload>) {
+class WebhookSecretProvider(
+    private val appRepository: AppRepository,
+    private val webhookRepository: WebhookRepository,
+) {
+    fun getSecret(
+        appId: Long,
+        webhookUrl: String,
+    ): String? {
+        val app =
+            appRepository.findByIdOrNull(appId)
+                ?: return null
+        val findByAppAndUrl = webhookRepository.findByAppAndUrl(app, webhookUrl)
+        return findByAppAndUrl?.secretKey
+    }
+}
+
+@Service
+class WebhookDeliveryService(
+    private val kafkaTemplate: KafkaTemplate<String, WebhookPayload>,
+    private val webhookSecretProvider: WebhookSecretProvider,
+    private val appRepository: AppRepository,
+    private val webhookRepository: WebhookRepository,
+) {
     private val logger = KotlinLogging.logger {}
 
     private val webhookTimeout = Duration.ofSeconds(AppService.WEBHOOK_TIMEOUT_SECONDS)
@@ -52,12 +92,17 @@ class WebhookDeliveryService(private val kafkaTemplate: KafkaTemplate<String, We
     @Bean
     fun webhookDeliveriesTopic() = NewTopic(WEBHOOK_DELIVERIES, 1, 1)
 
+    // read uncommitted to avoid losing messages
+//    @Transactional(isolation = Isolation.READ_UNCOMMITTED)
     @KafkaListener(topics = [WEBHOOK_DELIVERIES])
     fun listenTriggerRequests(
         value: WebhookPayload,
         ack: Acknowledgment,
     ) {
         logger.info { "Received WebhookPayload: $value" }
+
+        printTransactionStatus("listenTriggerRequests")
+        println("App count: ${appRepository.count()}")
 
         // TODO: evaluate runBlocking
         runBlocking {
@@ -71,13 +116,27 @@ class WebhookDeliveryService(private val kafkaTemplate: KafkaTemplate<String, We
         }
     }
 
-    private suspend fun deliverWebhookEvent(
+    suspend fun deliverWebhookEvent(
         webhookUrl: URI,
         appId: Long,
         payload: WebhookPayload,
         onSuccessfulDelivery: () -> Unit,
     ) {
         logger.debug { "Delivering webhook for app ID $appId: $webhookUrl" }
+        val objectMapper = ObjectMapper()
+        val stringPayload = objectMapper.writeValueAsString(payload)
+        logger.debug { "Payload: $stringPayload" }
+        val app =
+            appRepository.findByIdOrNull(appId)
+//        val webhook = webhookRepository.findByAppAndUrl(app!!, webhookUrl.toString())
+        val webhook =
+            withContext(Dispatchers.IO) {
+                webhookRepository.findByAppAndUrl(app!!, webhookUrl.toString())
+            }
+        requireNotNull(webhook) { "Webhook not found for app ID $appId: $webhookUrl" }
+        val secretKey = webhook.secretKey
+        requireNotNull(secretKey) { "Webhook secret key not found for app ID $appId: $webhookUrl" }
+        val signature = SignatureUtil.createSignature(secretKey, stringPayload)
         // TODO: retry?
         val duration =
             measureTime {
@@ -88,7 +147,15 @@ class WebhookDeliveryService(private val kafkaTemplate: KafkaTemplate<String, We
                             restClient.post()
                                 .uri(webhookUrl)
                                 .body(
-                                    payload,
+                                    stringPayload,
+                                )
+                                .header(
+                                    "X-Webhook-Signature",
+                                    signature,
+                                )
+                                .header(
+                                    "Content-Type",
+                                    "application/json",
                                 )
                                 .retrieve()
                                 .toBodilessEntity()
