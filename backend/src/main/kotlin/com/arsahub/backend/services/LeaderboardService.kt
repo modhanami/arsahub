@@ -13,6 +13,7 @@ import com.arsahub.backend.services.DateTimeUtils.getWeekStartEndTimes
 import org.springframework.stereotype.Service
 import java.time.DayOfWeek
 import java.time.LocalTime
+import java.time.YearMonth
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.temporal.TemporalAdjusters
@@ -95,29 +96,18 @@ class LeaderboardService(
             when (leaderboardType) {
                 LeaderboardTypes.WEEKLY -> {
                     // check if current day is the start day and the time is after the reset time
-                    val startDay = leaderboardConfig.startDay
+                    val startDay = leaderboardConfig.startDay // 1 - 7 (Sunday - Saturday)
                     requireNotNull(startDay) { "Start day is not set" }
+                    val dayOfWeek = DayOfWeek.of(startDay.toInt())
 
                     val (weekStartTime, weekEndTime) =
                         getWeekStartEndTimes(
-                            startDay.toInt(),
+                            dayOfWeek,
                             resetTime,
                             zonedCurrentTime,
                         )
 
-                    appUserPointsHistoryRepository.findLatestPointsByStartTimeInclusiveEndTimeExclusive(
-                        appId = app.id!!,
-                        startTime = weekStartTime.toInstant(),
-                        endTime = weekEndTime.toInstant(),
-                    )
-                        .mapIndexed { index, latestPointsProjection ->
-                            LeaderboardResponse.Entry(
-                                userId = latestPointsProjection.getAppUser().userId!!,
-                                memberName = latestPointsProjection.getAppUser().displayName!!,
-                                score = latestPointsProjection.getPoints().toInt(),
-                                rank = index + 1,
-                            )
-                        }
+                    getLeaderboard(app, weekStartTime, weekEndTime)
                 }
 
                 LeaderboardTypes.MONTHLY -> {
@@ -131,19 +121,7 @@ class LeaderboardService(
                             zonedCurrentTime,
                         )
 
-                    appUserPointsHistoryRepository.findLatestPointsByStartTimeInclusiveEndTimeExclusive(
-                        appId = app.id!!,
-                        startTime = monthStartTime.toInstant(),
-                        endTime = monthEndTime.toInstant(),
-                    )
-                        .mapIndexed { index, latestPointsProjection ->
-                            LeaderboardResponse.Entry(
-                                userId = latestPointsProjection.getAppUser().userId!!,
-                                memberName = latestPointsProjection.getAppUser().displayName!!,
-                                score = latestPointsProjection.getPoints().toInt(),
-                                rank = index + 1,
-                            )
-                        }
+                    getLeaderboard(app, monthStartTime, monthEndTime)
                 }
 
                 else -> {
@@ -156,16 +134,40 @@ class LeaderboardService(
             listOf(),
         )
     }
+
+    private fun getLeaderboard(
+        app: App,
+        startTime: ZonedDateTime,
+        endTime: ZonedDateTime,
+    ) = appUserPointsHistoryRepository.findLatestPointsByStartTimeInclusiveEndTimeExclusive(
+        appId = app.id!!,
+        startTime = startTime.toInstant(),
+        endTime = endTime.toInstant(),
+    )
+        .mapIndexed { index, latestPointsProjection ->
+            LeaderboardResponse.Entry(
+                userId = latestPointsProjection.getAppUser().userId!!,
+                memberName = latestPointsProjection.getAppUser().displayName!!,
+                score = latestPointsProjection.getPoints().toInt(),
+                rank = index + 1,
+            )
+        }
 }
 
 object DateTimeUtils {
     fun getWeekStartEndTimes(
-        startDay: Int,
+        startDay: DayOfWeek,
         resetTime: LocalTime,
         currentTime: ZonedDateTime,
     ): Pair<ZonedDateTime, ZonedDateTime> {
-        val startDayOfWeek = DayOfWeek.of(startDay)
-        val weekStartTime = currentTime.with(TemporalAdjusters.previousOrSame(startDayOfWeek)).with(resetTime)
+        val weekStartTime =
+            currentTime.with(TemporalAdjusters.previousOrSame(startDay)).with(resetTime).let {
+                if (it.isAfter(currentTime)) {
+                    it.minusWeeks(1)
+                } else {
+                    it
+                }
+            }
         val weekEndTime = weekStartTime.plusWeeks(1)
         return weekStartTime to weekEndTime
     }
@@ -175,19 +177,20 @@ object DateTimeUtils {
         resetTime: LocalTime,
         currentTime: ZonedDateTime,
     ): Pair<ZonedDateTime, ZonedDateTime> {
-        val monthStartTime: ZonedDateTime =
+        val daysInMonth = YearMonth.of(currentTime.year, currentTime.month).lengthOfMonth()
+        val monthStartTime =
             currentTime
-                .with(TemporalAdjusters.firstDayOfMonth())
-                .withDayOfMonth(resetDay)
+                .withDayOfMonth(resetDay.coerceAtMost(daysInMonth))
                 .with(resetTime)
+                .let {
+                    if (it.isAfter(currentTime)) {
+                        it.minusMonths(1)
+                    } else {
+                        it
+                    }
+                }
         val monthEndTime = monthStartTime.plusMonths(1)
-        return monthStartTime to monthEndTime
-    }
 
-    fun findClosestPreviousOrSameMonthDay(
-        dayOfMonth: Int,
-        currentTime: ZonedDateTime,
-    ): ZonedDateTime {
-        return currentTime.withDayOfMonth(dayOfMonth)
+        return monthStartTime to monthEndTime
     }
 }
