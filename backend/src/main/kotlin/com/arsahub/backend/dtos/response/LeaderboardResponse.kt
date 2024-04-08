@@ -5,9 +5,9 @@ data class LeaderboardResponse(
     val entries: List<Entry>,
 ) {
     data class Entry(
-        val rank: Int,
+        val rank: Long,
         val userId: String,
         val memberName: String,
-        val score: Int,
+        val score: Long,
     )
 }

@@ -392,7 +392,10 @@ create table leaderboard_config
     start_day             smallint,
     reset_day             smallint,
     reset_time            time     not null,
-    timezone              text     not null
+    timezone              text     not null,
+    name                  text     not null,
+    constraint leaderboard_config_pk_2
+        unique (app_id, name)
 );
 
 create table rule_trigger_field_state

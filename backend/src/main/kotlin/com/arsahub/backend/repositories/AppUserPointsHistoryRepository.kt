@@ -31,20 +31,19 @@ interface AppUserPointsHistoryRepository : JpaRepository<AppUserPointsHistory, L
 
     // TODO: use QueryDSL to make this query type-safe
     @Query(
-        value = """
-        SELECT p.app_user_id, p.points, p.created_at
-        FROM app_user_points_history p
-        INNER JOIN (
-            SELECT app_user_id, MAX(created_at) AS max_created_at
-            FROM app_user_points_history 
-            WHERE app_id = :appId
-            AND created_at >= :startTime
-            AND created_at < :endTime
-            GROUP BY app_user_id
-        ) latest ON p.app_user_id = latest.app_user_id AND p.created_at = latest.max_created_at
-        ORDER BY p.points DESC
-    """,
-        nativeQuery = true,
+        """
+        SELECT p.appUser.id AS appUserId, p.points AS points, p.createdAt AS createdAt
+        FROM AppUserPointsHistory p
+        WHERE p.app.id = :appId
+            AND p.createdAt = (
+                SELECT MAX(p2.createdAt)
+                FROM AppUserPointsHistory p2
+                WHERE p2.appUser.id = p.appUser.id
+                    AND p2.app.id = :appId
+                    AND p2.createdAt >= :startTime
+                    AND p2.createdAt < :endTime
+            )
+        """,
     )
     fun findLatestPointsByStartTimeInclusiveEndTimeExclusive(
         @Param("appId") appId: Long,
@@ -53,7 +52,7 @@ interface AppUserPointsHistoryRepository : JpaRepository<AppUserPointsHistory, L
     ): List<LatestPointsProjection>
 
     interface LatestPointsProjection {
-        fun getAppUser(): AppUser
+        fun getAppUserId(): Long
 
         fun getPoints(): Long
 

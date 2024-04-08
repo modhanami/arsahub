@@ -33,6 +33,9 @@ class LeaderboardConfig(
     @NotNull
     @Column(name = "timezone", nullable = false, length = Integer.MAX_VALUE)
     var timezone: String? = null,
+    @NotNull
+    @Column(name = "name", nullable = false, length = Integer.MAX_VALUE)
+    var name: String? = null,
 ) {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

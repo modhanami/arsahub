@@ -37,8 +37,8 @@ class LeaderboardService(
                         LeaderboardResponse.Entry(
                             userId = appUser.userId!!,
                             memberName = appUser.displayName!!,
-                            score = appUser.points!!,
-                            rank = index + 1,
+                            score = appUser.points!!.toLong(),
+                            rank = (index + 1).toLong(),
                         )
                     } else {
                         null
@@ -91,7 +91,7 @@ class LeaderboardService(
         val zonedCurrentTime = currentTime.withZoneSameInstant(timezone)
 
         // weekly or monthly
-        val leaderboard =
+        val entries =
             // TODO: save snapshot of leaderboard from previous week/month to database (leaderboard_history)
             when (leaderboardType) {
                 LeaderboardTypes.WEEKLY -> {
@@ -130,8 +130,8 @@ class LeaderboardService(
             }
 
         return LeaderboardResponse(
-            leaderboard = "total-points",
-            listOf(),
+            leaderboard = leaderboardConfig.name!!,
+            entries,
         )
     }
 
@@ -139,19 +139,24 @@ class LeaderboardService(
         app: App,
         startTime: ZonedDateTime,
         endTime: ZonedDateTime,
-    ) = appUserPointsHistoryRepository.findLatestPointsByStartTimeInclusiveEndTimeExclusive(
-        appId = app.id!!,
-        startTime = startTime.toInstant(),
-        endTime = endTime.toInstant(),
-    )
-        .mapIndexed { index, latestPointsProjection ->
-            LeaderboardResponse.Entry(
-                userId = latestPointsProjection.getAppUser().userId!!,
-                memberName = latestPointsProjection.getAppUser().displayName!!,
-                score = latestPointsProjection.getPoints().toInt(),
-                rank = index + 1,
+    ): List<LeaderboardResponse.Entry> {
+        val findLatestPointsByStartTimeInclusiveEndTimeExclusive =
+            appUserPointsHistoryRepository.findLatestPointsByStartTimeInclusiveEndTimeExclusive(
+                appId = app.id!!,
+                startTime = startTime.toInstant(),
+                endTime = endTime.toInstant(),
             )
-        }
+        return findLatestPointsByStartTimeInclusiveEndTimeExclusive
+            .sortedByDescending { it.getPoints() }
+            .mapIndexed { index, latestPointsProjection ->
+                LeaderboardResponse.Entry(
+                    userId = latestPointsProjection.getAppUserId().toString(),
+                    memberName = latestPointsProjection.getAppUserId().toString(),
+                    score = latestPointsProjection.getPoints(),
+                    rank = (index + 1).toLong(),
+                )
+            }
+    }
 }
 
 object DateTimeUtils {
