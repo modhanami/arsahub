@@ -6,6 +6,7 @@ import com.arsahub.backend.exceptions.ConflictException
 import com.arsahub.backend.exceptions.NotFoundException
 import com.arsahub.backend.exceptions.UnauthorizedException
 import io.jsonwebtoken.ClaimJwtException
+import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.MethodArgumentNotValidException
@@ -56,5 +57,11 @@ class CustomExceptionHandler {
     fun handleResponseStatusExceptions(ex: ResponseStatusException): ResponseEntity<ApiError> {
         val response = ApiError(ex.reason ?: "Unknown error")
         return ResponseEntity.status(ex.statusCode).body(response)
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException::class)
+    fun handleDataIntegrityViolationExceptions(ex: DataIntegrityViolationException): ResponseEntity<ApiError> {
+        val response = ApiError("Data integrity violation, please check your input is correct or not duplicated")
+        return ResponseEntity(response, HttpStatus.CONFLICT)
     }
 }
