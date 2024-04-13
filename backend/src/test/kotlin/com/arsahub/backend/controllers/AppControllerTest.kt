@@ -4028,6 +4028,96 @@ class AppControllerTest() {
             .andExpect(status().isNotFound)
     }
 
+    // Unlock achievement directly to the user, without using a trigger
+    @Test
+    fun `unlock achievement directly to user - success`() {
+        // Arrange
+        val user = createAppUser(authSetup.app)
+        val achievement =
+            achievementService.createAchievement(authSetup.app, AchievementCreateRequest("You Joined!"))
+
+        // Act & Assert
+        mockMvc.performWithAppAuth(
+            post("/api/apps/users/${user.userId}/achievements/unlock")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "achievementId": "${achievement.achievementId}"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+
+        val appUserAchievements = appUserAchievementRepository.findAll()
+        assertEquals(1, appUserAchievements.size)
+        assertEquals(user.id, appUserAchievements[0].appUser?.id)
+        assertEquals(achievement.achievementId, appUserAchievements[0].achievement?.achievementId)
+    }
+
+    @Test
+    fun `unlock achievement directly to user - success with existing achievement`() {
+        val user = createAppUser(authSetup.app)
+        val achievement =
+            achievementService.createAchievement(authSetup.app, AchievementCreateRequest("You Joined!"))
+
+        mockMvc.performWithAppAuth(
+            post("/api/apps/users/${user.userId}/achievements/unlock")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "achievementId": "${achievement.achievementId}"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+
+        val appUserAchievements = appUserAchievementRepository.findAll()
+        assertEquals(1, appUserAchievements.size)
+        assertEquals(user.id, appUserAchievements[0].appUser?.id)
+        assertEquals(achievement.achievementId, appUserAchievements[0].achievement?.achievementId)
+    }
+
+    @Test
+    fun `unlock achievement directly to user - failure with non-existing achievement`() {
+        val user = createAppUser(authSetup.app)
+
+        mockMvc.performWithAppAuth(
+            post("/api/apps/users/${user.userId}/achievements/unlock")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "achievementId": 100
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isNotFound)
+    }
+
+    @Test
+    fun `unlock achievement directly to user - failure with non-existing user`() {
+        val achievement =
+            achievementService.createAchievement(authSetup.app, AchievementCreateRequest("You Joined!"))
+
+        mockMvc.performWithAppAuth(
+            post("/api/apps/users/non-existing-user/achievements/unlock")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "achievementId": "${achievement.achievementId}"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isNotFound)
+    }
+
     @Test
     fun testWireMock() {
         stubFor(

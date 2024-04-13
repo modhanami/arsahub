@@ -303,6 +303,20 @@ class AppController(
         return appService.addPointsToUser(app, userId, request)
     }
 
+    class AppUserAchievementUnlockRequest(
+        @NotEmpty
+        val achievementId: Long,
+    )
+
+    @PostMapping("/users/{userId}/achievements/unlock")
+    fun unlockAchievementForUser(
+        @CurrentApp app: App,
+        @PathVariable userId: String,
+        @Valid @RequestBody request: AppUserAchievementUnlockRequest,
+    ) {
+        return appService.unlockAchievementForUser(app, userId, request)
+    }
+
     @Operation(
         summary = "Get leaderboard",
         responses = [
