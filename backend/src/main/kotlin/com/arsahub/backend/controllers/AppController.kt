@@ -289,6 +289,34 @@ class AppController(
         appService.deleteAppUser(app, userId)
     }
 
+    class AppUserPointsAddRequest(
+        @NotEmpty
+        val points: Int,
+    )
+
+    @PostMapping("/users/{userId}/points/add")
+    fun addPointsToUser(
+        @CurrentApp app: App,
+        @PathVariable userId: String,
+        @Valid @RequestBody request: AppUserPointsAddRequest,
+    ) {
+        return appService.addPointsToUser(app, userId, request)
+    }
+
+    class AppUserAchievementUnlockRequest(
+        @NotEmpty
+        val achievementId: Long,
+    )
+
+    @PostMapping("/users/{userId}/achievements/unlock")
+    fun unlockAchievementForUser(
+        @CurrentApp app: App,
+        @PathVariable userId: String,
+        @Valid @RequestBody request: AppUserAchievementUnlockRequest,
+    ) {
+        return appService.unlockAchievementForUser(app, userId, request)
+    }
+
     @Operation(
         summary = "Get leaderboard",
         responses = [

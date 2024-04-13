@@ -17,13 +17,16 @@ import com.arsahub.backend.exceptions.NotFoundException
 import com.arsahub.backend.models.App
 import com.arsahub.backend.models.AppInvitation
 import com.arsahub.backend.models.AppUser
+import com.arsahub.backend.models.AppUserAchievement
 import com.arsahub.backend.models.AppUserPointsHistory
 import com.arsahub.backend.models.Rule
 import com.arsahub.backend.models.Webhook
 import com.arsahub.backend.models.WebhookRepository
+import com.arsahub.backend.repositories.AchievementRepository
 import com.arsahub.backend.repositories.AppInvitationRepository
 import com.arsahub.backend.repositories.AppInvitationStatusRepository
 import com.arsahub.backend.repositories.AppRepository
+import com.arsahub.backend.repositories.AppUserAchievementRepository
 import com.arsahub.backend.repositories.AppUserPointsHistoryRepository
 import com.arsahub.backend.repositories.AppUserRepository
 import com.arsahub.backend.repositories.UserRepository
@@ -64,6 +67,8 @@ class AppService(
     private val webhookRepository: WebhookRepository,
     private val kafkaTemplateWebhookDelivery: KafkaTemplate<String, WebhookPayload>,
     private val webhookDeliveryService: WebhookDeliveryService,
+    private val achievementRepository: AchievementRepository,
+    private val appUserAchievementRepository: AppUserAchievementRepository,
 ) {
     private val logger = KotlinLogging.logger {}
 
@@ -439,6 +444,63 @@ class AppService(
         val appUser = getAppUserOrThrow(app, userId)
         appUser.displayName = request.displayName
         return appUserRepository.save(appUser)
+    }
+
+    @Transactional
+    fun addPointsToUser(
+        app: App,
+        userId: String,
+        request: AppController.AppUserPointsAddRequest,
+    ) {
+        val appUser = getAppUserOrThrow(app, userId)
+        val points = request.points
+        val newPoints = appUser.points!! + points
+        appUser.points = newPoints
+        appUserRepository.save(appUser)
+
+        val pointsHistory =
+            AppUserPointsHistory(
+                app = app,
+                appUser = appUser,
+                points = newPoints.toLong(), // TODO: convert the source type to long?
+                pointsChange = points.toLong(),
+            )
+        logger.debug {
+            "Saving points history for app user ${appUser.userId} in app ${app.title}: " +
+                "pointsChange=${pointsHistory.pointsChange}, points=${pointsHistory.points}"
+        }
+        appUserPointsHistoryRepository.save(pointsHistory)
+    }
+
+    fun unlockAchievementForUser(
+        app: App,
+        userId: String,
+        request: AppController.AppUserAchievementUnlockRequest,
+    ) {
+        val appUser = getAppUserOrThrow(app, userId)
+        val achievement =
+            achievementRepository.findByAchievementIdAndApp(request.achievementId, app)
+                ?: throw NotFoundException("Achievement not found")
+
+        /**
+         * @see com.arsahub.backend.services.actionhandlers.ActionUnlockAchievementHandler
+         */
+        if (appUser.achievements.any { it.achievement?.achievementId == achievement.achievementId }) {
+            val message =
+                "User ${appUser.displayName}` (${appUser.userId}) already unlocked achievement"
+            logger.info { message }
+            return
+        }
+
+        val appUserAchievement = AppUserAchievement(appUser = appUser, achievement = achievement)
+        appUser.achievements.add(appUserAchievement)
+        // save from the owning side
+        appUserAchievementRepository.saveAll(appUser.achievements)
+
+        logger.info {
+            "User ${appUser.displayName}` (${appUser.userId}) unlocked achievement " +
+                "`${achievement.title}` (${achievement.achievementId}) from direct unlock"
+        }
     }
 
     companion object {

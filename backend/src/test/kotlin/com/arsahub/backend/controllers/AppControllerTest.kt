@@ -3834,6 +3834,67 @@ class AppControllerTest() {
     }
 
     @Test
+    fun `dynamic points addition - success with negative points`() {
+        // Arrange
+        val user = createAppUser(authSetup.app)
+
+        val trigger =
+            createWorkshopCompletedTrigger(authSetup.app) {
+                fields {
+                    integer("points_earned")
+                }
+            }
+
+        // create rule
+        mockMvc.performWithAppAuth(
+            post("/api/apps/rules")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "title": "Rule",
+                      "trigger": {
+                        "key": "${trigger.key}"
+                      },
+                      "action": {
+                        "key": "add_points",
+                        "params": {
+                          "pointsExpression": "points_earned"
+                        }
+                      },
+                      "conditionExpression": "workshopId == 1",
+                      "repeatability": "unlimited"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isCreated)
+
+        // Act & Assert
+        mockMvc.performWithAppAuth(
+            post("/api/apps/trigger")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "key": "workshop_completed",
+                        "params": {
+                            "workshopId": 1,
+                            "source": "trust me",
+                            "points_earned": -20
+                        },
+                        "userId": "${user.userId}"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+
+        val userAfter = appUserRepository.findById(user.id!!).get()
+        assertEquals(-20, userAfter.points)
+    }
+
+    @Test
     fun `dynamic points addition - unsupported expression - failed`() {
         // Arrange
         val user = createAppUser(authSetup.app)
@@ -3909,6 +3970,213 @@ class AppControllerTest() {
         )
             .andExpect(status().isBadRequest)
             .andExpect(jsonPath("$.message").value("Invalid points expression"))
+    }
+
+    // Add (or remove) points directly to the user, without using a trigger
+    @Test
+    fun `add points directly to user - success`() {
+        // Arrange
+        val user = createAppUser(authSetup.app)
+
+        // Act & Assert
+        mockMvc.performWithAppAuth(
+            post("/api/apps/users/${user.userId}/points/add")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "points": 100
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+
+        val userAfter = appUserRepository.findById(user.id!!).get()
+        assertEquals(100, userAfter.points)
+
+        val pointsHistories = appUserPointsHistoryRepository.findAllByAppAndAppUser(authSetup.app, user)
+        assertEquals(1, pointsHistories.size)
+        assertEquals(100, pointsHistories[0].points)
+        assertEquals(100, pointsHistories[0].pointsChange)
+    }
+
+    @Test
+    fun `add points directly to user - success with maximum points`() {
+        // Arrange
+        val user = createAppUser(authSetup.app)
+
+        // Act & Assert
+        mockMvc.performWithAppAuth(
+            post("/api/apps/users/${user.userId}/points/add")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "points": 2147483647
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+
+        val userAfter = appUserRepository.findById(user.id!!).get()
+        assertEquals(2147483647, userAfter.points)
+
+        val pointsHistories = appUserPointsHistoryRepository.findAllByAppAndAppUser(authSetup.app, user)
+        assertEquals(1, pointsHistories.size)
+        assertEquals(2147483647, pointsHistories[0].points)
+        assertEquals(2147483647, pointsHistories[0].pointsChange)
+    }
+
+    @Test
+    fun `add points directly to user - success with negative points`() {
+        // Arrange
+        val user = createAppUser(authSetup.app)
+
+        mockMvc.performWithAppAuth(
+            post("/api/apps/users/${user.userId}/points/add")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "points": 100
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+
+        // Act & Assert
+        mockMvc.performWithAppAuth(
+            post("/api/apps/users/${user.userId}/points/add")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "points": -20
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+
+        val userAfter = appUserRepository.findById(user.id!!).get()
+        assertEquals(80, userAfter.points)
+
+        val pointsHistories =
+            appUserPointsHistoryRepository.findAllByAppAndAppUser(authSetup.app, user)
+                .sortedByDescending { it.createdAt }
+        assertEquals(2, pointsHistories.size)
+        assertEquals(80, pointsHistories[0].points)
+        assertEquals(-20, pointsHistories[0].pointsChange)
+    }
+
+    @Test
+    fun `add points directly to user - failure with non-existing user`() {
+        // Act & Assert
+        mockMvc.performWithAppAuth(
+            post("/api/apps/users/non-existing-user/points/add")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "points": 100
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isNotFound)
+    }
+
+    // Unlock achievement directly to the user, without using a trigger
+    @Test
+    fun `unlock achievement directly to user - success`() {
+        // Arrange
+        val user = createAppUser(authSetup.app)
+        val achievement =
+            achievementService.createAchievement(authSetup.app, AchievementCreateRequest("You Joined!"))
+
+        // Act & Assert
+        mockMvc.performWithAppAuth(
+            post("/api/apps/users/${user.userId}/achievements/unlock")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "achievementId": "${achievement.achievementId}"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+
+        val appUserAchievements = appUserAchievementRepository.findAll()
+        assertEquals(1, appUserAchievements.size)
+        assertEquals(user.id, appUserAchievements[0].appUser?.id)
+        assertEquals(achievement.achievementId, appUserAchievements[0].achievement?.achievementId)
+    }
+
+    @Test
+    fun `unlock achievement directly to user - success with existing achievement`() {
+        val user = createAppUser(authSetup.app)
+        val achievement =
+            achievementService.createAchievement(authSetup.app, AchievementCreateRequest("You Joined!"))
+
+        mockMvc.performWithAppAuth(
+            post("/api/apps/users/${user.userId}/achievements/unlock")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "achievementId": "${achievement.achievementId}"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+
+        val appUserAchievements = appUserAchievementRepository.findAll()
+        assertEquals(1, appUserAchievements.size)
+        assertEquals(user.id, appUserAchievements[0].appUser?.id)
+        assertEquals(achievement.achievementId, appUserAchievements[0].achievement?.achievementId)
+    }
+
+    @Test
+    fun `unlock achievement directly to user - failure with non-existing achievement`() {
+        val user = createAppUser(authSetup.app)
+
+        mockMvc.performWithAppAuth(
+            post("/api/apps/users/${user.userId}/achievements/unlock")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "achievementId": 100
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isNotFound)
+    }
+
+    @Test
+    fun `unlock achievement directly to user - failure with non-existing user`() {
+        val achievement =
+            achievementService.createAchievement(authSetup.app, AchievementCreateRequest("You Joined!"))
+
+        mockMvc.performWithAppAuth(
+            post("/api/apps/users/non-existing-user/achievements/unlock")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "achievementId": "${achievement.achievementId}"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isNotFound)
     }
 
     @Test
