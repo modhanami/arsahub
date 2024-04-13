@@ -1839,8 +1839,6 @@ class RuleEngineIntegrationTest() : BaseIntegrationTest() {
         assertEquals("Hello World!", response)
     }
 
-    private fun getPointsReachedTrigger() = triggerRepository.findByKey("points_reached")!!
-
     @BeforeEach
     fun setUp() {
         initIntegrationTest(postgres)

@@ -9,8 +9,18 @@ import com.arsahub.backend.repositories.AppRepository
 import com.arsahub.backend.repositories.AppUserAchievementRepository
 import com.arsahub.backend.repositories.AppUserPointsHistoryRepository
 import com.arsahub.backend.repositories.AppUserRepository
+import com.arsahub.backend.repositories.TriggerRepository
 import com.arsahub.backend.repositories.UserRepository
 import com.arsahub.backend.services.AchievementService
+import com.github.tomakehurst.wiremock.WireMockServer
+import com.github.tomakehurst.wiremock.client.WireMock
+import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.equalToJson
+import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.stubFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -33,6 +43,9 @@ class AppUserIntegrationTest : BaseIntegrationTest() {
     private lateinit var appUserPointsHistoryRepository: AppUserPointsHistoryRepository
 
     @Autowired
+    private lateinit var wireMockServer: WireMockServer
+
+    @Autowired
     private lateinit var appUserAchievementRepository: AppUserAchievementRepository
 
     @Autowired
@@ -46,6 +59,9 @@ class AppUserIntegrationTest : BaseIntegrationTest() {
 
     @Autowired
     private lateinit var userRepository: UserRepository
+
+    @Autowired
+    private lateinit var triggerRepository: TriggerRepository
 
     @Test
     fun `returns list of app users with 200`() {
@@ -378,6 +394,98 @@ class AppUserIntegrationTest : BaseIntegrationTest() {
         assertEquals(2, pointsHistories.size)
         assertEquals(80, pointsHistories[0].points)
         assertEquals(-20, pointsHistories[0].pointsChange)
+    }
+
+    @Test
+    fun `add points directly to user - success with forward chaning and webhooks sent`() {
+        // Arrange
+        val user = createAppUser(authSetup.app)
+
+        val allTriggers = triggerRepository.findAll()
+        for (trigger in allTriggers) {
+            println("Trigger: ${trigger.key}")
+        }
+        val pointsReachedTrigger = getPointsReachedTrigger()
+
+        val ruleAdd50PointsWhen100PointsReached =
+            createRule(authSetup.app) {
+                title = "When user reaches 100 points then add 50 points"
+                trigger = pointsReachedTrigger
+                action {
+                    addPoints(50)
+                }
+                conditionExpression = "points == 100"
+                repeatability = OncePerUserRuleRepeatability
+            }
+
+        // Arrange webhook
+        stubFor(
+            WireMock.post(urlEqualTo("/webhook")).willReturn(
+                aResponse()
+                    .withHeader("Content-Type", "text/plain")
+                    .withBody("Well received"),
+            ),
+        )
+        val webhookPath = "/webhook"
+        val webhookUrl = "http://localhost:${wireMockServer.port()}$webhookPath"
+        mockMvc.performWithAppAuth(
+            post("/api/apps/webhooks")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "url": "$webhookUrl"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isCreated)
+
+        forceNewTransaction()
+
+        // Act & Assert
+        mockMvc.performWithAppAuth(
+            post("/api/apps/users/${user.userId}/points/add")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "points": 200
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+
+        // Assert DB
+        val userAfterEmptyTriggerFired = appUserRepository.findById(user.id!!)
+        assertEquals(250, userAfterEmptyTriggerFired.get().points)
+
+        // Assert webhook - Only events from forward chaining rules are sent (not by the direct action)
+        // TODO: find a way to wait for the webhook to be called
+        runBlocking { delay(3000) }
+
+        wireMockServer.verify(
+            postRequestedFor(urlEqualTo(webhookPath))
+                .withRequestBody(
+                    equalToJson(
+                        // id is an escaped wiremock placeholder
+                        """
+                        {
+                            "id": "${"\${"}json-unit.any-string${"}"}",
+                            "appId": ${authSetup.app.id},
+                            "webhookUrl": "$webhookUrl",
+                            "event": "points_updated",
+                            "appUserId": "${user.userId}",
+                            "payload": {
+                                "points": 250,
+                                "pointsChange": 50
+                            }
+                        }
+                        """.trimIndent(),
+                    ),
+                ),
+        )
     }
 
     @Test
