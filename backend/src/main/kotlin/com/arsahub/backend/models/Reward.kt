@@ -42,6 +42,8 @@ class Reward(
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "image_metadata")
     var imageMetadata: MutableMap<String, Any>? = null,
+    @Column(name = "max_user_redemptions")
+    var maxUserRedemptions: Int? = null,
 ) : AuditedEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

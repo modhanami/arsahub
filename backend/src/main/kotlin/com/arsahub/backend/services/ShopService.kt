@@ -27,6 +27,8 @@ class RewardNotFoundException : NotFoundException("Reward not found")
 
 class RewardUnavailableException : IllegalArgumentException("Reward unavailable")
 
+class RewardAlreadyRedeemedException : IllegalArgumentException("Reward already redeemed")
+
 class InsufficientPointsException : IllegalArgumentException("Insufficient points")
 
 class RewardInvalidPriceException : IllegalArgumentException("Price must be positive")
@@ -73,6 +75,14 @@ class ShopService(
         val reward = getRewardOrThrow(request.rewardId, currentApp)
         val appUser =
             appService.getAppUserOrThrow(currentApp, request.userId)
+
+        // check max user redemptions
+        reward.maxUserRedemptions?.let {
+            val userRedemptions = transactionRepository.countByAppUserAndReward(appUser, reward)
+            if (userRedemptions >= it) {
+                throw RewardAlreadyRedeemedException()
+            }
+        }
 
         // check if out of stock
         // if quantity is null, assume infinite

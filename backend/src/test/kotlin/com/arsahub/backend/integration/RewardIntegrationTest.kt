@@ -534,6 +534,64 @@ class RewardIntegrationTest : BaseIntegrationTest() {
             )
     }
 
+    @Test
+    fun `redeem points - with max redemptions per user`() {
+        // Arrange
+        val appUserWith100Points =
+            appUserRepository.save(
+                AppUser(
+                    userId = UUID.fromString("00000000-0000-0000-0000-000000000001").toString(),
+                    displayName = "User1",
+                    app = authSetup.app,
+                    points = 100,
+                ),
+            )
+
+        val reward10Points =
+            rewardRepository.save(
+                Reward(
+                    name = "10 Points",
+                    description = "10 Points",
+                    price = 10,
+                    app = authSetup.app,
+                    maxUserRedemptions = 2,
+                ),
+            )
+
+        // Act & Assert HTTP 1
+        repeat(2) {
+            mockMvc.performWithAppAuth(
+                post("/api/apps/shop/rewards/redeem")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        """
+                        {
+                            "rewardId": ${reward10Points.id},
+                            "userId": "${appUserWith100Points.userId}"
+                        }
+                        """.trimIndent(),
+                    ),
+            )
+                .andExpect(status().isOk)
+        }
+
+        // Act & Assert HTTP 2
+        mockMvc.performWithAppAuth(
+            post("/api/apps/shop/rewards/redeem")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "rewardId": ${reward10Points.id},
+                        "userId": "${appUserWith100Points.userId}"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.message").value("Reward already redeemed"))
+    }
+
     @BeforeEach
     fun setUp() {
         initIntegrationTest(postgres)
