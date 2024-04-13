@@ -1,6 +1,9 @@
 package com.arsahub.backend.controllers
 
 import com.arsahub.backend.controllers.utils.AuthSetup
+import com.arsahub.backend.controllers.utils.AuthTestUtils.setGlobalAuthSetup
+import com.arsahub.backend.controllers.utils.AuthTestUtils.setGlobalSecretKey
+import com.arsahub.backend.controllers.utils.AuthTestUtils.setupAuth
 import com.arsahub.backend.dtos.request.ActionDefinition
 import com.arsahub.backend.dtos.request.AppUserCreateRequest
 import com.arsahub.backend.dtos.request.FieldDefinition
@@ -13,12 +16,17 @@ import com.arsahub.backend.models.Rule
 import com.arsahub.backend.models.RuleRepeatability
 import com.arsahub.backend.models.Trigger
 import com.arsahub.backend.models.UnlimitedRuleRepeatability
+import com.arsahub.backend.repositories.AppRepository
+import com.arsahub.backend.repositories.UserRepository
 import com.arsahub.backend.services.AppService
 import com.arsahub.backend.services.RuleService
 import com.arsahub.backend.services.TriggerService
 import com.arsahub.backend.services.WebhookDeliveryService
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.github.tomakehurst.wiremock.client.WireMock
+import org.junit.jupiter.api.BeforeEach
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection
@@ -28,6 +36,8 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.transaction.TestTransaction
 import org.springframework.transaction.annotation.Transactional
 import org.testcontainers.containers.PostgreSQLContainer
+import org.testcontainers.ext.ScriptUtils
+import org.testcontainers.jdbc.JdbcDatabaseDelegate
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 import java.util.*
@@ -46,6 +56,12 @@ import java.util.*
 )
 class BaseIntegrationTest {
     @Autowired
+    private lateinit var appRepository: AppRepository
+
+    @Autowired
+    private lateinit var userRepository: UserRepository
+
+    @Autowired
     private lateinit var appService: AppService
 
     @Autowired
@@ -55,6 +71,26 @@ class BaseIntegrationTest {
     private lateinit var triggerService: TriggerService
 
     protected lateinit var authSetup: AuthSetup
+
+    @Value("\${jwt.secret}")
+    private lateinit var jwtSecret: String
+
+    @BeforeEach
+    fun setUp() {
+        ScriptUtils.runInitScript(JdbcDatabaseDelegate(postgres, ""), "pre-schema.sql")
+        ScriptUtils.runInitScript(JdbcDatabaseDelegate(postgres, ""), "schema.sql")
+        ScriptUtils.runInitScript(JdbcDatabaseDelegate(postgres, ""), "data.sql")
+
+        authSetup =
+            setupAuth(
+                userRepository,
+                appRepository,
+            )
+        setGlobalAuthSetup(authSetup)
+        setGlobalSecretKey(jwtSecret)
+
+        WireMock.reset()
+    }
 
     companion object {
         @Container
