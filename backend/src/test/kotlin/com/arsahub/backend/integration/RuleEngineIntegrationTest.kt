@@ -37,14 +37,18 @@ import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import org.springframework.web.client.RestClient
 import org.springframework.web.client.body
+import org.testcontainers.containers.PostgreSQLContainer
+import org.testcontainers.junit.jupiter.Container
 import java.util.*
 
 class RuleEngineIntegrationTest() : BaseIntegrationTest() {
@@ -1836,4 +1840,16 @@ class RuleEngineIntegrationTest() : BaseIntegrationTest() {
     }
 
     private fun getPointsReachedTrigger() = triggerRepository.findByKey("points_reached")!!
+
+    @BeforeEach
+    fun setUp() {
+        initIntegrationTest(postgres)
+    }
+
+    companion object {
+        @Container
+        @ServiceConnection
+        val postgres: PostgreSQLContainer<Nothing> =
+            setupDBContainer().apply { start() }
+    }
 }

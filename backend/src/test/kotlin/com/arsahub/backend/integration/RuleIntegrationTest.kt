@@ -15,14 +15,18 @@ import com.arsahub.backend.services.TriggerService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import org.testcontainers.containers.PostgreSQLContainer
+import org.testcontainers.junit.jupiter.Container
 import java.util.*
 
 class RuleIntegrationTest : BaseIntegrationTest() {
@@ -574,5 +578,17 @@ class RuleIntegrationTest : BaseIntegrationTest() {
         // Assert DB
         val rules = ruleRepository.findById(rule.id!!)
         assertTrue(rules.isPresent)
+    }
+
+    @BeforeEach
+    fun setUp() {
+        initIntegrationTest(postgres)
+    }
+
+    companion object {
+        @Container
+        @ServiceConnection
+        val postgres: PostgreSQLContainer<Nothing> =
+            setupDBContainer().apply { start() }
     }
 }

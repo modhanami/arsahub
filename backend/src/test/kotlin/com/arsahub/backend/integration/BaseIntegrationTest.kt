@@ -1,5 +1,6 @@
 package com.arsahub.backend.integration
 
+import com.arsahub.backend.SocketIOService
 import com.arsahub.backend.controllers.utils.AuthSetup
 import com.arsahub.backend.controllers.utils.AuthTestUtils.setGlobalAuthSetup
 import com.arsahub.backend.controllers.utils.AuthTestUtils.setGlobalSecretKey
@@ -22,14 +23,14 @@ import com.arsahub.backend.services.AppService
 import com.arsahub.backend.services.RuleService
 import com.arsahub.backend.services.TriggerService
 import com.arsahub.backend.services.WebhookDeliveryService
+import com.corundumstudio.socketio.SocketIOServer
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.WireMock
-import org.junit.jupiter.api.BeforeEach
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection
+import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock
 import org.springframework.kafka.test.context.EmbeddedKafka
 import org.springframework.test.context.ActiveProfiles
@@ -39,7 +40,6 @@ import org.springframework.transaction.annotation.Transactional
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.ext.ScriptUtils
 import org.testcontainers.jdbc.JdbcDatabaseDelegate
-import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 import java.util.*
 
@@ -82,8 +82,15 @@ class BaseIntegrationTest {
     @Autowired
     protected lateinit var mockMvc: MockMvc
 
-    @BeforeEach
-    fun setUp() {
+    @MockBean
+    @Suppress("unused")
+    private lateinit var socketIoServer: SocketIOServer // no-op
+
+    @MockBean
+    @Suppress("unused")
+    private lateinit var socketIOService: SocketIOService // no-op
+
+    protected fun initIntegrationTest(postgres: PostgreSQLContainer<Nothing>) {
         ScriptUtils.runInitScript(JdbcDatabaseDelegate(postgres, ""), "pre-schema.sql")
         ScriptUtils.runInitScript(JdbcDatabaseDelegate(postgres, ""), "schema.sql")
         ScriptUtils.runInitScript(JdbcDatabaseDelegate(postgres, ""), "data.sql")
@@ -100,9 +107,8 @@ class BaseIntegrationTest {
     }
 
     companion object {
-        @Container
-        @ServiceConnection
-        val postgres: PostgreSQLContainer<Nothing> =
+        @JvmStatic
+        protected fun setupDBContainer(): PostgreSQLContainer<Nothing> =
             PostgreSQLContainer<Nothing>("postgres:16-alpine")
                 .withReuse(true)
     }

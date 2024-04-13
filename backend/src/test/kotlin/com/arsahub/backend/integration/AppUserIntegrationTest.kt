@@ -1,6 +1,5 @@
 package com.arsahub.backend.integration
 
-import com.arsahub.backend.SocketIOService
 import com.arsahub.backend.controllers.utils.AuthTestUtils.performWithAppAuth
 import com.arsahub.backend.controllers.utils.AuthTestUtils.setupAuth
 import com.arsahub.backend.dtos.request.AchievementCreateRequest
@@ -12,19 +11,21 @@ import com.arsahub.backend.repositories.AppUserPointsHistoryRepository
 import com.arsahub.backend.repositories.AppUserRepository
 import com.arsahub.backend.repositories.UserRepository
 import com.arsahub.backend.services.AchievementService
-import com.corundumstudio.socketio.SocketIOServer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.mock.mockito.MockBean
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import org.testcontainers.containers.PostgreSQLContainer
+import org.testcontainers.junit.jupiter.Container
 import java.util.*
 
 class AppUserIntegrationTest : BaseIntegrationTest() {
@@ -45,14 +46,6 @@ class AppUserIntegrationTest : BaseIntegrationTest() {
 
     @Autowired
     private lateinit var userRepository: UserRepository
-
-    @MockBean
-    @Suppress("unused")
-    private lateinit var socketIoServer: SocketIOServer // no-op
-
-    @MockBean
-    @Suppress("unused")
-    private lateinit var socketIOService: SocketIOService // no-op
 
     @Test
     fun `returns list of app users with 200`() {
@@ -492,5 +485,17 @@ class AppUserIntegrationTest : BaseIntegrationTest() {
                 ),
         )
             .andExpect(status().isNotFound)
+    }
+
+    @BeforeEach
+    fun setUp() {
+        initIntegrationTest(postgres)
+    }
+
+    companion object {
+        @Container
+        @ServiceConnection
+        val postgres: PostgreSQLContainer<Nothing> =
+            setupDBContainer().apply { start() }
     }
 }
