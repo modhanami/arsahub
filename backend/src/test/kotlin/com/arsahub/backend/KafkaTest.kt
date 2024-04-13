@@ -1,6 +1,6 @@
 package com.arsahub.backend
 
-import com.arsahub.backend.controllers.forceNewTransaction
+import com.arsahub.backend.integration.forceNewTransaction
 import com.arsahub.backend.models.App
 import com.arsahub.backend.models.AppUser
 import com.arsahub.backend.models.User
