@@ -3834,6 +3834,67 @@ class AppControllerTest() {
     }
 
     @Test
+    fun `dynamic points addition - success with negative points`() {
+        // Arrange
+        val user = createAppUser(authSetup.app)
+
+        val trigger =
+            createWorkshopCompletedTrigger(authSetup.app) {
+                fields {
+                    integer("points_earned")
+                }
+            }
+
+        // create rule
+        mockMvc.performWithAppAuth(
+            post("/api/apps/rules")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "title": "Rule",
+                      "trigger": {
+                        "key": "${trigger.key}"
+                      },
+                      "action": {
+                        "key": "add_points",
+                        "params": {
+                          "pointsExpression": "points_earned"
+                        }
+                      },
+                      "conditionExpression": "workshopId == 1",
+                      "repeatability": "unlimited"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isCreated)
+
+        // Act & Assert
+        mockMvc.performWithAppAuth(
+            post("/api/apps/trigger")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "key": "workshop_completed",
+                        "params": {
+                            "workshopId": 1,
+                            "source": "trust me",
+                            "points_earned": -20
+                        },
+                        "userId": "${user.userId}"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+
+        val userAfter = appUserRepository.findById(user.id!!).get()
+        assertEquals(-20, userAfter.points)
+    }
+
+    @Test
     fun `dynamic points addition - unsupported expression - failed`() {
         // Arrange
         val user = createAppUser(authSetup.app)
