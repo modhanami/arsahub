@@ -1,4 +1,4 @@
-package com.arsahub.backend.controllers
+package com.arsahub.backend.integration
 
 import com.arsahub.backend.controllers.utils.AuthTestUtils.performWithAppAuth
 import com.arsahub.backend.controllers.utils.AuthTestUtils.performWithUserAuth
@@ -6,8 +6,6 @@ import com.arsahub.backend.controllers.utils.AuthTestUtils.setupAuth
 import com.arsahub.backend.dtos.request.Action
 import com.arsahub.backend.dtos.request.FieldDefinition
 import com.arsahub.backend.dtos.request.TriggerCreateRequest
-import com.arsahub.backend.integration.BaseIntegrationTest
-import com.arsahub.backend.integration.forceNewTransaction
 import com.arsahub.backend.models.AppInvitation
 import com.arsahub.backend.models.AppUser
 import com.arsahub.backend.models.OncePerUserRuleRepeatability
@@ -16,19 +14,15 @@ import com.arsahub.backend.models.RuleRepeatability
 import com.arsahub.backend.models.UnlimitedRuleRepeatability
 import com.arsahub.backend.models.User
 import com.arsahub.backend.models.WebhookRepository
-import com.arsahub.backend.repositories.AchievementRepository
 import com.arsahub.backend.repositories.AppInvitationRepository
 import com.arsahub.backend.repositories.AppInvitationStatusRepository
 import com.arsahub.backend.repositories.AppRepository
-import com.arsahub.backend.repositories.AppUserAchievementRepository
 import com.arsahub.backend.repositories.AppUserPointsHistoryRepository
 import com.arsahub.backend.repositories.AppUserRepository
 import com.arsahub.backend.repositories.RuleRepository
 import com.arsahub.backend.repositories.RuleTriggerFieldStateRepository
 import com.arsahub.backend.repositories.TriggerRepository
 import com.arsahub.backend.repositories.UserRepository
-import com.arsahub.backend.services.AchievementService
-import com.arsahub.backend.services.RuleService
 import com.arsahub.backend.services.TriggerService
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.github.tomakehurst.wiremock.WireMockServer
@@ -53,7 +47,7 @@ import org.springframework.web.client.RestClient
 import org.springframework.web.client.body
 import java.util.*
 
-class AppControllerTest() : BaseIntegrationTest() {
+class RuleEngineIntegrationTest() : BaseIntegrationTest() {
     @Autowired
     private lateinit var webhookRepository: WebhookRepository
 
@@ -67,12 +61,6 @@ class AppControllerTest() : BaseIntegrationTest() {
     private lateinit var appUserPointsHistoryRepository: AppUserPointsHistoryRepository
 
     @Autowired
-    private lateinit var appUserAchievementRepository: AppUserAchievementRepository
-
-    @Autowired
-    private lateinit var achievementService: AchievementService
-
-    @Autowired
     private lateinit var triggerRepository: TriggerRepository
 
     @Autowired
@@ -83,12 +71,6 @@ class AppControllerTest() : BaseIntegrationTest() {
 
     @Autowired
     private lateinit var appRepository: AppRepository
-
-    @Autowired
-    private lateinit var achievementRepository: AchievementRepository
-
-    @Autowired
-    private lateinit var ruleService: RuleService
 
     @Autowired
     private lateinit var triggerService: TriggerService
