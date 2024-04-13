@@ -37,6 +37,8 @@ class RewardInvalidQuantityException : IllegalArgumentException("Quantity must b
 
 class RewardNameAlreadyExistsException : ConflictException("Reward with the same name already exists")
 
+class RewardInvalidMaxUserRedemptions : IllegalArgumentException("Max user redemptions must be positive")
+
 @Service
 class ShopService(
     private val rewardRepository: RewardRepository,
@@ -135,6 +137,12 @@ class ShopService(
             }
         }
 
+        request.maxUserRedemptions?.let {
+            if (it <= 0) {
+                throw RewardInvalidMaxUserRedemptions()
+            }
+        }
+
         // validate uniqueness of name
         if (rewardRepository.findByAppAndName(app, request.name!!) != null) {
             throw RewardNameAlreadyExistsException()
@@ -147,6 +155,7 @@ class ShopService(
                 description = request.description,
                 price = request.price,
                 quantity = request.quantity,
+                maxUserRedemptions = request.maxUserRedemptions,
             )
         return rewardRepository.save(reward)
     }

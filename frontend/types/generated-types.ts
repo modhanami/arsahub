@@ -1,7 +1,7 @@
 /* tslint:disable */
 /* eslint-disable */
 
-// Generated using typescript-generator version 3.2.1263 on 2024-04-01 17:54:46.
+// Generated using typescript-generator version 3.2.1263 on 2024-04-13 22:50:46.
 
 export interface AchievementCreateRequest {
   title: string;
@@ -53,6 +53,7 @@ export interface KeyAndParams {
 export interface RewardCreateRequest {
   price: number | null;
   quantity: number | null;
+  maxUserRedemptions: number | null;
   name: string | null;
   description: string | null;
 }
@@ -171,6 +172,7 @@ export interface RewardResponse {
   description: string | null;
   price: number | null;
   quantity: number | null;
+  maxUserRedemptions: number | null;
   imageKey: string | null;
   imageMetadata: { [index: string]: any } | null;
 }
@@ -223,6 +225,8 @@ export interface UserResponse {
 
 export interface WebhookPayload {
   id: string;
+  appId: number;
+  webhookUrl: string;
   event: string;
   appUserId: string;
   payload: { [index: string]: any };
