@@ -34,6 +34,7 @@ import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock
 import org.springframework.kafka.test.context.EmbeddedKafka
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.transaction.TestTransaction
+import org.springframework.test.web.servlet.MockMvc
 import org.springframework.transaction.annotation.Transactional
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.ext.ScriptUtils
@@ -77,6 +78,9 @@ class BaseIntegrationTest {
 
     @Value("\${jwt.secret}")
     private lateinit var jwtSecret: String
+
+    @Autowired
+    protected lateinit var mockMvc: MockMvc
 
     @BeforeEach
     fun setUp() {
