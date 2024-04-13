@@ -26,6 +26,8 @@ import com.arsahub.backend.services.WebhookDeliveryService
 import com.corundumstudio.socketio.SocketIOServer
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.WireMock
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
@@ -91,6 +93,10 @@ class BaseIntegrationTest {
     private lateinit var socketIOService: SocketIOService // no-op
 
     protected fun initIntegrationTest(postgres: PostgreSQLContainer<Nothing>) {
+        while (!postgres.isRunning) {
+            runBlocking { delay(20) }
+        }
+
         ScriptUtils.runInitScript(JdbcDatabaseDelegate(postgres, ""), "pre-schema.sql")
         ScriptUtils.runInitScript(JdbcDatabaseDelegate(postgres, ""), "schema.sql")
         ScriptUtils.runInitScript(JdbcDatabaseDelegate(postgres, ""), "data.sql")

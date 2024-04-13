@@ -209,3 +209,9 @@ tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
 if ("detekt" !in gradle.startParameter.taskNames) {
     tasks.detekt { enabled = false }
 }
+
+tasks.withType<Test> {
+//    systemProperties["junit.jupiter.execution.parallel.enabled"] = true
+//    systemProperties["junit.jupiter.execution.parallel.mode.default"] = "concurrent"
+    maxParallelForks = (Runtime.getRuntime().availableProcessors() / 2).coerceAtLeast(1)
+}
