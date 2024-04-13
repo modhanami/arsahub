@@ -72,6 +72,9 @@ class BaseIntegrationTest {
 
     protected lateinit var authSetup: AuthSetup
 
+    @Autowired
+    protected lateinit var mapper: ObjectMapper
+
     @Value("\${jwt.secret}")
     private lateinit var jwtSecret: String
 
