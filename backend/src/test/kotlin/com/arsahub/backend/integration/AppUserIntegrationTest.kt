@@ -9,6 +9,7 @@ import com.arsahub.backend.repositories.AppRepository
 import com.arsahub.backend.repositories.AppUserAchievementRepository
 import com.arsahub.backend.repositories.AppUserPointsHistoryRepository
 import com.arsahub.backend.repositories.AppUserRepository
+import com.arsahub.backend.repositories.TriggerRepository
 import com.arsahub.backend.repositories.UserRepository
 import com.arsahub.backend.services.AchievementService
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -46,6 +47,9 @@ class AppUserIntegrationTest : BaseIntegrationTest() {
 
     @Autowired
     private lateinit var userRepository: UserRepository
+
+    @Autowired
+    private lateinit var triggerRepository: TriggerRepository
 
     @Test
     fun `returns list of app users with 200`() {
@@ -378,6 +382,52 @@ class AppUserIntegrationTest : BaseIntegrationTest() {
         assertEquals(2, pointsHistories.size)
         assertEquals(80, pointsHistories[0].points)
         assertEquals(-20, pointsHistories[0].pointsChange)
+    }
+
+    @Test
+    fun `add points directly to user - success with points_reached rules fired`() {
+        // Arrange
+        val user = createAppUser(authSetup.app)
+
+        val allTriggers = triggerRepository.findAll()
+        for (trigger in allTriggers) {
+            println("Trigger: ${trigger.key}")
+        }
+        val pointsReachedTrigger = getPointsReachedTrigger()
+        val emptyTrigger =
+            createTrigger(authSetup.app) {
+                title = "Empty trigger"
+                key = "empty"
+            }
+
+        val ruleAdd50PointsWhen100PointsReached =
+            createRule(authSetup.app) {
+                title = "When user reaches 100 points then add 50 points"
+                trigger = pointsReachedTrigger
+                action {
+                    addPoints(50)
+                }
+                conditionExpression = "points == 100"
+                repeatability = OncePerUserRuleRepeatability
+            }
+
+        // Act & Assert
+        mockMvc.performWithAppAuth(
+            post("/api/apps/users/${user.userId}/points/add")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "points": 200
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+
+        // Assert DB - user has 60 points
+        val userAfterEmptyTriggerFired = appUserRepository.findById(user.id!!)
+        assertEquals(250, userAfterEmptyTriggerFired.get().points)
     }
 
     @Test

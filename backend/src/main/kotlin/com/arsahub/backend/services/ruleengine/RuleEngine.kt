@@ -120,9 +120,15 @@ class RuleEngine(
 
                 params
             }
-        val actionResults = processMatchingRules(matchingRules, app, appUser, trigger, request.params, afterAction)
+        val actionResults = processMatchingRules(matchingRules, app, appUser, request.params, afterAction)
 
-        handleForwardChain(app, appUser, trigger, actionResults, afterAction)
+        val needToTriggerPointsReachedTrigger = actionResults.any { it is ActionResult.PointsUpdate }
+        if (needToTriggerPointsReachedTrigger) {
+            logger.debug { "Handling forward chain" }
+            handleForwardChain(app, appUser, afterAction)
+        } else {
+            logger.debug { "No need to trigger points_reached trigger" }
+        }
 
         /*
          TODO: Currently, the trigger log is committed as a whole with other operations.
@@ -178,7 +184,6 @@ class RuleEngine(
         matchingRules: List<Rule>,
         app: App,
         appUser: AppUser,
-        trigger: Trigger,
         params: Map<String, Any>?,
         afterAction: (ActionResult, Rule) -> Unit?,
     ): List<ActionResult> {
@@ -280,26 +285,18 @@ class RuleEngine(
         }.filterNotNull()
     }
 
-    private fun handleForwardChain(
+    @Transactional
+    fun handleForwardChain(
         app: App,
         appUser: AppUser,
-        trigger: Trigger,
-        actionResults: List<ActionResult>,
-        afterAction: (ActionResult, Rule) -> Unit?,
+        afterAction: (ActionResult, Rule) -> Unit? = { _, _ -> },
     ) {
-        logger.info { "Handling forward chain" }
-        val needToTriggerPointsReachedTrigger = actionResults.any { it is ActionResult.PointsUpdate }
-        logger.debug { "Need to trigger points_reached trigger: $needToTriggerPointsReachedTrigger" }
-        if (!needToTriggerPointsReachedTrigger) {
-            return
-        }
-
         val pointsReachedTrigger = triggerService.getBuiltInTriggerOrThrow("points_reached")
         val referencingRules = ruleService.getRulesByReferencedTrigger(app, pointsReachedTrigger)
         val matchingRules = getMatchingRules(referencingRules, app, appUser, emptyMap())
 
         logger.debug { "Found ${matchingRules.size} matching rules for points_reached trigger" }
-        processMatchingRules(matchingRules, app, appUser, trigger, emptyMap(), afterAction)
+        processMatchingRules(matchingRules, app, appUser, emptyMap(), afterAction)
     }
 
     private fun logTrigger(

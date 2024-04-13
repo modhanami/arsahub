@@ -18,6 +18,7 @@ import com.arsahub.backend.models.RuleRepeatability
 import com.arsahub.backend.models.Trigger
 import com.arsahub.backend.models.UnlimitedRuleRepeatability
 import com.arsahub.backend.repositories.AppRepository
+import com.arsahub.backend.repositories.TriggerRepository
 import com.arsahub.backend.repositories.UserRepository
 import com.arsahub.backend.services.AppService
 import com.arsahub.backend.services.RuleService
@@ -56,6 +57,9 @@ import java.util.*
     partitions = 1,
 )
 class BaseIntegrationTest {
+    @Autowired
+    private lateinit var triggerRepository: TriggerRepository
+
     @Autowired
     private lateinit var appRepository: AppRepository
 
@@ -356,6 +360,8 @@ class BaseIntegrationTest {
                 """.trimIndent()
         }
     }
+
+    fun getPointsReachedTrigger() = triggerRepository.findByKey("points_reached")!!
 }
 
 fun forceNewTransaction() {

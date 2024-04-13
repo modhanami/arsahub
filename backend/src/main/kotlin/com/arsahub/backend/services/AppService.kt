@@ -470,6 +470,7 @@ class AppService(
                 "pointsChange=${pointsHistory.pointsChange}, points=${pointsHistory.points}"
         }
         appUserPointsHistoryRepository.save(pointsHistory)
+        ruleEngine.handleForwardChain(app, appUser)
     }
 
     fun unlockAchievementForUser(
