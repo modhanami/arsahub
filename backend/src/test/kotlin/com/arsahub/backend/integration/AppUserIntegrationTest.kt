@@ -1,6 +1,6 @@
-package com.arsahub.backend
+package com.arsahub.backend.integration
 
-import com.arsahub.backend.controllers.BaseIntegrationTest
+import com.arsahub.backend.SocketIOService
 import com.arsahub.backend.controllers.utils.AuthTestUtils.performWithAppAuth
 import com.arsahub.backend.controllers.utils.AuthTestUtils.setupAuth
 import com.arsahub.backend.dtos.request.AchievementCreateRequest

@@ -7,6 +7,8 @@ import com.arsahub.backend.dtos.request.AchievementCreateRequest
 import com.arsahub.backend.dtos.request.Action
 import com.arsahub.backend.dtos.request.FieldDefinition
 import com.arsahub.backend.dtos.request.TriggerCreateRequest
+import com.arsahub.backend.integration.BaseIntegrationTest
+import com.arsahub.backend.integration.forceNewTransaction
 import com.arsahub.backend.models.AppInvitation
 import com.arsahub.backend.models.AppUser
 import com.arsahub.backend.models.OncePerUserRuleRepeatability

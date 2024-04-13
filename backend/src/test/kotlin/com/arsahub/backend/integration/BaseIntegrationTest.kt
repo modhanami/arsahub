@@ -1,4 +1,4 @@
-package com.arsahub.backend.controllers
+package com.arsahub.backend.integration
 
 import com.arsahub.backend.controllers.utils.AuthSetup
 import com.arsahub.backend.controllers.utils.AuthTestUtils.setGlobalAuthSetup
@@ -182,7 +182,7 @@ class BaseIntegrationTest {
                 }
                 conditionExpression = "workshopId == $workshopIdEq && source == '$sourceEq'"
                 this.repeatability = repeatability
-            }.let(::WorkshopCompletedRule)
+            }.let(BaseIntegrationTest::WorkshopCompletedRule)
 
         return workshopCompletedRule
     }
