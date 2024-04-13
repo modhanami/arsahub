@@ -37,6 +37,9 @@ import { isApiError, isApiValidationError } from "@/api";
 import { HttpStatusCode } from "axios";
 import { Input } from "@/components/ui/input";
 import { Image } from "@nextui-org/react";
+import { DevTool } from "@hookform/devtools";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 const MAX_FILE_SIZE_MB = 1000000;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 2; // 2MB
@@ -125,6 +128,7 @@ export function RewardCreateForm() {
   const setImageMutation = useSetRewardImage();
   const [preview, setPreview] = React.useState("");
   const isSubmitting = createMutation.isPending || setImageMutation.isPending;
+  const [isUnlimited, setIsUnlimited] = React.useState(false);
 
   async function onSubmit(values: FormData) {
     createMutation.mutate(
@@ -284,26 +288,42 @@ export function RewardCreateForm() {
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name="quantity"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Quantity</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        placeholder="Quantity of your reward"
-                        step="1"
-                        min="1"
-                        {...field}
-                      />
-                    </FormControl>
+                    {!isUnlimited && (
+                      <FormControl>
+                        <Input
+                          type="number"
+                          placeholder="Quantity of your reward"
+                          step="1"
+                          min="1"
+                          {...field}
+                        />
+                      </FormControl>
+                    )}
+
                     <FormDescription />
                     <FormMessage />
+                    <div className="flex items-center space-x-2 p-2 pb-4">
+                      <Checkbox
+                        checked={isUnlimited}
+                        onCheckedChange={(checked) => {
+                          setIsUnlimited(!!checked);
+                          form.setValue("quantity", "");
+                        }}
+                        id="unlimited-quantity"
+                      ></Checkbox>
+                      <Label htmlFor="unlimited-quantity">Unlimited</Label>
+                    </div>
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name="image"
@@ -345,6 +365,7 @@ export function RewardCreateForm() {
                 </Button>
               </div>
             </form>
+            <DevTool control={form.control} />
           </Form>
         </DialogContent>
       </Dialog>
