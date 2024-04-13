@@ -441,6 +441,32 @@ class AppService(
         return appUserRepository.save(appUser)
     }
 
+    @Transactional
+    fun addPointsToUser(
+        app: App,
+        userId: String,
+        request: AppController.AppUserPointsAddRequest,
+    ) {
+        val appUser = getAppUserOrThrow(app, userId)
+        val points = request.points
+        val newPoints = appUser.points!! + points
+        appUser.points = newPoints
+        appUserRepository.save(appUser)
+
+        val pointsHistory =
+            AppUserPointsHistory(
+                app = app,
+                appUser = appUser,
+                points = newPoints.toLong(), // TODO: convert the source type to long?
+                pointsChange = points.toLong(),
+            )
+        logger.debug {
+            "Saving points history for app user ${appUser.userId} in app ${app.title}: " +
+                "pointsChange=${pointsHistory.pointsChange}, points=${pointsHistory.points}"
+        }
+        appUserPointsHistoryRepository.save(pointsHistory)
+    }
+
     companion object {
         const val WEBHOOK_TIMEOUT_SECONDS: Long = 5
     }

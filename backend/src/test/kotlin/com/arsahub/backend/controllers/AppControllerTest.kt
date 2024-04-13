@@ -3911,6 +3911,123 @@ class AppControllerTest() {
             .andExpect(jsonPath("$.message").value("Invalid points expression"))
     }
 
+    // Add (or remove) points directly to the user, without using a trigger
+    @Test
+    fun `add points directly to user - success`() {
+        // Arrange
+        val user = createAppUser(authSetup.app)
+
+        // Act & Assert
+        mockMvc.performWithAppAuth(
+            post("/api/apps/users/${user.userId}/points/add")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "points": 100
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+
+        val userAfter = appUserRepository.findById(user.id!!).get()
+        assertEquals(100, userAfter.points)
+
+        val pointsHistories = appUserPointsHistoryRepository.findAllByAppAndAppUser(authSetup.app, user)
+        assertEquals(1, pointsHistories.size)
+        assertEquals(100, pointsHistories[0].points)
+        assertEquals(100, pointsHistories[0].pointsChange)
+    }
+
+    @Test
+    fun `add points directly to user - success with maximum points`() {
+        // Arrange
+        val user = createAppUser(authSetup.app)
+
+        // Act & Assert
+        mockMvc.performWithAppAuth(
+            post("/api/apps/users/${user.userId}/points/add")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "points": 2147483647
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+
+        val userAfter = appUserRepository.findById(user.id!!).get()
+        assertEquals(2147483647, userAfter.points)
+
+        val pointsHistories = appUserPointsHistoryRepository.findAllByAppAndAppUser(authSetup.app, user)
+        assertEquals(1, pointsHistories.size)
+        assertEquals(2147483647, pointsHistories[0].points)
+        assertEquals(2147483647, pointsHistories[0].pointsChange)
+    }
+
+    @Test
+    fun `add points directly to user - success with negative points`() {
+        // Arrange
+        val user = createAppUser(authSetup.app)
+
+        mockMvc.performWithAppAuth(
+            post("/api/apps/users/${user.userId}/points/add")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "points": 100
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+
+        // Act & Assert
+        mockMvc.performWithAppAuth(
+            post("/api/apps/users/${user.userId}/points/add")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "points": -20
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isOk)
+
+        val userAfter = appUserRepository.findById(user.id!!).get()
+        assertEquals(80, userAfter.points)
+
+        val pointsHistories =
+            appUserPointsHistoryRepository.findAllByAppAndAppUser(authSetup.app, user)
+                .sortedByDescending { it.createdAt }
+        assertEquals(2, pointsHistories.size)
+        assertEquals(80, pointsHistories[0].points)
+        assertEquals(-20, pointsHistories[0].pointsChange)
+    }
+
+    @Test
+    fun `add points directly to user - failure with non-existing user`() {
+        // Act & Assert
+        mockMvc.performWithAppAuth(
+            post("/api/apps/users/non-existing-user/points/add")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "points": 100
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isNotFound)
+    }
+
     @Test
     fun testWireMock() {
         stubFor(
