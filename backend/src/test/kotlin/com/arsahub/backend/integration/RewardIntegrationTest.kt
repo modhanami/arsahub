@@ -9,6 +9,7 @@ import com.arsahub.backend.repositories.AppUserRepository
 import com.arsahub.backend.repositories.RewardRepository
 import com.arsahub.backend.repositories.TransactionRepository
 import com.arsahub.backend.repositories.UserRepository
+import com.arsahub.backend.services.ShopService
 import org.hamcrest.Matchers.containsInAnyOrder
 import org.hamcrest.Matchers.hasEntry
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -42,6 +43,9 @@ class RewardIntegrationTest : BaseIntegrationTest() {
 
     @Autowired
     private lateinit var userRepository: UserRepository
+
+    @Autowired
+    private lateinit var shopService: ShopService
 
     // Redeem points
     @Test
@@ -590,6 +594,12 @@ class RewardIntegrationTest : BaseIntegrationTest() {
         )
             .andExpect(status().isBadRequest)
             .andExpect(jsonPath("$.message").value("Reward already redeemed"))
+
+        // Assert getRewardsForUser
+        val userRewards = shopService.getRewardsForUser(authSetup.app, appUserWith100Points.userId!!)
+        assertEquals(1, userRewards.size)
+        assertEquals("10 Points", userRewards[0].reward.name)
+        assertEquals(2, userRewards[0].count)
     }
 
     @BeforeEach

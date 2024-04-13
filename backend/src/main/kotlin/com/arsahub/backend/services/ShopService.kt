@@ -3,6 +3,7 @@ package com.arsahub.backend.services
 import com.arsahub.backend.dtos.request.RewardCreateRequest
 import com.arsahub.backend.dtos.request.RewardRedeemRequest
 import com.arsahub.backend.dtos.request.RewardSetImageRequest
+import com.arsahub.backend.dtos.response.RewardWithCount
 import com.arsahub.backend.exceptions.ConflictException
 import com.arsahub.backend.exceptions.NotFoundException
 import com.arsahub.backend.models.App
@@ -214,5 +215,15 @@ class ShopService(
         reward.imageMetadata = metadata
 
         return rewardRepository.save(reward)
+    }
+
+    fun getRewardsForUser(
+        app: App,
+        userId: String,
+    ): List<RewardWithCount> {
+        val appUser = appService.getAppUserOrThrow(app, userId)
+        val findRewardAndCountByAppAndAppUser = transactionRepository.findRewardAndCountByAppAndAppUser(app, appUser)
+        println(findRewardAndCountByAppAndAppUser)
+        return findRewardAndCountByAppAndAppUser
     }
 }
