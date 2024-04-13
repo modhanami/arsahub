@@ -210,8 +210,12 @@ if ("detekt" !in gradle.startParameter.taskNames) {
     tasks.detekt { enabled = false }
 }
 
+/**
+ * TODO: Enable parallel test execution
+ * @see https://github.com/testcontainers/testcontainers-java/issues/1495#issuecomment-1191668796
+ */
 tasks.withType<Test> {
 //    systemProperties["junit.jupiter.execution.parallel.enabled"] = true
 //    systemProperties["junit.jupiter.execution.parallel.mode.default"] = "concurrent"
-    maxParallelForks = (Runtime.getRuntime().availableProcessors() / 2).coerceAtLeast(1)
+//    maxParallelForks = (Runtime.getRuntime().availableProcessors() / 2).coerceAtLeast(1)
 }
