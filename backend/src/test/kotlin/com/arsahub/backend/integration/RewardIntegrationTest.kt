@@ -9,6 +9,7 @@ import com.arsahub.backend.repositories.AppUserRepository
 import com.arsahub.backend.repositories.RewardRepository
 import com.arsahub.backend.repositories.TransactionRepository
 import com.arsahub.backend.repositories.UserRepository
+import com.arsahub.backend.services.ShopService
 import org.hamcrest.Matchers.containsInAnyOrder
 import org.hamcrest.Matchers.hasEntry
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection
 import org.springframework.http.MediaType
+import org.springframework.test.web.servlet.ResultActions
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -41,6 +43,9 @@ class RewardIntegrationTest : BaseIntegrationTest() {
 
     @Autowired
     private lateinit var userRepository: UserRepository
+
+    @Autowired
+    private lateinit var shopService: ShopService
 
     // Redeem points
     @Test
@@ -67,9 +72,8 @@ class RewardIntegrationTest : BaseIntegrationTest() {
                 ),
             )
 
-        // Act & Assert HTTP
-        val resultActions =
-            mockMvc.performWithAppAuth(
+        fun redeemReward(): ResultActions {
+            return mockMvc.performWithAppAuth(
                 post("/api/apps/shop/rewards/redeem")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(
@@ -86,6 +90,10 @@ class RewardIntegrationTest : BaseIntegrationTest() {
                 .andExpect(jsonPath("$.pointsSpent").value(10))
                 .andExpect(jsonPath("$.createdAt").exists())
                 .andExpect(jsonPath("$.referenceNumber").exists())
+        }
+
+        // Act & Assert HTTP 1
+        val resultActions = redeemReward()
 
         // Assert DB
         // Assert reward quantity
@@ -108,6 +116,31 @@ class RewardIntegrationTest : BaseIntegrationTest() {
         val transactionReferenceNumber = transaction.referenceNumber
         assertDoesNotThrow { UUID.fromString(transactionReferenceNumber) }
         resultActions.andExpect(jsonPath("$.referenceNumber").value(transactionReferenceNumber))
+
+        // Act & Assert HTTP 2
+        val resultActions2 = redeemReward()
+
+        // Assert DB
+        // Assert reward quantity
+        val reward10PointsAfter2 = rewardRepository.findById(reward10Points.id!!).get()
+        assertEquals(8, reward10PointsAfter2.quantity)
+
+        // Assert user points
+        val appUserWith100PointsAfter2 = appUserRepository.findById(appUserWith100Points.id!!).get()
+        assertEquals(80, appUserWith100PointsAfter2.points)
+
+        // Assert transaction created
+        val transaction2 = transactionRepository.findAll().sortedByDescending { it.createdAt }.first()
+        assertEquals(10, transaction2.pointsSpent)
+
+        // Assert reward redeemed
+        val rewardRedeemed2 = transaction2.reward!!
+        assertEquals("10 Points", rewardRedeemed2.name)
+
+        // Assert transaction reference number
+        val transactionReferenceNumber2 = transaction2.referenceNumber
+        assertDoesNotThrow { UUID.fromString(transactionReferenceNumber2) }
+        resultActions2.andExpect(jsonPath("$.referenceNumber").value(transactionReferenceNumber2))
     }
 
     @Test
@@ -503,6 +536,70 @@ class RewardIntegrationTest : BaseIntegrationTest() {
                     ),
                 ),
             )
+    }
+
+    @Test
+    fun `redeem points - with max redemptions per user`() {
+        // Arrange
+        val appUserWith100Points =
+            appUserRepository.save(
+                AppUser(
+                    userId = UUID.fromString("00000000-0000-0000-0000-000000000001").toString(),
+                    displayName = "User1",
+                    app = authSetup.app,
+                    points = 100,
+                ),
+            )
+
+        val reward10Points =
+            rewardRepository.save(
+                Reward(
+                    name = "10 Points",
+                    description = "10 Points",
+                    price = 10,
+                    app = authSetup.app,
+                    maxUserRedemptions = 2,
+                ),
+            )
+
+        // Act & Assert HTTP 1
+        repeat(2) {
+            mockMvc.performWithAppAuth(
+                post("/api/apps/shop/rewards/redeem")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        """
+                        {
+                            "rewardId": ${reward10Points.id},
+                            "userId": "${appUserWith100Points.userId}"
+                        }
+                        """.trimIndent(),
+                    ),
+            )
+                .andExpect(status().isOk)
+        }
+
+        // Act & Assert HTTP 2
+        mockMvc.performWithAppAuth(
+            post("/api/apps/shop/rewards/redeem")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                        "rewardId": ${reward10Points.id},
+                        "userId": "${appUserWith100Points.userId}"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.message").value("Reward already redeemed"))
+
+        // Assert getRewardsForUser
+        val userRewards = shopService.getRewardsForUser(authSetup.app, appUserWith100Points.userId!!)
+        assertEquals(1, userRewards.size)
+        assertEquals("10 Points", userRewards[0].reward.name)
+        assertEquals(2, userRewards[0].count)
     }
 
     @BeforeEach

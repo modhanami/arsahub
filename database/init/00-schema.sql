@@ -33,7 +33,8 @@ create table app
     updated_at  timestamp with time zone default now() not null,
     owner_id    bigint                                 not null
         constraint app_user_user_id_fk
-            references "user"
+            references "user",
+    timezone    text
 );
 
 create table achievement
@@ -272,21 +273,22 @@ create table reward_template
 
 create table reward
 (
-    reward_id      bigserial
+    reward_id            bigserial
         primary key,
-    app_id         bigint                  not null
+    app_id               bigint                  not null
         references app,
-    name           text                    not null,
-    description    text,
-    price          integer                 not null,
-    type_id        bigint
+    name                 text                    not null,
+    description          text,
+    price                integer                 not null,
+    type_id              bigint
         references reward_type,
-    data           jsonb,
-    created_at     timestamp default now() not null,
-    updated_at     timestamp default now() not null,
-    quantity       integer,
-    image_key      text,
-    image_metadata jsonb,
+    data                 jsonb,
+    created_at           timestamp default now() not null,
+    updated_at           timestamp default now() not null,
+    quantity             integer,
+    image_key            text,
+    image_metadata       jsonb,
+    max_user_redemptions integer,
     unique (name, type_id)
 );
 
@@ -392,7 +394,9 @@ create table leaderboard_config
     start_day             smallint,
     reset_day             smallint,
     reset_time            time     not null,
-    timezone              text     not null
+    name                  text     not null,
+    constraint leaderboard_config_pk_2
+        unique (app_id, name)
 );
 
 create table rule_trigger_field_state

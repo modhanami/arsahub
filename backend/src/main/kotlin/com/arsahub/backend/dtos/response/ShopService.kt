@@ -9,6 +9,7 @@ data class RewardResponse(
     val description: String? = null,
     val price: Int? = null,
     val quantity: Int? = null,
+    val maxUserRedemptions: Int? = null,
     val imageKey: String? = null,
     val imageMetadata: Map<String, Any>? = null,
 ) {
@@ -20,6 +21,7 @@ data class RewardResponse(
                 description = reward.description,
                 price = reward.price,
                 quantity = reward.quantity,
+                maxUserRedemptions = reward.maxUserRedemptions,
                 imageKey = reward.imageKey,
                 imageMetadata = reward.imageMetadata,
             )

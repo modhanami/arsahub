@@ -3,6 +3,7 @@ package com.arsahub.backend.services
 import com.arsahub.backend.dtos.request.RewardCreateRequest
 import com.arsahub.backend.dtos.request.RewardRedeemRequest
 import com.arsahub.backend.dtos.request.RewardSetImageRequest
+import com.arsahub.backend.dtos.response.RewardWithCount
 import com.arsahub.backend.exceptions.ConflictException
 import com.arsahub.backend.exceptions.NotFoundException
 import com.arsahub.backend.models.App
@@ -27,6 +28,8 @@ class RewardNotFoundException : NotFoundException("Reward not found")
 
 class RewardUnavailableException : IllegalArgumentException("Reward unavailable")
 
+class RewardAlreadyRedeemedException : IllegalArgumentException("Reward already redeemed")
+
 class InsufficientPointsException : IllegalArgumentException("Insufficient points")
 
 class RewardInvalidPriceException : IllegalArgumentException("Price must be positive")
@@ -34,6 +37,8 @@ class RewardInvalidPriceException : IllegalArgumentException("Price must be posi
 class RewardInvalidQuantityException : IllegalArgumentException("Quantity must be positive")
 
 class RewardNameAlreadyExistsException : ConflictException("Reward with the same name already exists")
+
+class RewardInvalidMaxUserRedemptions : IllegalArgumentException("Max user redemptions must be positive")
 
 @Service
 class ShopService(
@@ -73,6 +78,14 @@ class ShopService(
         val reward = getRewardOrThrow(request.rewardId, currentApp)
         val appUser =
             appService.getAppUserOrThrow(currentApp, request.userId)
+
+        // check max user redemptions
+        reward.maxUserRedemptions?.let {
+            val userRedemptions = transactionRepository.countByAppUserAndReward(appUser, reward)
+            if (userRedemptions >= it) {
+                throw RewardAlreadyRedeemedException()
+            }
+        }
 
         // check if out of stock
         // if quantity is null, assume infinite
@@ -125,6 +138,12 @@ class ShopService(
             }
         }
 
+        request.maxUserRedemptions?.let {
+            if (it <= 0) {
+                throw RewardInvalidMaxUserRedemptions()
+            }
+        }
+
         // validate uniqueness of name
         if (rewardRepository.findByAppAndName(app, request.name!!) != null) {
             throw RewardNameAlreadyExistsException()
@@ -137,6 +156,7 @@ class ShopService(
                 description = request.description,
                 price = request.price,
                 quantity = request.quantity,
+                maxUserRedemptions = request.maxUserRedemptions,
             )
         return rewardRepository.save(reward)
     }
@@ -195,5 +215,15 @@ class ShopService(
         reward.imageMetadata = metadata
 
         return rewardRepository.save(reward)
+    }
+
+    fun getRewardsForUser(
+        app: App,
+        userId: String,
+    ): List<RewardWithCount> {
+        val appUser = appService.getAppUserOrThrow(app, userId)
+        val findRewardAndCountByAppAndAppUser = transactionRepository.findRewardAndCountByAppAndAppUser(app, appUser)
+        println(findRewardAndCountByAppAndAppUser)
+        return findRewardAndCountByAppAndAppUser
     }
 }

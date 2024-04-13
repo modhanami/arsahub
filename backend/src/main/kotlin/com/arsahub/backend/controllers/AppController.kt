@@ -19,6 +19,7 @@ import com.arsahub.backend.dtos.response.AppResponse
 import com.arsahub.backend.dtos.response.AppUserResponse
 import com.arsahub.backend.dtos.response.LeaderboardResponse
 import com.arsahub.backend.dtos.response.RewardResponse
+import com.arsahub.backend.dtos.response.RewardResponseWithCount
 import com.arsahub.backend.dtos.response.RuleResponse
 import com.arsahub.backend.dtos.response.TransactionResponse
 import com.arsahub.backend.dtos.response.TriggerResponse
@@ -492,6 +493,14 @@ class AppController(
         @CurrentApp app: App,
     ): List<RewardResponse> {
         return shopService.getRewards(app).map { RewardResponse.fromEntity(it) }
+    }
+
+    @GetMapping("/users/{userId}/rewards")
+    fun getRewardsForUser(
+        @CurrentApp app: App,
+        @PathVariable userId: String,
+    ): List<RewardResponseWithCount> {
+        return shopService.getRewardsForUser(app, userId).map { RewardResponseWithCount.fromEntity(it) }
     }
 
     @Operation(
