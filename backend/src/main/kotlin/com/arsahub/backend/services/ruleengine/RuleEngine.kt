@@ -289,7 +289,7 @@ class RuleEngine(
     fun handleForwardChain(
         app: App,
         appUser: AppUser,
-        afterAction: (ActionResult, Rule) -> Unit? = { _, _ -> },
+        afterAction: (ActionResult, Rule) -> Unit?,
     ) {
         val pointsReachedTrigger = triggerService.getBuiltInTriggerOrThrow("points_reached")
         val referencingRules = ruleService.getRulesByReferencedTrigger(app, pointsReachedTrigger)

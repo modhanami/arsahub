@@ -154,7 +154,14 @@ class AppService(
             actionResults.add(actionResult to rule)
             Unit
         }
+        handleActionResults(actionResults, app, appUser)
+    }
 
+    private fun handleActionResults(
+        actionResults: MutableList<Pair<ActionResult, Rule>>,
+        app: App,
+        appUser: AppUser,
+    ) {
         runBlocking {
             actionResults.forEach { (actionResult, rule) ->
                 // save points history
@@ -176,7 +183,7 @@ class AppService(
 
                 val appWebhooks = webhookRepository.findByApp(app)
                 webhookDeliveryService.publishWebhookEvents(app, appWebhooks, appUser, actionResult)
-                broadcastActionResult(actionResult, app, request.userId)
+                broadcastActionResult(actionResult, app, appUser.userId!!)
             }
         }
     }
@@ -470,7 +477,13 @@ class AppService(
                 "pointsChange=${pointsHistory.pointsChange}, points=${pointsHistory.points}"
         }
         appUserPointsHistoryRepository.save(pointsHistory)
-        ruleEngine.handleForwardChain(app, appUser)
+
+        val actionResults = mutableListOf<Pair<ActionResult, Rule>>()
+        ruleEngine.handleForwardChain(app, appUser) { actionResult, rule ->
+            actionResults.add(actionResult to rule)
+            Unit
+        }
+        handleActionResults(actionResults, app, appUser)
     }
 
     fun unlockAchievementForUser(
