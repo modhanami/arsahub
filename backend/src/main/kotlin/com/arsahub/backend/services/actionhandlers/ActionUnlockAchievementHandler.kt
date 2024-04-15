@@ -4,6 +4,7 @@ import com.arsahub.backend.models.AppUser
 import com.arsahub.backend.models.Rule
 import com.arsahub.backend.repositories.AppUserAchievementRepository
 import org.springframework.stereotype.Component
+import java.time.Instant
 
 @Component
 class ActionUnlockAchievementHandler(
@@ -26,7 +27,7 @@ class ActionUnlockAchievementHandler(
             return ActionResult.Nothing(message)
         }
 
-        appUser.addAchievement(achievement)
+        appUser.addAchievement(achievement, Instant.now())
         // save from the owning side
         appUserAchievementRepository.saveAll(appUser.achievements)
 
