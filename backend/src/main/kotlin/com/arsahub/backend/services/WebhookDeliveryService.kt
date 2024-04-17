@@ -2,12 +2,11 @@ package com.arsahub.backend.services
 
 import com.arsahub.backend.dtos.response.AchievementResponse
 import com.arsahub.backend.dtos.response.WebhookPayload
-import com.arsahub.backend.models.App
-import com.arsahub.backend.models.AppUser
-import com.arsahub.backend.models.Webhook
-import com.arsahub.backend.models.WebhookRepository
+import com.arsahub.backend.models.*
 import com.arsahub.backend.repositories.AppRepository
+import com.arsahub.backend.repositories.WebhookRequestRepository
 import com.arsahub.backend.services.actionhandlers.ActionResult
+import com.arsahub.backend.utils.JsonUtils
 import com.arsahub.backend.utils.SignatureUtil
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -17,6 +16,7 @@ import kotlinx.coroutines.withContext
 import org.apache.kafka.clients.admin.NewTopic
 import org.springframework.context.annotation.Bean
 import org.springframework.data.repository.findByIdOrNull
+import org.springframework.http.ResponseEntity
 import org.springframework.http.client.JdkClientHttpRequestFactory
 import org.springframework.kafka.annotation.KafkaListener
 import org.springframework.kafka.core.KafkaTemplate
@@ -65,6 +65,8 @@ class WebhookDeliveryService(
     private val webhookSecretProvider: WebhookSecretProvider,
     private val appRepository: AppRepository,
     private val webhookRepository: WebhookRepository,
+    private val webhookRequestRepository: WebhookRequestRepository,
+    private val jsonUtils: JsonUtils,
 ) {
     private val logger = KotlinLogging.logger {}
 
@@ -122,10 +124,11 @@ class WebhookDeliveryService(
         logger.debug { "Delivering webhook for app ID $appId: $webhookUrl" }
         val objectMapper = ObjectMapper()
         val stringPayload = objectMapper.writeValueAsString(payload)
+        val jsonPayload = jsonUtils.convertJsonStringToMutableMap(stringPayload)
         logger.debug { "Payload: $stringPayload" }
         val app =
             appRepository.findByIdOrNull(appId)
-//        val webhook = webhookRepository.findByAppAndUrl(app!!, webhookUrl.toString())
+        requireNotNull(app) { "App not found for ID $appId" }
         val webhook =
             withContext(Dispatchers.IO) {
                 webhookRepository.findByAppAndUrl(app!!, webhookUrl.toString())
@@ -139,38 +142,91 @@ class WebhookDeliveryService(
             measureTime {
                 try {
                     val response =
-                        // the underlying rest client is blocking, so we need to switch to IO dispatcher
-                        withContext(Dispatchers.IO) {
-                            restClient.post()
-                                .uri(webhookUrl)
-                                .body(
-                                    stringPayload,
-                                )
-                                .header(
-                                    "X-Webhook-Signature",
-                                    signature,
-                                )
-                                .header(
-                                    "Content-Type",
-                                    "application/json",
-                                )
-                                .retrieve()
-                                .toBodilessEntity()
-                        }
+                        sendWebhookRequest(webhookUrl, stringPayload, signature)
 
                     if (response.statusCode.isError) {
                         logger.error { "Webhook $webhookUrl failed for app ID $appId: ${response.statusCode}" }
                         // TODO: handle webhook failure
+                        saveFailedWebhookRequest(app, webhook, jsonPayload, signature)
                     } else {
                         logger.debug { "Webhook $webhookUrl succeeded for app ID $appId: ${response.statusCode}" }
+                        saveSuccessWebhookRequest(app, webhook, jsonPayload, signature)
                         onSuccessfulDelivery()
                     }
                 } catch (e: Exception) {
                     logger.error(e) { "Webhook $webhookUrl failed for app ID $appId" }
                     // TODO: handle webhook failure
+                    saveFailedWebhookRequest(app, webhook, jsonPayload, signature)
                 }
             }
         logger.debug { "Webhook $webhookUrl took $duration for app ID $appId " }
+    }
+
+    private suspend fun sendWebhookRequest(
+        webhookUrl: URI,
+        stringPayload: String,
+        signature: String,
+    ): ResponseEntity<Void> {
+        // the underlying rest client is blocking, so we need to switch to IO dispatcher
+        return withContext(Dispatchers.IO) {
+            restClient.post()
+                .uri(webhookUrl)
+                .body(
+                    stringPayload,
+                )
+                .header(
+                    "X-Webhook-Signature",
+                    signature,
+                )
+                .header(
+                    "Content-Type",
+                    "application/json",
+                )
+                .retrieve()
+                .toBodilessEntity()
+        }
+    }
+
+    private suspend fun saveSuccessWebhookRequest(
+        app: App,
+        webhook: Webhook,
+        jsonPayload: MutableMap<String, Any>,
+        signature: String,
+    ) {
+        withContext(Dispatchers.IO) {
+            logger.debug { "Saving successful webhook request: $jsonPayload" }
+            webhookRequestRepository.save(
+                WebhookRequest(
+                    app = app,
+                    webhook = webhook,
+                    requestBody = jsonPayload,
+                    status = WebhookRequestStatusEnum.SUCCESS.entity,
+                    signature = signature,
+                ),
+            )
+            logger.debug { "Saved successful webhook request: $jsonPayload" }
+        }
+    }
+
+    private suspend fun saveFailedWebhookRequest(
+        app: App,
+        webhook: Webhook,
+        jsonPayload: MutableMap<String, Any>,
+        signature: String,
+    ) {
+        withContext(Dispatchers.IO) {
+            logger.debug { "Saving failed webhook request: $jsonPayload" }
+            webhookRequestRepository.save(
+                WebhookRequest(
+                    app = app,
+                    webhook = webhook,
+                    requestBody = jsonPayload,
+                    status = WebhookRequestStatusEnum.FAILED.entity,
+                    signature = signature,
+                ),
+            )
+            logger.debug { "Saved failed webhook request: $jsonPayload" }
+        }
     }
 
     fun publishWebhookEvents(

@@ -6,42 +6,23 @@ import com.arsahub.backend.controllers.utils.AuthTestUtils.setupAuth
 import com.arsahub.backend.dtos.request.Action
 import com.arsahub.backend.dtos.request.FieldDefinition
 import com.arsahub.backend.dtos.request.TriggerCreateRequest
-import com.arsahub.backend.models.AppInvitation
-import com.arsahub.backend.models.AppUser
-import com.arsahub.backend.models.OncePerUserRuleRepeatability
-import com.arsahub.backend.models.Rule
-import com.arsahub.backend.models.RuleRepeatability
-import com.arsahub.backend.models.UnlimitedRuleRepeatability
-import com.arsahub.backend.models.User
-import com.arsahub.backend.models.WebhookRepository
-import com.arsahub.backend.repositories.AppInvitationRepository
-import com.arsahub.backend.repositories.AppInvitationStatusRepository
-import com.arsahub.backend.repositories.AppRepository
-import com.arsahub.backend.repositories.AppUserPointsHistoryRepository
-import com.arsahub.backend.repositories.AppUserRepository
-import com.arsahub.backend.repositories.RuleRepository
-import com.arsahub.backend.repositories.RuleTriggerFieldStateRepository
-import com.arsahub.backend.repositories.TriggerRepository
-import com.arsahub.backend.repositories.UserRepository
+import com.arsahub.backend.models.*
+import com.arsahub.backend.repositories.*
 import com.arsahub.backend.services.TriggerService
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
-import com.github.tomakehurst.wiremock.client.WireMock.aResponse
-import com.github.tomakehurst.wiremock.client.WireMock.equalToJson
-import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
-import com.github.tomakehurst.wiremock.client.WireMock.stubFor
-import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
+import com.github.tomakehurst.wiremock.client.WireMock.*
+import com.jayway.jsonpath.JsonPath
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection
 import org.springframework.http.MediaType
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
@@ -87,6 +68,9 @@ class RuleEngineIntegrationTest() : BaseIntegrationTest() {
 
     @Autowired
     private lateinit var userRepository: UserRepository
+
+    @Autowired
+    private lateinit var webhookRequestRepository: WebhookRequestRepository
 
     @Suppress("unused")
     fun TrigggerTestModel.toNode(): ObjectNode {
@@ -350,18 +334,22 @@ class RuleEngineIntegrationTest() : BaseIntegrationTest() {
         )
         val webhookPath = "/webhook"
         val webhookUrl = "http://localhost:${wireMockServer.port()}$webhookPath"
-        mockMvc.performWithAppAuth(
-            post("/api/apps/webhooks")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    """
-                    {
-                        "url": "$webhookUrl"
-                    }
-                    """.trimIndent(),
-                ),
-        )
-            .andExpect(status().isCreated)
+        val result =
+            mockMvc.performWithAppAuth(
+                post("/api/apps/webhooks")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        """
+                        {
+                            "url": "$webhookUrl"
+                        }
+                        """.trimIndent(),
+                    ),
+            )
+                .andExpect(status().isCreated)
+                .andReturn()
+
+        val webhookId = JsonPath.parse(result.response.contentAsString).read("$.id", Long::class.java)
 
         forceNewTransaction()
 
@@ -417,6 +405,33 @@ class RuleEngineIntegrationTest() : BaseIntegrationTest() {
                     ),
                 ),
         )
+
+        // Assert webhook requests saved in DB and the endpoint for fetching returns in descending order
+        mockMvc.performWithAppAuth(
+            post("/api/apps/trigger")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(getMatchingSendTriggerPayloadForWorkshopCompletedRule(rule, user, 1, "trust me")),
+        )
+            .andExpect(status().isOk)
+
+        forceNewTransaction()
+
+        // Assert webhook
+        // TODO: find a way to wait for the webhook to be called
+        runBlocking { delay(3000) }
+
+        val webhookRequestsDescendingByCreatedAt =
+            webhookRequestRepository.findAll()
+                .sortedByDescending { it.createdAt }
+        assertEquals(2, webhookRequestsDescendingByCreatedAt.size)
+
+        mockMvc.performWithAppAuth(
+            get("/api/apps/webhooks/$webhookId/requests"),
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.length()").value(2))
+            .andExpect(jsonPath("$[0].id").value(webhookRequestsDescendingByCreatedAt[0].id))
+            .andExpect(jsonPath("$[1].id").value(webhookRequestsDescendingByCreatedAt[1].id))
     }
 
     @Test
