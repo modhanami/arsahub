@@ -45,6 +45,30 @@ interface AnalyticsRepository : JpaRepository<Transaction, Long>, AnalyticsRepos
         app: App,
         timeRange: TimeRange,
     ): List<TriggerWithTriggerCount>
+
+    // total app users in a time range
+    @Query(
+        "SELECT COUNT(DISTINCT t) " +
+            "FROM AppUser t " +
+            "WHERE t.app = :app " +
+            "AND t.createdAt >= :#{#timeRange.startInclusive} AND t.createdAt < :#{#timeRange.endExclusive}",
+    )
+    fun getTotalAppUsers(
+        app: App,
+        timeRange: TimeRange,
+    ): Int
+
+    // total points earned in a time range
+    @Query(
+        "SELECT SUM(t.points) " +
+            "FROM AppUserPointsHistory t " +
+            "WHERE t.app = :app " +
+            "AND t.createdAt >= :#{#timeRange.startInclusive} AND t.createdAt < :#{#timeRange.endExclusive}",
+    )
+    fun getTotalPointsEarned(
+        app: App,
+        timeRange: TimeRange,
+    ): Long
 }
 
 interface AnalyticsRepositoryCustom {

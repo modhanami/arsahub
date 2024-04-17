@@ -1,7 +1,7 @@
 /* tslint:disable */
 /* eslint-disable */
 
-// Generated using typescript-generator version 3.2.1263 on 2024-04-15 23:37:06.
+// Generated using typescript-generator version 3.2.1263 on 2024-04-17 15:30:37.
 
 export interface AchievementCreateRequest {
   title: string;
@@ -300,13 +300,13 @@ export interface UserIdentity {
 }
 
 export interface MultipartFile extends InputStreamSource {
+  originalFilename: string;
   name: string;
   bytes: any;
   empty: boolean;
   resource: Resource;
   size: number;
   contentType: string;
-  originalFilename: string;
 }
 
 export interface Achievement
@@ -375,14 +375,14 @@ export interface Trigger
 }
 
 export interface Resource extends InputStreamSource {
+  uri: URI;
+  contentAsByteArray: any;
   open: boolean;
   file: any;
   readable: boolean;
   url: URL;
   description: string;
   filename: string;
-  uri: URI;
-  contentAsByteArray: any;
 }
 
 export interface InputStreamSource {
@@ -467,9 +467,9 @@ export interface TriggerField
   id: number | null;
 }
 
-export interface URL extends Serializable {}
-
 export interface URI extends Comparable<URI>, Serializable {}
+
+export interface URL extends Serializable {}
 
 export interface AppUser
   extends AuditedEntity,
@@ -499,6 +499,8 @@ export const enum AnalyticsConstants {
   TOTAL_UNLOCKED_ACHIEVEMENTS = "total-unlocked-achievements",
   TOP_10_ACHIEVEMENTS = "top-10-achievements",
   TOP_10_TRIGGERS = "top-10-triggers",
+  TOTAL_APP_USERS = "total-app-users",
+  TOTAL_POINTS_EARNED = "total-points-earned",
 }
 
 export const enum ValidationMessages {

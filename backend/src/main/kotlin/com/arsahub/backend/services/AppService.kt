@@ -530,24 +530,38 @@ class AppService(
     ): Any {
         val timeRange = TimeRange(start, end)
         logger.info { "Getting analytics for app ${app.title}: type=$type, start=$start, end=$end" }
-        return when (type) {
-            AnalyticsConstants.TOTAL_UNLOCKED_ACHIEVEMENTS.message -> {
+
+        if (start.isAfter(end)) {
+            throw IllegalArgumentException("Start time must not be after end time")
+        }
+
+        val analyticsType =
+            AnalyticsConstants.fromString(type) ?: throw NotFoundException("Invalid analytics type")
+
+        return when (analyticsType) {
+            AnalyticsConstants.TOTAL_UNLOCKED_ACHIEVEMENTS -> {
                 analyticsRepository.getTotalUnlockedAchievements(app, timeRange)
             }
 
-            AnalyticsConstants.TOP_10_ACHIEVEMENTS.message -> {
+            AnalyticsConstants.TOP_10_ACHIEVEMENTS -> {
                 analyticsRepository.getAchievementsWithUnlockedCount(app, timeRange).map {
                     AchievementWithUnlockCountResponse.fromEntity(it)
                 }
             }
 
-            AnalyticsConstants.TOP_10_TRIGGERS.message -> {
+            AnalyticsConstants.TOP_10_TRIGGERS -> {
                 analyticsRepository.getTriggersWithTriggerCount(app, timeRange).map {
                     TriggerWithTriggerCountResponse.fromEntity(it)
                 }
             }
 
-            else -> throw IllegalArgumentException("Invalid type")
+            AnalyticsConstants.TOTAL_APP_USERS -> {
+                analyticsRepository.getTotalAppUsers(app, timeRange)
+            }
+
+            AnalyticsConstants.TOTAL_POINTS_EARNED -> {
+                analyticsRepository.getTotalPointsEarned(app, timeRange)
+            }
         }
     }
 
