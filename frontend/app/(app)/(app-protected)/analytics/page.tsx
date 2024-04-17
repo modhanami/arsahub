@@ -111,7 +111,7 @@ export default function Page() {
 
       <div>
         <div className="sm:flex flex-row gap-4 my-4">
-          <Card className="mx-auto max-w-md">
+          <Card>
             <ErrorMessage error={totalPointsEarned.error} />
 
             <h4 className="text-tremor-default text-tremor-content dark:text-dark-tremor-content">
@@ -123,7 +123,7 @@ export default function Page() {
                 : 0}
             </p>
           </Card>
-          <Card className="mx-auto max-w-md">
+          <Card>
             <ErrorMessage error={totalUnlockedAchievements.error} />
 
             <h4 className="text-tremor-default text-tremor-content dark:text-dark-tremor-content">
@@ -135,7 +135,7 @@ export default function Page() {
                 : 0}
             </p>
           </Card>
-          <Card className="mx-auto max-w-md">
+          <Card>
             <ErrorMessage error={totalAppUsers.error} />
 
             <h4 className="text-tremor-default text-tremor-content dark:text-dark-tremor-content">
@@ -156,42 +156,6 @@ export default function Page() {
             <h3 className="text-tremor-content-strong dark:text-dark-tremor-content-strong font-semibold">
               Top 10 Achievements
             </h3>
-            {/*<Table className="mt-5">*/}
-            {/*  <TableHead>*/}
-            {/*    <TableRow>*/}
-            {/*      <TableHeaderCell>ID</TableHeaderCell>*/}
-            {/*      <TableHeaderCell>Name</TableHeaderCell>*/}
-            {/*      <TableHeaderCell>Unlocks</TableHeaderCell>*/}
-            {/*    </TableRow>*/}
-            {/*  </TableHead>*/}
-            {/*  <TableBody>*/}
-            {/*    {top10Achievements.data?.map((item) => (*/}
-            {/*      <TableRow key={item.achievement.achievementId}>*/}
-            {/*        <TableCell>{item.achievement.achievementId}</TableCell>*/}
-            {/*        <TableCell>*/}
-            {/*          <div className="flex items-center gap-2 truncate w-[300px]">*/}
-            {/*            {item.achievement.imageKey && (*/}
-            {/*              <Image*/}
-            {/*                src={getImageUrlFromKey(item.achievement.imageKey)}*/}
-            {/*                width={64}*/}
-            {/*                height={64}*/}
-            {/*                alt={`achievement image ${item.achievement.title}`}*/}
-            {/*                radius="none"*/}
-            {/*              />*/}
-            {/*            )}*/}
-            {/*            <span*/}
-            {/*              className="truncate"*/}
-            {/*              title={item.achievement.title}*/}
-            {/*            >*/}
-            {/*              {item.achievement.title}*/}
-            {/*            </span>*/}
-            {/*          </div>*/}
-            {/*        </TableCell>*/}
-            {/*        <TableCell>{item.count}</TableCell>*/}
-            {/*      </TableRow>*/}
-            {/*    ))}*/}
-            {/*  </TableBody>*/}
-            {/*</Table>*/}
 
             {/*  bar list with images */}
             {top10Achievements.data && (
@@ -223,25 +187,6 @@ export default function Page() {
             <h3 className="text-tremor-content-strong dark:text-dark-tremor-content-strong font-semibold">
               Top 10 Triggers
             </h3>
-            {/*<Table className="mt-5">*/}
-            {/*  <TableHead>*/}
-            {/*    <TableRow>*/}
-            {/*      <TableHeaderCell>ID</TableHeaderCell>*/}
-            {/*      <TableHeaderCell>Name</TableHeaderCell>*/}
-            {/*      <TableHeaderCell>Triggers</TableHeaderCell>*/}
-            {/*    </TableRow>*/}
-            {/*  </TableHead>*/}
-            {/*  <TableBody>*/}
-            {/*    {top10Triggers.data?.map((item) => (*/}
-            {/*      <TableRow key={item.trigger.id}>*/}
-            {/*        <TableCell>{item.trigger.id}</TableCell>*/}
-            {/*        <TableCell>{item.trigger.title}</TableCell>*/}
-            {/*        <TableCell>{item.count}</TableCell>*/}
-            {/*      </TableRow>*/}
-            {/*    ))}*/}
-            {/*  </TableBody>*/}
-            {/*</Table>*/}
-
             {top10Triggers.data && (
               <BarList
                 data={top10Triggers.data?.map((item) => ({
