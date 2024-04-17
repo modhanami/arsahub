@@ -56,7 +56,7 @@ interface AnalyticsRepository : JpaRepository<Transaction, Long>, AnalyticsRepos
     fun getTotalAppUsers(
         app: App,
         timeRange: TimeRange,
-    ): Int
+    ): Int?
 
     // total points earned in a time range
     @Query(
@@ -68,7 +68,7 @@ interface AnalyticsRepository : JpaRepository<Transaction, Long>, AnalyticsRepos
     fun getTotalPointsEarned(
         app: App,
         timeRange: TimeRange,
-    ): Long
+    ): Long?
 }
 
 interface AnalyticsRepositoryCustom {

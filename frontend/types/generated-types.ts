@@ -1,7 +1,7 @@
 /* tslint:disable */
 /* eslint-disable */
 
-// Generated using typescript-generator version 3.2.1263 on 2024-04-17 15:30:37.
+// Generated using typescript-generator version 3.2.1263 on 2024-04-17 21:51:49.
 
 export interface AchievementCreateRequest {
   title: string;
@@ -172,6 +172,13 @@ export interface LeaderboardResponse {
   entries: Entry[];
 }
 
+export interface Entry {
+  rank: number;
+  userId: string;
+  memberName: string;
+  score: number;
+}
+
 export interface LoginResponse {
   accessToken: string;
 }
@@ -300,13 +307,13 @@ export interface UserIdentity {
 }
 
 export interface MultipartFile extends InputStreamSource {
-  originalFilename: string;
   name: string;
   bytes: any;
   empty: boolean;
   resource: Resource;
   size: number;
   contentType: string;
+  originalFilename: string;
 }
 
 export interface Achievement
@@ -333,13 +340,6 @@ export interface App
   apiKey: string | null;
   owner: User | null;
   id: number | null;
-}
-
-export interface Entry {
-  rank: number;
-  userId: string;
-  memberName: string;
-  score: number;
 }
 
 export interface Reward
@@ -375,14 +375,14 @@ export interface Trigger
 }
 
 export interface Resource extends InputStreamSource {
-  uri: URI;
-  contentAsByteArray: any;
   open: boolean;
   file: any;
   readable: boolean;
   url: URL;
   description: string;
   filename: string;
+  uri: URI;
+  contentAsByteArray: any;
 }
 
 export interface InputStreamSource {
@@ -467,9 +467,9 @@ export interface TriggerField
   id: number | null;
 }
 
-export interface URI extends Comparable<URI>, Serializable {}
-
 export interface URL extends Serializable {}
+
+export interface URI extends Comparable<URI>, Serializable {}
 
 export interface AppUser
   extends AuditedEntity,
@@ -501,6 +501,24 @@ export const enum AnalyticsConstants {
   TOP_10_TRIGGERS = "top-10-triggers",
   TOTAL_APP_USERS = "total-app-users",
   TOTAL_POINTS_EARNED = "total-points-earned",
+}
+
+export const enum ValidationLengths {
+  TITLE_MIN_LENGTH = 4,
+  TITLE_MAX_LENGTH = 200,
+  NAME_MIN_LENGTH = 4,
+  NAME_MAX_LENGTH = 200,
+  DESCRIPTION_MAX_LENGTH = 500,
+  KEY_MIN_LENGTH = 4,
+  KEY_MAX_LENGTH = 200,
+  PASSWORD_MIN_LENGTH = 8,
+  PASSWORD_MAX_LENGTH = 50,
+  LABEL_MIN_LENGTH = 4,
+  LABEL_MAX_LENGTH = 200,
+  APP_USER_UID_MIN_LENGTH = 4,
+  APP_USER_UID_MAX_LENGTH = 200,
+  APP_USER_DISPLAY_NAME_MIN_LENGTH = 4,
+  APP_USER_DISPLAY_NAME_MAX_LENGTH = 200,
 }
 
 export const enum ValidationMessages {

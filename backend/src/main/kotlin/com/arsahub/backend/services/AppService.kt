@@ -556,11 +556,11 @@ class AppService(
             }
 
             AnalyticsConstants.TOTAL_APP_USERS -> {
-                analyticsRepository.getTotalAppUsers(app, timeRange)
+                analyticsRepository.getTotalAppUsers(app, timeRange) ?: 0
             }
 
             AnalyticsConstants.TOTAL_POINTS_EARNED -> {
-                analyticsRepository.getTotalPointsEarned(app, timeRange)
+                analyticsRepository.getTotalPointsEarned(app, timeRange) ?: 0
             }
         }
     }

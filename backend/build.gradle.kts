@@ -168,9 +168,12 @@ tasks {
             }
         classPatterns =
             listOf(
-                "com.arsahub.backend.dtos.*Constants",
-                "com.arsahub.backend.dtos.*Messages",
-                "com.arsahub.backend.dtos.*.*",
+                "com.arsahub.backend.dtos.**",
+            )
+        excludeClassPatterns =
+            listOf(
+                "**${'$'}Companion",
+                "**${'$'}Constants",
             )
         outputKind = TypeScriptOutputKind.module
         outputFileType = TypeScriptFileType.implementationFile
