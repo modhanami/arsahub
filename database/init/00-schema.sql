@@ -113,8 +113,8 @@ create table app_user
         primary key,
     unique_id    text                                not null,
     display_name text                                not null,
-    created_at   timestamp default CURRENT_TIMESTAMP not null,
-    updated_at   timestamp default CURRENT_TIMESTAMP,
+    created_at   timestamp default current_timestamp not null,
+    updated_at   timestamp default current_timestamp,
     app_id       bigint                              not null
         constraint app_user_app_app_id_fk
             references app,
@@ -317,8 +317,8 @@ create table app_invitation_status
     id         bigserial
         primary key,
     status     text                                not null,
-    created_at timestamp default CURRENT_TIMESTAMP not null,
-    updated_at timestamp default CURRENT_TIMESTAMP not null
+    created_at timestamp default current_timestamp not null,
+    updated_at timestamp default current_timestamp not null
 );
 
 create table app_invitation
@@ -331,8 +331,8 @@ create table app_invitation
         references "user",
     invitation_status_id integer                             not null
         references app_invitation_status,
-    created_at           timestamp default CURRENT_TIMESTAMP not null,
-    updated_at           timestamp default CURRENT_TIMESTAMP not null
+    created_at           timestamp default current_timestamp not null,
+    updated_at           timestamp default current_timestamp not null
 );
 
 create table app_user_points_history
@@ -423,4 +423,34 @@ create table rule_trigger_field_state
 );
 
 alter sequence rule_state_rule_state_id_seq owned by rule_trigger_field_state.rule_trigger_field_state_id;
+
+create table webhook_request_status
+(
+    webhook_request_status_id bigserial
+        constraint webhook_request_status_pk
+            primary key,
+    name                      text
+);
+
+create table webhook_request
+(
+    webhook_request_id bigserial
+        constraint webhook_request_pk
+            primary key,
+    webhook_id         bigint                                 not null
+        constraint webhook_request_webhook_webhook_id_fk
+            references webhook,
+    request_body       jsonb                                  not null,
+    status_id          smallint                               not null
+        constraint webhook_request_status_fk
+            references webhook_request_status,
+    created_at         timestamp with time zone default now() not null,
+    updated_at         timestamp with time zone,
+    signature          text                                   not null,
+    app_id             bigint                   default 1     not null
+        constraint webhook_request_app_app_id_fk
+            references app,
+    constraint webhook_request_pk_2
+        unique (app_id, signature)
+);
 

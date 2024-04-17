@@ -7,40 +7,21 @@ import com.arsahub.backend.dtos.request.AppUserCreateRequest
 import com.arsahub.backend.dtos.request.AppUserUpdateRequest
 import com.arsahub.backend.dtos.request.TriggerSendRequest
 import com.arsahub.backend.dtos.request.WebhookCreateRequest
-import com.arsahub.backend.dtos.response.AchievementResponse
-import com.arsahub.backend.dtos.response.AchievementWithUnlockCountResponse
-import com.arsahub.backend.dtos.response.TriggerWithTriggerCountResponse
-import com.arsahub.backend.dtos.response.WebhookPayload
+import com.arsahub.backend.dtos.response.*
 import com.arsahub.backend.dtos.socketio.AchievementUnlock
 import com.arsahub.backend.dtos.socketio.LeaderboardUpdate
 import com.arsahub.backend.dtos.socketio.PointsUpdate
 import com.arsahub.backend.dtos.supabase.UserIdentity
 import com.arsahub.backend.exceptions.ConflictException
 import com.arsahub.backend.exceptions.NotFoundException
-import com.arsahub.backend.models.App
-import com.arsahub.backend.models.AppInvitation
-import com.arsahub.backend.models.AppUser
-import com.arsahub.backend.models.AppUserPointsHistory
-import com.arsahub.backend.models.Rule
-import com.arsahub.backend.models.Webhook
-import com.arsahub.backend.models.WebhookRepository
-import com.arsahub.backend.repositories.AchievementRepository
-import com.arsahub.backend.repositories.AnalyticsRepository
-import com.arsahub.backend.repositories.AppInvitationRepository
-import com.arsahub.backend.repositories.AppInvitationStatusRepository
-import com.arsahub.backend.repositories.AppRepository
-import com.arsahub.backend.repositories.AppUserAchievementRepository
-import com.arsahub.backend.repositories.AppUserPointsHistoryRepository
-import com.arsahub.backend.repositories.AppUserRepository
-import com.arsahub.backend.repositories.TimeRange
-import com.arsahub.backend.repositories.UserRepository
+import com.arsahub.backend.models.*
+import com.arsahub.backend.repositories.*
 import com.arsahub.backend.services.actionhandlers.ActionResult
 import com.arsahub.backend.services.ruleengine.RuleEngine
 import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.validation.Valid
 import kotlinx.coroutines.runBlocking
 import org.springframework.data.repository.findByIdOrNull
-import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
@@ -70,11 +51,11 @@ class AppService(
     private val appInvitationRepository: AppInvitationRepository,
     private val appUserPointsHistoryRepository: AppUserPointsHistoryRepository,
     private val webhookRepository: WebhookRepository,
-    private val kafkaTemplateWebhookDelivery: KafkaTemplate<String, WebhookPayload>,
     private val webhookDeliveryService: WebhookDeliveryService,
     private val achievementRepository: AchievementRepository,
     private val appUserAchievementRepository: AppUserAchievementRepository,
     private val analyticsRepository: AnalyticsRepository,
+    private val webhookRequestRepository: WebhookRequestRepository,
 ) {
     private val logger = KotlinLogging.logger {}
 
@@ -447,6 +428,18 @@ class AppService(
     ) {
         val webhook = webhookRepository.findByAppAndId(app, webhookId) ?: throw NotFoundException("Webhook not found")
         webhookRepository.delete(webhook)
+    }
+
+    fun getWebhookRequests(
+        app: App,
+        webhookId: Long,
+    ): List<WebhookRequestResponse> {
+        val webhook = webhookRepository.findByAppAndId(app, webhookId) ?: throw NotFoundException("Webhook not found")
+        return webhookRequestRepository.findByAppAndWebhookAndStatusOrderByCreatedAtDesc(
+            app,
+            webhook,
+            WebhookRequestStatusEnum.SUCCESS.entity,
+        ).map { WebhookRequestResponse.fromEntity(it) }
     }
 
     fun updateAppUser(
