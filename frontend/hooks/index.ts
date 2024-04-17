@@ -14,6 +14,7 @@ import {
   deleteWebhook,
   dryTrigger,
   fetchAchievements,
+  fetchAnalytics,
   fetchAppByAPIKey,
   fetchAppUser,
   fetchAppUsers,
@@ -529,5 +530,21 @@ export function useDeleteWebhook() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["webhooks"] });
     },
+  });
+}
+
+export type UseAnalyticsParams = {
+  type: string;
+  start?: Date;
+  end?: Date;
+};
+
+export function useAnalytics<T>(options: UseAnalyticsParams) {
+  const { currentApp } = useCurrentApp();
+
+  return useQuery({
+    queryKey: ["analytics", options.type, options.start, options.end],
+    queryFn: () => currentApp && fetchAnalytics<T>(currentApp, options),
+    enabled: !!currentApp && !!options.start && !!options.end,
   });
 }

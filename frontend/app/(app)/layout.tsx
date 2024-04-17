@@ -93,6 +93,13 @@ function createSideNavItems(): SidebarNavItem[] {
       icon: "webhook",
     },
     {
+      type: "item",
+      title: "Analytics",
+      href: resolveBasePath("/analytics"),
+      appProtected: true,
+      icon: "analytics",
+    },
+    {
       type: "divider",
     },
 
