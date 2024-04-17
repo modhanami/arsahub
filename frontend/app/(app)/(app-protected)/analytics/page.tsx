@@ -157,7 +157,7 @@ export default function Page() {
           </Card>
         </div>
 
-        <div className="flex gap-4">
+        <div className="flex flex-col gap-4">
           <Card>
             <ErrorMessage error={top10Achievements.error} />
 
