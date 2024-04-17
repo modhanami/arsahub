@@ -206,14 +206,15 @@ create table trigger_log
     trigger_id     integer
         constraint trigger_log_trigger_trigger_id_fk
             references trigger,
-    request_body   jsonb  not null,
-    app_id         bigint not null
+    request_body   jsonb                    not null,
+    app_id         bigint                   not null
         constraint trigger_log_app_app_id_fk
             references app,
-    app_user_id    bigint not null
+    app_user_id    bigint                   not null
         constraint trigger_log_app_user_app_user_id_fk
             references app_user
-            on delete cascade
+            on delete cascade,
+    created_at     timestamp with time zone not null
 );
 
 create table app_user_achievement
