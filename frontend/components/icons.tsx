@@ -20,6 +20,7 @@ import {
   Image,
   Info,
   Laptop,
+  LineChart,
   Loader2,
   Lock,
   LucideProps,
@@ -106,4 +107,5 @@ export const Icons = {
   webhook: WebhookIcon,
   eye: Eye,
   eyeOff: EyeOffIcon,
+  analytics: LineChart,
 };
