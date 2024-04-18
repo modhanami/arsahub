@@ -33,7 +33,8 @@ create table app
     updated_at  timestamp with time zone default now() not null,
     owner_id    bigint                                 not null
         constraint app_user_user_id_fk
-            references "user"
+            references "user",
+    timezone    text
 );
 
 create table achievement
@@ -112,8 +113,8 @@ create table app_user
         primary key,
     unique_id    text                                not null,
     display_name text                                not null,
-    created_at   timestamp default CURRENT_TIMESTAMP not null,
-    updated_at   timestamp default CURRENT_TIMESTAMP,
+    created_at   timestamp default current_timestamp not null,
+    updated_at   timestamp default current_timestamp,
     app_id       bigint                              not null
         constraint app_user_app_app_id_fk
             references app,
@@ -205,14 +206,15 @@ create table trigger_log
     trigger_id     integer
         constraint trigger_log_trigger_trigger_id_fk
             references trigger,
-    request_body   jsonb  not null,
-    app_id         bigint not null
+    request_body   jsonb                    not null,
+    app_id         bigint                   not null
         constraint trigger_log_app_app_id_fk
             references app,
-    app_user_id    bigint not null
+    app_user_id    bigint                   not null
         constraint trigger_log_app_user_app_user_id_fk
             references app_user
-            on delete cascade
+            on delete cascade,
+    created_at     timestamp with time zone not null
 );
 
 create table app_user_achievement
@@ -272,21 +274,22 @@ create table reward_template
 
 create table reward
 (
-    reward_id      bigserial
+    reward_id            bigserial
         primary key,
-    app_id         bigint                  not null
+    app_id               bigint                  not null
         references app,
-    name           text                    not null,
-    description    text,
-    price          integer                 not null,
-    type_id        bigint
+    name                 text                    not null,
+    description          text,
+    price                integer                 not null,
+    type_id              bigint
         references reward_type,
-    data           jsonb,
-    created_at     timestamp default now() not null,
-    updated_at     timestamp default now() not null,
-    quantity       integer,
-    image_key      text,
-    image_metadata jsonb,
+    data                 jsonb,
+    created_at           timestamp default now() not null,
+    updated_at           timestamp default now() not null,
+    quantity             integer,
+    image_key            text,
+    image_metadata       jsonb,
+    max_user_redemptions integer,
     unique (name, type_id)
 );
 
@@ -314,8 +317,8 @@ create table app_invitation_status
     id         bigserial
         primary key,
     status     text                                not null,
-    created_at timestamp default CURRENT_TIMESTAMP not null,
-    updated_at timestamp default CURRENT_TIMESTAMP not null
+    created_at timestamp default current_timestamp not null,
+    updated_at timestamp default current_timestamp not null
 );
 
 create table app_invitation
@@ -328,8 +331,8 @@ create table app_invitation
         references "user",
     invitation_status_id integer                             not null
         references app_invitation_status,
-    created_at           timestamp default CURRENT_TIMESTAMP not null,
-    updated_at           timestamp default CURRENT_TIMESTAMP not null
+    created_at           timestamp default current_timestamp not null,
+    updated_at           timestamp default current_timestamp not null
 );
 
 create table app_user_points_history
@@ -392,7 +395,9 @@ create table leaderboard_config
     start_day             smallint,
     reset_day             smallint,
     reset_time            time     not null,
-    timezone              text     not null
+    name                  text     not null,
+    constraint leaderboard_config_pk_2
+        unique (app_id, name)
 );
 
 create table rule_trigger_field_state
@@ -418,4 +423,34 @@ create table rule_trigger_field_state
 );
 
 alter sequence rule_state_rule_state_id_seq owned by rule_trigger_field_state.rule_trigger_field_state_id;
+
+create table webhook_request_status
+(
+    webhook_request_status_id bigserial
+        constraint webhook_request_status_pk
+            primary key,
+    name                      text
+);
+
+create table webhook_request
+(
+    webhook_request_id bigserial
+        constraint webhook_request_pk
+            primary key,
+    webhook_id         bigint                                 not null
+        constraint webhook_request_webhook_webhook_id_fk
+            references webhook,
+    request_body       jsonb                                  not null,
+    status_id          smallint                               not null
+        constraint webhook_request_status_fk
+            references webhook_request_status,
+    created_at         timestamp with time zone default now() not null,
+    updated_at         timestamp with time zone,
+    signature          text                                   not null,
+    app_id             bigint                   default 1     not null
+        constraint webhook_request_app_app_id_fk
+            references app,
+    constraint webhook_request_pk_2
+        unique (app_id, signature)
+);
 

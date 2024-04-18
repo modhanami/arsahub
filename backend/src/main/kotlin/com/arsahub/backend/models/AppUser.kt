@@ -11,6 +11,7 @@ import jakarta.persistence.ManyToOne
 import jakarta.persistence.OneToMany
 import jakarta.persistence.Table
 import jakarta.validation.constraints.NotNull
+import java.time.Instant
 
 @Entity
 @Table(name = "app_user")
@@ -43,8 +44,12 @@ class AppUser(
         this.points = this.points?.plus(points)
     }
 
-    fun addAchievement(achievement: Achievement) {
-        val appUserAchievement = AppUserAchievement(appUser = this, achievement = achievement)
+    fun addAchievement(
+        achievement: Achievement,
+        completedAt: Instant,
+    ) {
+        val appUserAchievement =
+            AppUserAchievement(app = this.app, appUser = this, achievement = achievement, completedAt = completedAt)
         achievements.add(appUserAchievement)
     }
 }

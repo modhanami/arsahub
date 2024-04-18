@@ -10,6 +10,7 @@ class RewardCreateRequest(
     @NotNull
     val price: Int?,
     val quantity: Int?,
+    val maxUserRedemptions: Int?,
 ) {
     @ValidName
     val name = name?.trim()

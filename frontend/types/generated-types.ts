@@ -1,7 +1,7 @@
 /* tslint:disable */
 /* eslint-disable */
 
-// Generated using typescript-generator version 3.2.1263 on 2024-04-01 17:54:46.
+// Generated using typescript-generator version 3.2.1263 on 2024-04-17 21:51:49.
 
 export interface AchievementCreateRequest {
   title: string;
@@ -53,6 +53,7 @@ export interface KeyAndParams {
 export interface RewardCreateRequest {
   price: number | null;
   quantity: number | null;
+  maxUserRedemptions: number | null;
   name: string | null;
   description: string | null;
 }
@@ -127,6 +128,16 @@ export interface AchievementResponse {
   imageMetadata: { [index: string]: any } | null;
 }
 
+export interface AchievementWithUnlockCount {
+  achievement: Achievement;
+  count: number;
+}
+
+export interface AchievementWithUnlockCountResponse {
+  achievement: AchievementResponse;
+  count: number;
+}
+
 export interface ApiError {
   message: string;
 }
@@ -161,6 +172,13 @@ export interface LeaderboardResponse {
   entries: Entry[];
 }
 
+export interface Entry {
+  rank: number;
+  userId: string;
+  memberName: string;
+  score: number;
+}
+
 export interface LoginResponse {
   accessToken: string;
 }
@@ -171,8 +189,19 @@ export interface RewardResponse {
   description: string | null;
   price: number | null;
   quantity: number | null;
+  maxUserRedemptions: number | null;
   imageKey: string | null;
   imageMetadata: { [index: string]: any } | null;
+}
+
+export interface RewardResponseWithCount {
+  reward: RewardResponse;
+  count: number;
+}
+
+export interface RewardWithCount {
+  reward: Reward;
+  count: number;
 }
 
 export interface RuleResponse {
@@ -212,6 +241,16 @@ export interface TriggerResponse {
   fields: FieldDefinition[] | null;
 }
 
+export interface TriggerWithTriggerCount {
+  trigger: Trigger;
+  count: number;
+}
+
+export interface TriggerWithTriggerCountResponse {
+  trigger: TriggerResponse;
+  count: number;
+}
+
 export interface UserResponse {
   userId: number;
   internalUserId: number;
@@ -223,6 +262,8 @@ export interface UserResponse {
 
 export interface WebhookPayload {
   id: string;
+  appId: number;
+  webhookUrl: string;
   event: string;
   appUserId: string;
   payload: { [index: string]: any };
@@ -275,6 +316,20 @@ export interface MultipartFile extends InputStreamSource {
   originalFilename: string;
 }
 
+export interface Achievement
+  extends AuditedEntity,
+    ManagedEntity,
+    PersistentAttributeInterceptable,
+    ExtendedSelfDirtinessTracker {
+  title: string;
+  description: string | null;
+  appUserAchievements: AppUserAchievement[];
+  app: App | null;
+  imageKey: string | null;
+  imageMetadata: { [index: string]: any } | null;
+  achievementId: number | null;
+}
+
 export interface App
   extends AuditedEntity,
     ManagedEntity,
@@ -287,18 +342,43 @@ export interface App
   id: number | null;
 }
 
-export interface Entry {
-  rank: number;
-  userId: string;
-  memberName: string;
-  score: number;
+export interface Reward
+  extends AuditedEntity,
+    ManagedEntity,
+    PersistentAttributeInterceptable,
+    ExtendedSelfDirtinessTracker {
+  app: App | null;
+  name: string | null;
+  description: string | null;
+  price: number | null;
+  type: RewardType | null;
+  data: { [index: string]: any } | null;
+  quantity: number | null;
+  imageKey: string | null;
+  imageMetadata: { [index: string]: any } | null;
+  maxUserRedemptions: number | null;
+  id: number | null;
+}
+
+export interface Trigger
+  extends AuditedEntity,
+    ManagedEntity,
+    PersistentAttributeInterceptable,
+    ExtendedSelfDirtinessTracker {
+  title: string | null;
+  description: string | null;
+  rules: Rule[];
+  key: string | null;
+  app: App | null;
+  fields: TriggerField[];
+  id: number | null;
 }
 
 export interface Resource extends InputStreamSource {
   open: boolean;
   file: any;
-  url: URL;
   readable: boolean;
+  url: URL;
   description: string;
   filename: string;
   uri: URI;
@@ -308,6 +388,29 @@ export interface Resource extends InputStreamSource {
 export interface InputStreamSource {
   inputStream: any;
 }
+
+export interface AppUserAchievement
+  extends ManagedEntity,
+    PersistentAttributeInterceptable,
+    SelfDirtinessTracker {
+  achievement: Achievement | null;
+  appUser: AppUser | null;
+  completedAt: Date | null;
+  app: App | null;
+  id: number | null;
+}
+
+export interface AuditedEntity extends ManagedMappedSuperclass {
+  createdAt: Date | null;
+  updatedAt: Date | null;
+}
+
+export interface ManagedEntity extends Managed {}
+
+export interface PersistentAttributeInterceptable
+  extends PrimeAmongSecondarySupertypes {}
+
+export interface ExtendedSelfDirtinessTracker extends SelfDirtinessTracker {}
 
 export interface User
   extends AuditedEntity,
@@ -321,21 +424,66 @@ export interface User
   userId: number | null;
 }
 
-export interface AuditedEntity extends ManagedMappedSuperclass {
-  createdAt: Date | null;
-  updatedAt: Date | null;
+export interface SelfDirtinessTracker extends PrimeAmongSecondarySupertypes {}
+
+export interface RewardType
+  extends ManagedEntity,
+    PersistentAttributeInterceptable,
+    SelfDirtinessTracker {
+  id: number | null;
+  key: string | null;
+  name: string | null;
 }
 
-export interface ManagedEntity extends Managed {}
+export interface Rule
+  extends AuditedEntity,
+    ManagedEntity,
+    PersistentAttributeInterceptable,
+    ExtendedSelfDirtinessTracker {
+  title: string | null;
+  description: string | null;
+  trigger: Trigger | null;
+  triggerParams: { [index: string]: any } | null;
+  app: App | null;
+  action: string | null;
+  actionPoints: number | null;
+  actionAchievement: Achievement | null;
+  repeatability: string | null;
+  conditionExpression: string | null;
+  deletedAt: Date | null;
+  accumulatedFields: string[] | null;
+  actionPointsExpression: string | null;
+  id: number | null;
+}
 
-export interface PersistentAttributeInterceptable
-  extends PrimeAmongSecondarySupertypes {}
-
-export interface SelfDirtinessTracker extends PrimeAmongSecondarySupertypes {}
+export interface TriggerField
+  extends ManagedEntity,
+    PersistentAttributeInterceptable,
+    SelfDirtinessTracker {
+  key: string | null;
+  type: string | null;
+  label: string | null;
+  trigger: Trigger | null;
+  id: number | null;
+}
 
 export interface URL extends Serializable {}
 
 export interface URI extends Comparable<URI>, Serializable {}
+
+export interface AppUser
+  extends AuditedEntity,
+    ManagedEntity,
+    PersistentAttributeInterceptable,
+    ExtendedSelfDirtinessTracker {
+  userId: string | null;
+  displayName: string | null;
+  app: App | null;
+  points: number | null;
+  achievements: AppUserAchievement[];
+  user: User | null;
+  id: number | null;
+}
 
 export interface ManagedMappedSuperclass extends Managed {}
 
@@ -346,6 +494,14 @@ export interface PrimeAmongSecondarySupertypes {}
 export interface Serializable {}
 
 export interface Comparable<T> {}
+
+export const enum AnalyticsConstants {
+  TOTAL_UNLOCKED_ACHIEVEMENTS = "total-unlocked-achievements",
+  TOP_10_ACHIEVEMENTS = "top-10-achievements",
+  TOP_10_TRIGGERS = "top-10-triggers",
+  TOTAL_APP_USERS = "total-app-users",
+  TOTAL_POINTS_EARNED = "total-points-earned",
+}
 
 export const enum ValidationLengths {
   TITLE_MIN_LENGTH = 4,

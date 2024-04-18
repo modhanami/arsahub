@@ -90,6 +90,26 @@ export const columns: ColumnDef<RewardResponse>[] = [
     },
   },
   {
+    accessorKey: "maxUserRedemptions",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Max User Redemptions" />
+    ),
+    cell: ({ row }) => {
+      const amount = parseFloat(row.getValue("maxUserRedemptions"));
+      const formatted = Number.isNaN(amount)
+        ? "Unlimited"
+        : new Intl.NumberFormat("en-US").format(amount);
+
+      return (
+        <div className="flex space-x-2">
+          <span className="max-w-[500px] truncate font-medium">
+            {formatted}
+          </span>
+        </div>
+      );
+    },
+  },
+  {
     accessorKey: "createdAt",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Created At" />

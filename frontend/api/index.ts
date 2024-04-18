@@ -32,6 +32,7 @@ import {
 } from "@/types";
 import { supabase } from "@/lib/supabase";
 import { Session } from "@supabase/supabase-js";
+import { UseAnalyticsParams } from "@/hooks";
 
 export const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
@@ -595,4 +596,19 @@ export async function deleteWebhook(app: AppResponse, webhookId: number) {
       ...makeAppAuthHeader(app),
     },
   });
+}
+
+export async function fetchAnalytics<T>(
+  app: AppResponse,
+  options: UseAnalyticsParams,
+) {
+  const { data } = await instance.get<T>(`${API_URL}/apps/analytics`, {
+    params: {
+      ...options,
+    },
+    headers: {
+      ...makeAppAuthHeader(app),
+    },
+  });
+  return data;
 }

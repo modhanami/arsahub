@@ -13,6 +13,7 @@ plugins {
     kotlin("jvm") version "1.9.20"
     kotlin("plugin.spring") version "1.9.20"
     kotlin("plugin.jpa") version "1.9.20"
+    kotlin("kapt") version "1.9.20"
     id("org.jetbrains.kotlin.plugin.allopen") version "1.9.10"
     id("com.google.cloud.tools.jib") version "3.4.0"
     id("cz.habarta.typescript-generator") version "3.2.1263"
@@ -89,6 +90,8 @@ dependencies {
     implementation("com.google.api.grpc:proto-google-common-protos:2.36.0")
     implementation("io.github.jan-tennert.supabase:gotrue-kt:2.1.3")
     implementation("org.springframework.kafka:spring-kafka")
+    implementation("com.querydsl:querydsl-jpa:5.1.0:jakarta")
+    kapt("com.querydsl:querydsl-apt:5.1.0:jakarta")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     runtimeOnly("org.postgresql:postgresql")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
@@ -165,8 +168,12 @@ tasks {
             }
         classPatterns =
             listOf(
-                "com.arsahub.backend.dtos.Validation*",
-                "com.arsahub.backend.dtos.*.*",
+                "com.arsahub.backend.dtos.**",
+            )
+        excludeClassPatterns =
+            listOf(
+                "**${'$'}Companion",
+                "**${'$'}Constants",
             )
         outputKind = TypeScriptOutputKind.module
         outputFileType = TypeScriptFileType.implementationFile
@@ -208,4 +215,23 @@ tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
 
 if ("detekt" !in gradle.startParameter.taskNames) {
     tasks.detekt { enabled = false }
+}
+
+/**
+ * TODO: Enable parallel test execution
+ * @see https://github.com/testcontainers/testcontainers-java/issues/1495#issuecomment-1191668796
+ */
+tasks.withType<Test> {
+//    systemProperties["junit.jupiter.execution.parallel.enabled"] = true
+//    systemProperties["junit.jupiter.execution.parallel.mode.default"] = "concurrent"
+//    maxParallelForks = (Runtime.getRuntime().availableProcessors() / 2).coerceAtLeast(1)
+}
+
+kapt {
+    javacOptions {
+        option("querydsl.entityAccessors", true)
+    }
+    arguments {
+        arg("plugin", "com.querydsl.apt.jpa.JPAAnnotationProcessor")
+    }
 }

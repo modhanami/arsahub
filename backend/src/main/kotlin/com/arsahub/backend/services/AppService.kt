@@ -2,40 +2,29 @@ package com.arsahub.backend.services
 
 import com.arsahub.backend.SocketIOService
 import com.arsahub.backend.controllers.AppController
+import com.arsahub.backend.dtos.AnalyticsConstants
 import com.arsahub.backend.dtos.request.AppUserCreateRequest
 import com.arsahub.backend.dtos.request.AppUserUpdateRequest
 import com.arsahub.backend.dtos.request.TriggerSendRequest
 import com.arsahub.backend.dtos.request.WebhookCreateRequest
-import com.arsahub.backend.dtos.response.AchievementResponse
-import com.arsahub.backend.dtos.response.WebhookPayload
+import com.arsahub.backend.dtos.response.*
 import com.arsahub.backend.dtos.socketio.AchievementUnlock
 import com.arsahub.backend.dtos.socketio.LeaderboardUpdate
 import com.arsahub.backend.dtos.socketio.PointsUpdate
 import com.arsahub.backend.dtos.supabase.UserIdentity
 import com.arsahub.backend.exceptions.ConflictException
 import com.arsahub.backend.exceptions.NotFoundException
-import com.arsahub.backend.models.App
-import com.arsahub.backend.models.AppInvitation
-import com.arsahub.backend.models.AppUser
-import com.arsahub.backend.models.AppUserPointsHistory
-import com.arsahub.backend.models.Rule
-import com.arsahub.backend.models.Webhook
-import com.arsahub.backend.models.WebhookRepository
-import com.arsahub.backend.repositories.AppInvitationRepository
-import com.arsahub.backend.repositories.AppInvitationStatusRepository
-import com.arsahub.backend.repositories.AppRepository
-import com.arsahub.backend.repositories.AppUserPointsHistoryRepository
-import com.arsahub.backend.repositories.AppUserRepository
-import com.arsahub.backend.repositories.UserRepository
+import com.arsahub.backend.models.*
+import com.arsahub.backend.repositories.*
 import com.arsahub.backend.services.actionhandlers.ActionResult
 import com.arsahub.backend.services.ruleengine.RuleEngine
 import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.validation.Valid
 import kotlinx.coroutines.runBlocking
 import org.springframework.data.repository.findByIdOrNull
-import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.Instant
 import java.util.*
 
 class AppUserNotFoundException : NotFoundException("App user not found")
@@ -62,8 +51,11 @@ class AppService(
     private val appInvitationRepository: AppInvitationRepository,
     private val appUserPointsHistoryRepository: AppUserPointsHistoryRepository,
     private val webhookRepository: WebhookRepository,
-    private val kafkaTemplateWebhookDelivery: KafkaTemplate<String, WebhookPayload>,
     private val webhookDeliveryService: WebhookDeliveryService,
+    private val achievementRepository: AchievementRepository,
+    private val appUserAchievementRepository: AppUserAchievementRepository,
+    private val analyticsRepository: AnalyticsRepository,
+    private val webhookRequestRepository: WebhookRequestRepository,
 ) {
     private val logger = KotlinLogging.logger {}
 
@@ -149,7 +141,14 @@ class AppService(
             actionResults.add(actionResult to rule)
             Unit
         }
+        handleActionResults(actionResults, app, appUser)
+    }
 
+    private fun handleActionResults(
+        actionResults: MutableList<Pair<ActionResult, Rule>>,
+        app: App,
+        appUser: AppUser,
+    ) {
         runBlocking {
             actionResults.forEach { (actionResult, rule) ->
                 // save points history
@@ -171,7 +170,7 @@ class AppService(
 
                 val appWebhooks = webhookRepository.findByApp(app)
                 webhookDeliveryService.publishWebhookEvents(app, appWebhooks, appUser, actionResult)
-                broadcastActionResult(actionResult, app, request.userId)
+                broadcastActionResult(actionResult, app, appUser.userId!!)
             }
         }
     }
@@ -431,6 +430,18 @@ class AppService(
         webhookRepository.delete(webhook)
     }
 
+    fun getWebhookRequests(
+        app: App,
+        webhookId: Long,
+    ): List<WebhookRequestResponse> {
+        val webhook = webhookRepository.findByAppAndId(app, webhookId) ?: throw NotFoundException("Webhook not found")
+        return webhookRequestRepository.findByAppAndWebhookAndStatusOrderByCreatedAtDesc(
+            app,
+            webhook,
+            WebhookRequestStatusEnum.SUCCESS.entity,
+        ).map { WebhookRequestResponse.fromEntity(it) }
+    }
+
     fun updateAppUser(
         app: App,
         userId: String,
@@ -439,6 +450,112 @@ class AppService(
         val appUser = getAppUserOrThrow(app, userId)
         appUser.displayName = request.displayName
         return appUserRepository.save(appUser)
+    }
+
+    @Transactional
+    fun addPointsToUser(
+        app: App,
+        userId: String,
+        request: AppController.AppUserPointsAddRequest,
+    ) {
+        val appUser = getAppUserOrThrow(app, userId)
+        val points = request.points
+        val newPoints = appUser.points!! + points
+        appUser.points = newPoints
+        appUserRepository.save(appUser)
+
+        val pointsHistory =
+            AppUserPointsHistory(
+                app = app,
+                appUser = appUser,
+                points = newPoints.toLong(), // TODO: convert the source type to long?
+                pointsChange = points.toLong(),
+            )
+        logger.debug {
+            "Saving points history for app user ${appUser.userId} in app ${app.title}: " +
+                "pointsChange=${pointsHistory.pointsChange}, points=${pointsHistory.points}"
+        }
+        appUserPointsHistoryRepository.save(pointsHistory)
+
+        val actionResults = mutableListOf<Pair<ActionResult, Rule>>()
+        ruleEngine.handleForwardChain(app, appUser) { actionResult, rule ->
+            actionResults.add(actionResult to rule)
+            Unit
+        }
+        handleActionResults(actionResults, app, appUser)
+    }
+
+    fun unlockAchievementForUser(
+        app: App,
+        userId: String,
+        request: AppController.AppUserAchievementUnlockRequest,
+    ) {
+        val appUser = getAppUserOrThrow(app, userId)
+        val achievement =
+            achievementRepository.findByAchievementIdAndApp(request.achievementId, app)
+                ?: throw NotFoundException("Achievement not found")
+
+        /**
+         * @see com.arsahub.backend.services.actionhandlers.ActionUnlockAchievementHandler
+         */
+        if (appUser.achievements.any { it.achievement?.achievementId == achievement.achievementId }) {
+            val message =
+                "User ${appUser.displayName}` (${appUser.userId}) already unlocked achievement"
+            logger.info { message }
+            return
+        }
+
+        appUser.addAchievement(achievement, Instant.now())
+        // save from the owning side
+        appUserAchievementRepository.saveAll(appUser.achievements)
+
+        logger.info {
+            "User ${appUser.displayName}` (${appUser.userId}) unlocked achievement " +
+                "`${achievement.title}` (${achievement.achievementId}) from direct unlock"
+        }
+    }
+
+    fun getAnalytics(
+        app: App,
+        type: String,
+        start: Instant,
+        end: Instant,
+    ): Any {
+        val timeRange = TimeRange(start, end)
+        logger.info { "Getting analytics for app ${app.title}: type=$type, start=$start, end=$end" }
+
+        if (start.isAfter(end)) {
+            throw IllegalArgumentException("Start time must not be after end time")
+        }
+
+        val analyticsType =
+            AnalyticsConstants.fromString(type) ?: throw NotFoundException("Invalid analytics type")
+
+        return when (analyticsType) {
+            AnalyticsConstants.TOTAL_UNLOCKED_ACHIEVEMENTS -> {
+                analyticsRepository.getTotalUnlockedAchievements(app, timeRange)
+            }
+
+            AnalyticsConstants.TOP_10_ACHIEVEMENTS -> {
+                analyticsRepository.getAchievementsWithUnlockedCount(app, timeRange).map {
+                    AchievementWithUnlockCountResponse.fromEntity(it)
+                }
+            }
+
+            AnalyticsConstants.TOP_10_TRIGGERS -> {
+                analyticsRepository.getTriggersWithTriggerCount(app, timeRange).map {
+                    TriggerWithTriggerCountResponse.fromEntity(it)
+                }
+            }
+
+            AnalyticsConstants.TOTAL_APP_USERS -> {
+                analyticsRepository.getTotalAppUsers(app, timeRange) ?: 0
+            }
+
+            AnalyticsConstants.TOTAL_POINTS_EARNED -> {
+                analyticsRepository.getTotalPointsEarned(app, timeRange) ?: 0
+            }
+        }
     }
 
     companion object {

@@ -64,13 +64,13 @@ function createSideNavItems(): SidebarNavItem[] {
       appProtected: true,
       icon: "achievement",
     },
-    // {
-    //   type: "item",
-    //   title: "Rewards",
-    //   href: resolveBasePath("/rewards"),
-    //   appProtected: true,
-    //   icon: "reward",
-    // },
+    {
+      type: "item",
+      title: "Rewards",
+      href: resolveBasePath("/rewards"),
+      appProtected: true,
+      icon: "reward",
+    },
     // {
     //   type: "item",
     //   title: "Points Shop",
@@ -91,6 +91,13 @@ function createSideNavItems(): SidebarNavItem[] {
       href: resolveBasePath("/webhooks"),
       appProtected: true,
       icon: "webhook",
+    },
+    {
+      type: "item",
+      title: "Analytics",
+      href: resolveBasePath("/analytics"),
+      appProtected: true,
+      icon: "analytics",
     },
     {
       type: "divider",

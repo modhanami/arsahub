@@ -1,38 +1,11 @@
 package com.arsahub.backend.controllers
 
-import com.arsahub.backend.dtos.request.AchievementCreateRequest
-import com.arsahub.backend.dtos.request.AchievementSetImageRequest
-import com.arsahub.backend.dtos.request.AppUserCreateRequest
-import com.arsahub.backend.dtos.request.AppUserUpdateRequest
-import com.arsahub.backend.dtos.request.RewardCreateRequest
-import com.arsahub.backend.dtos.request.RewardRedeemRequest
-import com.arsahub.backend.dtos.request.RewardSetImageRequest
-import com.arsahub.backend.dtos.request.RuleCreateRequest
-import com.arsahub.backend.dtos.request.RuleUpdateRequest
-import com.arsahub.backend.dtos.request.TriggerCreateRequest
-import com.arsahub.backend.dtos.request.TriggerSendRequest
-import com.arsahub.backend.dtos.request.TriggerUpdateRequest
-import com.arsahub.backend.dtos.request.WebhookCreateRequest
-import com.arsahub.backend.dtos.response.AchievementResponse
-import com.arsahub.backend.dtos.response.ApiValidationError
-import com.arsahub.backend.dtos.response.AppResponse
-import com.arsahub.backend.dtos.response.AppUserResponse
-import com.arsahub.backend.dtos.response.LeaderboardResponse
-import com.arsahub.backend.dtos.response.RewardResponse
-import com.arsahub.backend.dtos.response.RuleResponse
-import com.arsahub.backend.dtos.response.TransactionResponse
-import com.arsahub.backend.dtos.response.TriggerResponse
-import com.arsahub.backend.dtos.response.WebhookResponse
+import com.arsahub.backend.dtos.request.*
+import com.arsahub.backend.dtos.response.*
 import com.arsahub.backend.dtos.supabase.UserIdentity
 import com.arsahub.backend.models.App
 import com.arsahub.backend.security.auth.CurrentApp
-import com.arsahub.backend.services.AchievementService
-import com.arsahub.backend.services.AppService
-import com.arsahub.backend.services.LeaderboardService
-import com.arsahub.backend.services.RuleService
-import com.arsahub.backend.services.ShopService
-import com.arsahub.backend.services.SupabaseUserIdentityPrincipal
-import com.arsahub.backend.services.TriggerService
+import com.arsahub.backend.services.*
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
@@ -46,19 +19,9 @@ import jakarta.validation.Valid
 import jakarta.validation.constraints.NotEmpty
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
-import org.springframework.web.bind.annotation.DeleteMapping
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PatchMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.PutMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
-import org.springframework.web.bind.annotation.RequestPart
-import org.springframework.web.bind.annotation.ResponseStatus
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
+import java.time.Instant
 
 @RestController
 @RequestMapping("/api/apps")
@@ -289,6 +252,34 @@ class AppController(
         appService.deleteAppUser(app, userId)
     }
 
+    class AppUserPointsAddRequest(
+        @NotEmpty
+        val points: Int,
+    )
+
+    @PostMapping("/users/{userId}/points/add")
+    fun addPointsToUser(
+        @CurrentApp app: App,
+        @PathVariable userId: String,
+        @Valid @RequestBody request: AppUserPointsAddRequest,
+    ) {
+        return appService.addPointsToUser(app, userId, request)
+    }
+
+    class AppUserAchievementUnlockRequest(
+        @NotEmpty
+        val achievementId: Long,
+    )
+
+    @PostMapping("/users/{userId}/achievements/unlock")
+    fun unlockAchievementForUser(
+        @CurrentApp app: App,
+        @PathVariable userId: String,
+        @Valid @RequestBody request: AppUserAchievementUnlockRequest,
+    ) {
+        return appService.unlockAchievementForUser(app, userId, request)
+    }
+
     @Operation(
         summary = "Get leaderboard",
         responses = [
@@ -466,6 +457,14 @@ class AppController(
         return shopService.getRewards(app).map { RewardResponse.fromEntity(it) }
     }
 
+    @GetMapping("/users/{userId}/rewards")
+    fun getRewardsForUser(
+        @CurrentApp app: App,
+        @PathVariable userId: String,
+    ): List<RewardResponseWithCount> {
+        return shopService.getRewardsForUser(app, userId).map { RewardResponseWithCount.fromEntity(it) }
+    }
+
     @Operation(
         summary = "Redeem a reward",
         responses = [
@@ -581,5 +580,23 @@ class AppController(
         @PathVariable webhookId: Long,
     ) {
         appService.deleteWebhook(app, webhookId)
+    }
+
+    @GetMapping("/webhooks/{webhookId}/requests")
+    fun getWebhookRequests(
+        @CurrentApp app: App,
+        @PathVariable webhookId: Long,
+    ): List<WebhookRequestResponse> {
+        return appService.getWebhookRequests(app, webhookId)
+    }
+
+    @GetMapping("/analytics")
+    fun getAnalytics(
+        @CurrentApp app: App,
+        @RequestParam type: String,
+        @RequestParam start: Instant,
+        @RequestParam end: Instant,
+    ): Any {
+        return appService.getAnalytics(app, type, start, end)
     }
 }
