@@ -153,14 +153,14 @@ export default function Page() {
           <Card>
             <ErrorMessage error={top10Achievements.error} />
 
-            <h3 className="text-tremor-content-strong dark:text-dark-tremor-content-strong font-semibold">
-              Top 10 Achievements
+            <h3 className="text-tremor-content-strong dark:text-dark-tremor-content-strong font-semibold mb-4">
+              Top 10 Achievements Unlocked
             </h3>
 
             {/*  bar list with images */}
-            {top10Achievements.data && (
+            {top10Achievements.data?.length ?? 0 > 0 ? (
               <BarList
-                data={top10Achievements.data?.map((item) => ({
+                data={(top10Achievements.data || []).map((item) => ({
                   name: `${item.achievement.title!}`,
                   value: item.count,
                   icon: () => (
@@ -178,24 +178,32 @@ export default function Page() {
                 sortOrder="descending"
                 className="mx-auto max-w-sm"
               />
+            ) : (
+              <div className="text-center text-tremor-content dark:text-dark-tremor-content">
+                No data available
+              </div>
             )}
           </Card>
           {/*  Top 10 triggers */}
           <Card>
             <ErrorMessage error={top10Triggers.error} />
 
-            <h3 className="text-tremor-content-strong dark:text-dark-tremor-content-strong font-semibold">
-              Top 10 Triggers
+            <h3 className="text-tremor-content-strong dark:text-dark-tremor-content-strong font-semibold mb-4">
+              Top 10 Triggers Used
             </h3>
-            {top10Triggers.data && (
+            {top10Triggers.data?.length ?? 0 > 0 ? (
               <BarList
-                data={top10Triggers.data?.map((item) => ({
+                data={(top10Triggers.data || []).map((item) => ({
                   name: item.trigger.title!,
                   value: item.count,
                 }))}
                 sortOrder="descending"
                 className="mx-auto max-w-sm"
               />
+            ) : (
+              <div className="text-center text-tremor-content dark:text-dark-tremor-content">
+                No data available
+              </div>
             )}
           </Card>
         </div>
