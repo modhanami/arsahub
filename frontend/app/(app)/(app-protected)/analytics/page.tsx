@@ -17,8 +17,7 @@ import { DashboardHeader } from "@/components/header";
 import { DashboardShell } from "@/components/shell";
 import { useIsFetching } from "@tanstack/react-query";
 import { isApiError } from "@/api";
-
-const numberFormatter = new Intl.NumberFormat("en-US");
+import { numberFormatter } from "@/lib/utils";
 
 export default function Page() {
   const [startTime, _setStartTime] = useState<Dayjs | null>(

@@ -17,3 +17,5 @@ export function formatDate(input: string | number): string {
 export function getReturnTo(path?: string) {
   return `${window.location.origin}${path || ""}`;
 }
+
+export const numberFormatter = new Intl.NumberFormat("en-US");
