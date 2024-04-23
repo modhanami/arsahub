@@ -18,6 +18,7 @@ import { DashboardShell } from "@/components/shell";
 import { useIsFetching } from "@tanstack/react-query";
 import { isApiError } from "@/api";
 import { numberFormatter } from "@/lib/utils";
+import { useCurrentApp } from "@/lib/current-app";
 
 export default function Page() {
   const [startTime, _setStartTime] = useState<Dayjs | null>(
@@ -34,6 +35,8 @@ export default function Page() {
     if (v.isBefore(startTime)) return;
     _setEndTime(v);
   }, 500);
+
+  const { currentApp, isLoading: isAppLoading } = useCurrentApp();
 
   const totalUnlockedAchievements = useAnalytics<number>({
     type: AnalyticsConstants.TOTAL_UNLOCKED_ACHIEVEMENTS,
@@ -68,6 +71,8 @@ export default function Page() {
   const isSomeQueryLoading = !!useIsFetching({
     queryKey: ["analytics"],
   });
+
+  if (isAppLoading) return "Loading...";
 
   return (
     <DashboardShell>
@@ -109,6 +114,25 @@ export default function Page() {
       </DashboardHeader>
 
       <div>
+        <div className="sm:flex flex-row gap-4 my-4">
+          {/*  App General Info: Name and ID */}
+          <div className="flex flex-col gap-2">
+            <h3 className="text-tremor-default text-tremor-content dark:text-dark-tremor-content">
+              App Name
+            </h3>
+            <p className="text-tremor-content-strong dark:text-dark-tremor-content-strong">
+              {currentApp?.name}
+            </p>
+          </div>
+          <div className="flex flex-col gap-2">
+            <h3 className="text-tremor-default text-tremor-content dark:text-dark-tremor-content">
+              App ID
+            </h3>
+            <p className="text-tremor-content-strong dark:text-dark-tremor-content-strong">
+              {currentApp?.id}
+            </p>
+          </div>
+        </div>
         <div className="sm:flex flex-row gap-4 my-4">
           <Card>
             <ErrorMessage error={totalPointsEarned.error} />

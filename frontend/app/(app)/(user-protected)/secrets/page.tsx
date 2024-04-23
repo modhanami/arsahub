@@ -33,7 +33,6 @@ export default function Page() {
         heading="Secrets"
         text="This is a secrets page. You can grab your API key here."
       ></DashboardHeader>
-      <div>App ID: {data.id}</div>
       {data.apiKey && (
         <div>
           <p className="font-medium mt-4">Secret</p>
