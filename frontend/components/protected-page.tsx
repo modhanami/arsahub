@@ -48,7 +48,8 @@ export function AppProtectedPage({ children }: { children: React.ReactNode }) {
     if (!currentApp) {
       toast({
         title: "No App Specified",
-        description: "You must specify an app API key to access this page.",
+        description:
+          "You must login or specify an app API key to access this page.",
       });
       router.push(resolveBasePath("/"));
       return;

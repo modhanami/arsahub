@@ -20,12 +20,14 @@ function createSideNavItems(): SidebarNavItem[] {
       title: "Overview",
       href: resolveBasePath("/overview"),
       icon: "general",
+      appProtected: true,
       type: "item",
     },
     {
       title: "Secrets",
       href: resolveBasePath(`/secrets`),
       icon: "lock",
+      appProtected: true,
       type: "item",
     },
     {
