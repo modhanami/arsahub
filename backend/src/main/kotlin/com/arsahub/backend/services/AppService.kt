@@ -7,7 +7,10 @@ import com.arsahub.backend.dtos.request.AppUserCreateRequest
 import com.arsahub.backend.dtos.request.AppUserUpdateRequest
 import com.arsahub.backend.dtos.request.TriggerSendRequest
 import com.arsahub.backend.dtos.request.WebhookCreateRequest
-import com.arsahub.backend.dtos.response.*
+import com.arsahub.backend.dtos.response.AchievementResponse
+import com.arsahub.backend.dtos.response.AchievementWithUnlockCountResponse
+import com.arsahub.backend.dtos.response.TriggerWithTriggerCountResponse
+import com.arsahub.backend.dtos.response.WebhookRequestResponse
 import com.arsahub.backend.dtos.socketio.AchievementUnlock
 import com.arsahub.backend.dtos.socketio.LeaderboardUpdate
 import com.arsahub.backend.dtos.socketio.PointsUpdate
@@ -556,6 +559,14 @@ class AppService(
                 analyticsRepository.getTotalPointsEarned(app, timeRange) ?: 0
             }
         }
+    }
+
+    fun getPointsHistory(
+        app: App,
+        userId: String,
+    ): List<AppUserPointsHistory> {
+        val appUser = getAppUserOrThrow(app, userId)
+        return appUserPointsHistoryRepository.findAllByAppAndAppUserOrderByCreatedAtDesc(app, appUser)
     }
 
     companion object {

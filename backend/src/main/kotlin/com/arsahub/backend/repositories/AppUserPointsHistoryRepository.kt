@@ -10,4 +10,9 @@ interface AppUserPointsHistoryRepository : JpaRepository<AppUserPointsHistory, L
         app: App,
         appUser: AppUser,
     ): List<AppUserPointsHistory>
+
+    fun findAllByAppAndAppUserOrderByCreatedAtDesc(
+        app: App,
+        appUser: AppUser,
+    ): List<AppUserPointsHistory>
 }

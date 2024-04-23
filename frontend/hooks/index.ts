@@ -17,6 +17,7 @@ import {
   fetchAnalytics,
   fetchAppByAPIKey,
   fetchAppUser,
+  fetchAppUserPointsHistory,
   fetchAppUsers,
   fetchCurrentUserWithAccessToken,
   fetchLeaderboard,
@@ -70,6 +71,16 @@ export function useAppUsers() {
 const defaultOptions = {
   enabled: true,
 };
+
+export function useAppUserPointsHistory(userId: string) {
+  const { currentApp } = useCurrentApp();
+
+  return useQuery({
+    queryKey: ["appUserPointsHistory", userId],
+    queryFn: () => currentApp && fetchAppUserPointsHistory(currentApp, userId),
+    enabled: !!currentApp && !!userId,
+  });
+}
 
 export function useAchievements(options = defaultOptions) {
   const { currentApp } = useCurrentApp();

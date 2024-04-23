@@ -599,4 +599,13 @@ class AppController(
     ): Any {
         return appService.getAnalytics(app, type, start, end)
     }
+
+    // get all points history for an app user
+    @GetMapping("/users/{userId}/points/history")
+    fun getPointsHistory(
+        @CurrentApp app: App,
+        @PathVariable userId: String,
+    ): List<AppUserPointsHistoryResponse> {
+        return appService.getPointsHistory(app, userId).map { AppUserPointsHistoryResponse.fromEntity(it) }
+    }
 }

@@ -1,7 +1,7 @@
 /* tslint:disable */
 /* eslint-disable */
 
-// Generated using typescript-generator version 3.2.1263 on 2024-04-17 21:51:49.
+// Generated using typescript-generator version 3.2.1263 on 2024-04-23 22:45:00.
 
 export interface AchievementCreateRequest {
   title: string;
@@ -153,6 +153,15 @@ export interface AppResponse {
   apiKey: string;
 }
 
+export interface AppUserPointsHistoryResponse {
+  id: number;
+  appId: number;
+  points: number;
+  pointsChange: number;
+  fromRule: RuleResponse | null;
+  createdAt: Date;
+}
+
 export interface AppUserResponse {
   userId: string;
   displayName: string;
@@ -269,6 +278,16 @@ export interface WebhookPayload {
   payload: { [index: string]: any };
 }
 
+export interface WebhookRequestResponse {
+  id: number;
+  webhookId: number;
+  requestBody: { [index: string]: any };
+  statusId: number;
+  statusName: string;
+  signature: string;
+  appId: number;
+}
+
 export interface WebhookResponse {
   id: number;
   url: string;
@@ -307,13 +326,13 @@ export interface UserIdentity {
 }
 
 export interface MultipartFile extends InputStreamSource {
+  originalFilename: string;
   name: string;
   bytes: any;
   empty: boolean;
   resource: Resource;
   size: number;
   contentType: string;
-  originalFilename: string;
 }
 
 export interface Achievement
@@ -375,14 +394,14 @@ export interface Trigger
 }
 
 export interface Resource extends InputStreamSource {
-  open: boolean;
-  file: any;
-  readable: boolean;
-  url: URL;
-  description: string;
-  filename: string;
   uri: URI;
   contentAsByteArray: any;
+  open: boolean;
+  file: any;
+  url: URL;
+  readable: boolean;
+  filename: string;
+  description: string;
 }
 
 export interface InputStreamSource {
@@ -467,9 +486,9 @@ export interface TriggerField
   id: number | null;
 }
 
-export interface URL extends Serializable {}
-
 export interface URI extends Comparable<URI>, Serializable {}
+
+export interface URL extends Serializable {}
 
 export interface AppUser
   extends AuditedEntity,
