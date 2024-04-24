@@ -20,6 +20,8 @@ export type SidebarNavItem =
       external?: boolean;
       icon?: keyof typeof Icons;
       appProtected?: boolean;
+      userProtected?: boolean;
+      tooltip?: string;
       type: "item";
       hoverHighlight?: boolean;
     } & (

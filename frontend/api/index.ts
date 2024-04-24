@@ -5,6 +5,7 @@ import {
   ApiValidationError,
   AppResponse,
   AppUserCreateRequest,
+  AppUserPointsHistoryResponse,
   AppUserResponse,
   AppUserUpdateRequest,
   LeaderboardResponse,
@@ -149,6 +150,21 @@ export async function setAchievementImage(
 export async function fetchAppUsers(app: AppResponse) {
   const { data } = await instance.get<AppUserResponse[]>(
     `${API_URL}/apps/users`,
+    {
+      headers: {
+        ...makeAppAuthHeader(app),
+      },
+    },
+  );
+  return data;
+}
+
+export async function fetchAppUserPointsHistory(
+  app: AppResponse,
+  userId: string,
+) {
+  const { data } = await instance.get<AppUserPointsHistoryResponse[]>(
+    `${API_URL}/apps/users/${userId}/points/history`,
     {
       headers: {
         ...makeAppAuthHeader(app),

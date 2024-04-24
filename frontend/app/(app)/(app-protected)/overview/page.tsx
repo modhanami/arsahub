@@ -17,8 +17,8 @@ import { DashboardHeader } from "@/components/header";
 import { DashboardShell } from "@/components/shell";
 import { useIsFetching } from "@tanstack/react-query";
 import { isApiError } from "@/api";
-
-const numberFormatter = new Intl.NumberFormat("en-US");
+import { numberFormatter } from "@/lib/utils";
+import { useCurrentApp } from "@/lib/current-app";
 
 export default function Page() {
   const [startTime, _setStartTime] = useState<Dayjs | null>(
@@ -35,6 +35,8 @@ export default function Page() {
     if (v.isBefore(startTime)) return;
     _setEndTime(v);
   }, 500);
+
+  const { currentApp, isLoading: isAppLoading } = useCurrentApp();
 
   const totalUnlockedAchievements = useAnalytics<number>({
     type: AnalyticsConstants.TOTAL_UNLOCKED_ACHIEVEMENTS,
@@ -70,9 +72,11 @@ export default function Page() {
     queryKey: ["analytics"],
   });
 
+  if (isAppLoading) return "Loading...";
+
   return (
     <DashboardShell>
-      <DashboardHeader heading="Analytics" text="View your statistics here.">
+      <DashboardHeader heading="Overview" text="View your app's overview">
         <div className="flex gap-2 items-center">
           {isSomeQueryLoading && (
             <Icons.spinner className="mr-4 h-6 w-6 animate-spin" />
@@ -110,6 +114,25 @@ export default function Page() {
       </DashboardHeader>
 
       <div>
+        <div className="sm:flex flex-row gap-4 my-4">
+          {/*  App General Info: Name and ID */}
+          <div className="flex flex-col gap-2">
+            <h3 className="text-tremor-default text-tremor-content dark:text-dark-tremor-content">
+              App Name
+            </h3>
+            <p className="text-tremor-content-strong dark:text-dark-tremor-content-strong">
+              {currentApp?.name}
+            </p>
+          </div>
+          <div className="flex flex-col gap-2">
+            <h3 className="text-tremor-default text-tremor-content dark:text-dark-tremor-content">
+              App ID
+            </h3>
+            <p className="text-tremor-content-strong dark:text-dark-tremor-content-strong">
+              {currentApp?.id}
+            </p>
+          </div>
+        </div>
         <div className="sm:flex flex-row gap-4 my-4">
           <Card>
             <ErrorMessage error={totalPointsEarned.error} />
@@ -153,14 +176,14 @@ export default function Page() {
           <Card>
             <ErrorMessage error={top10Achievements.error} />
 
-            <h3 className="text-tremor-content-strong dark:text-dark-tremor-content-strong font-semibold">
-              Top 10 Achievements
+            <h3 className="text-tremor-content-strong dark:text-dark-tremor-content-strong font-semibold mb-4">
+              Top 10 Achievements Unlocked
             </h3>
 
             {/*  bar list with images */}
-            {top10Achievements.data && (
+            {top10Achievements.data?.length ?? 0 > 0 ? (
               <BarList
-                data={top10Achievements.data?.map((item) => ({
+                data={(top10Achievements.data || []).map((item) => ({
                   name: `${item.achievement.title!}`,
                   value: item.count,
                   icon: () => (
@@ -178,24 +201,32 @@ export default function Page() {
                 sortOrder="descending"
                 className="mx-auto max-w-sm"
               />
+            ) : (
+              <div className="text-center text-tremor-content dark:text-dark-tremor-content">
+                No data available
+              </div>
             )}
           </Card>
           {/*  Top 10 triggers */}
           <Card>
             <ErrorMessage error={top10Triggers.error} />
 
-            <h3 className="text-tremor-content-strong dark:text-dark-tremor-content-strong font-semibold">
-              Top 10 Triggers
+            <h3 className="text-tremor-content-strong dark:text-dark-tremor-content-strong font-semibold mb-4">
+              Top 10 Triggers Used
             </h3>
-            {top10Triggers.data && (
+            {top10Triggers.data?.length ?? 0 > 0 ? (
               <BarList
-                data={top10Triggers.data?.map((item) => ({
+                data={(top10Triggers.data || []).map((item) => ({
                   name: item.trigger.title!,
                   value: item.count,
                 }))}
                 sortOrder="descending"
                 className="mx-auto max-w-sm"
               />
+            ) : (
+              <div className="text-center text-tremor-content dark:text-dark-tremor-content">
+                No data available
+              </div>
             )}
           </Card>
         </div>
