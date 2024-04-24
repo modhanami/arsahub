@@ -611,6 +611,15 @@ class AppService(
     }
 
     private fun validateImageOrThrow(image: MultipartFile) {
+        if (image.isEmpty) {
+            logger.error { "Image is empty" }
+            throw ConflictException("Image is empty")
+        }
+
+        if (image.contentType?.startsWith("image/") != true) {
+            logger.error { "Invalid image content type: ${image.contentType}" }
+            throw ConflictException("Invalid image content type")
+        }
     }
 
     companion object {
