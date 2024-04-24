@@ -3,7 +3,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useCurrentApp } from "../lib/current-app";
 import { useCurrentUser } from "../lib/current-user";
 import { toast } from "./ui/use-toast";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { resolveBasePath } from "@/lib/base-path";
 import { getReturnTo } from "@/lib/utils";
 
@@ -39,20 +39,30 @@ export function UserProtectedPage({ children }: { children: React.ReactNode }) {
 export function AppProtectedPage({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { currentApp, isLoading } = useCurrentApp();
+  const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (isLoading) {
+      console.log("[AppProtectedPage] isLoading");
       return;
     }
 
+    // TODO: This is a temporary fix to prevent a flash of the toast message
     if (!currentApp) {
-      toast({
-        title: "No App Specified",
-        description:
-          "You must login or specify an app API key to access this page.",
-      });
-      router.push(resolveBasePath("/"));
+      toastTimeoutRef.current = setTimeout(() => {
+        toast({
+          title: "No App Specified",
+          description:
+            "You must login or specify an app API key to access this page.",
+          variant: "destructive",
+        });
+        router.push(resolveBasePath("/"));
+      }, 3000);
       return;
+    }
+
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
     }
   }, [currentApp, isLoading, router]);
 

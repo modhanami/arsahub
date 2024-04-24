@@ -13,6 +13,7 @@ import { useCurrentUser } from "@/lib/current-user";
 import { getReturnTo } from "@/lib/utils";
 import { usePathname, useRouter } from "next/navigation";
 import { resolveBasePath } from "../lib/base-path";
+import { Icons } from "./icons";
 
 export function UserAccountNav() {
   const { currentUser, session, isLoading, startLoginFlow, startLogoutFlow } =
@@ -65,6 +66,16 @@ export function UserAccountNav() {
             )}
           </div>
         </div>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          className="cursor-pointer"
+          onClick={() => {
+            router.push(resolveBasePath("/secrets"));
+          }}
+        >
+          <Icons.lock className="w-4 h-4 mr-2" />
+          Secrets
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem className="cursor-pointer" onClick={startLogoutFlow}>
           Logout

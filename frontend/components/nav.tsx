@@ -9,6 +9,7 @@ import { Icons } from "@/components/icons";
 import { useCurrentApp } from "@/lib/current-app";
 import { CurrentAppForm } from "@/components/current-app";
 import React from "react";
+import { useCurrentUser } from "@/lib/current-user";
 
 interface DashboardNavProps {
   items: SidebarNavItem[];
@@ -18,6 +19,7 @@ interface DashboardNavProps {
 export function DashboardNav({ items, children }: DashboardNavProps) {
   const path = usePathname();
   const { currentApp, isLoading } = useCurrentApp();
+  const { currentUser, isLoading: userLoading } = useCurrentUser();
 
   if (!items?.length) {
     return null;
@@ -32,12 +34,22 @@ export function DashboardNav({ items, children }: DashboardNavProps) {
               const Icon = Icons[item.icon || "arrowRight"];
               const isDisabled =
                 item.disabled ||
-                (item.appProtected && !isLoading && !currentApp);
+                (item.appProtected && !currentApp) ||
+                (item.userProtected && !currentUser);
               return (
                 item.href && (
                   <Link
                     key={item.title}
                     href={isDisabled || !item.href ? "#" : item.href}
+                    title={
+                      item.tooltip
+                        ? item.tooltip
+                        : item.appProtected && !currentApp
+                          ? "You must specify an app to access this page."
+                          : item.userProtected && !currentUser
+                            ? "You must login to access this page."
+                            : ""
+                    }
                   >
                     <span
                       className={cn(

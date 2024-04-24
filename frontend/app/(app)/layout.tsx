@@ -23,13 +23,12 @@ function createSideNavItems(): SidebarNavItem[] {
       appProtected: true,
       type: "item",
     },
-    {
-      title: "Secrets",
-      href: resolveBasePath(`/secrets`),
-      icon: "lock",
-      appProtected: true,
-      type: "item",
-    },
+    // {
+    //   title: "Secrets",
+    //   href: resolveBasePath(`/secrets`),
+    //   icon: "lock",
+    //   type: "item",
+    // },
     {
       type: "divider",
     },
@@ -94,13 +93,13 @@ function createSideNavItems(): SidebarNavItem[] {
       appProtected: true,
       icon: "webhook",
     },
-    {
-      type: "item",
-      title: "Analytics",
-      href: resolveBasePath("/analytics"),
-      appProtected: true,
-      icon: "analytics",
-    },
+    // {
+    //   type: "item",
+    //   title: "Analytics",
+    //   href: resolveBasePath("/analytics"),
+    //   appProtected: true,
+    //   icon: "analytics",
+    // },
     {
       type: "divider",
     },
