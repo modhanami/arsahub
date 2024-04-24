@@ -15,7 +15,7 @@ export default function Page() {
       width="100%"
       height="100%"
       allowFullScreen={true}
-      className="overflow-hidden border-none"
+      className="overflow-hidden border-none max-w-5xl mx-auto"
     />
   );
 }
