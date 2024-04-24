@@ -11,9 +11,13 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.enums.SecuritySchemeIn
+import io.swagger.v3.oas.annotations.enums.SecuritySchemeType
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
+import io.swagger.v3.oas.annotations.security.SecurityRequirement
+import io.swagger.v3.oas.annotations.security.SecurityScheme
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotEmpty
@@ -26,6 +30,13 @@ import java.time.Instant
 @RestController
 @RequestMapping("/api/apps")
 @Tag(name = "App API", description = "API for app developers")
+@SecurityScheme(
+    name = "X-API-Key",
+    type = SecuritySchemeType.APIKEY,
+    `in` = SecuritySchemeIn.HEADER,
+    paramName = "X-API-Key",
+)
+@SecurityRequirement(name = "X-API-Key")
 class AppController(
     private val appService: AppService,
     private val leaderboardService: LeaderboardService,
