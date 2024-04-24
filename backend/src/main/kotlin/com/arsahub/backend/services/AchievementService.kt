@@ -12,10 +12,7 @@ import com.arsahub.backend.repositories.RuleRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.stereotype.Service
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.core.sync.RequestBody
-import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import java.io.File
@@ -43,24 +40,9 @@ class AchievementService(
     private val properties: MyServiceProperties,
     private val ruleRepository: RuleRepository,
     private val appUserAchievementRepository: AppUserAchievementRepository,
+    private val s3Client: S3Client,
 ) {
     private val logger = KotlinLogging.logger {}
-
-    private val s3Client =
-        S3Client.builder()
-            .endpointOverride(
-                java.net.URI.create("https://176727395c7e97ac98fb6d497684940a.r2.cloudflarestorage.com"),
-            )
-            .region(Region.US_EAST_1) // auto
-            .credentialsProvider(
-                StaticCredentialsProvider.create(
-                    AwsBasicCredentials.create(
-                        properties.auth.accessKeyId,
-                        properties.auth.secretAccessKey,
-                    ),
-                ),
-            )
-            .build()
 
     fun createAchievement(
         app: App,
