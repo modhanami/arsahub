@@ -608,4 +608,11 @@ class AppController(
     ): List<AppUserPointsHistoryResponse> {
         return appService.getPointsHistory(app, userId).map { AppUserPointsHistoryResponse.fromEntity(it) }
     }
+
+    @PostMapping("/images/upload", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
+    fun uploadTempImage(
+        @RequestPart("image") image: MultipartFile,
+    ): TempImageUploadResponse {
+        return appService.uploadTempImage(image)
+    }
 }

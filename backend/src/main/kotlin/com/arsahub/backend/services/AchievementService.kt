@@ -12,11 +12,11 @@ import com.arsahub.backend.repositories.RuleRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.stereotype.Service
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.core.sync.RequestBody
-import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.services.s3.model.CopyObjectRequest
+import software.amazon.awssdk.services.s3.model.HeadObjectRequest
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import java.io.File
 import java.util.*
@@ -43,33 +43,52 @@ class AchievementService(
     private val properties: MyServiceProperties,
     private val ruleRepository: RuleRepository,
     private val appUserAchievementRepository: AppUserAchievementRepository,
+    private val s3Client: S3Client,
 ) {
     private val logger = KotlinLogging.logger {}
-
-    private val s3Client =
-        S3Client.builder()
-            .endpointOverride(
-                java.net.URI.create("https://176727395c7e97ac98fb6d497684940a.r2.cloudflarestorage.com"),
-            )
-            .region(Region.US_EAST_1) // auto
-            .credentialsProvider(
-                StaticCredentialsProvider.create(
-                    AwsBasicCredentials.create(
-                        properties.auth.accessKeyId,
-                        properties.auth.secretAccessKey,
-                    ),
-                ),
-            )
-            .build()
 
     fun createAchievement(
         app: App,
         request: AchievementCreateRequest,
     ): Achievement {
+        logger.info { "Creating achievement: $request" }
         // validate uniqueness of title in app
         val existingTrigger = achievementRepository.findByTitleAndApp(request.title, app)
         if (existingTrigger != null) {
+            logger.error { "Achievement with title ${request.title} already exists" }
             throw AchievementConflictException(request.title)
+        }
+
+        // check if image is in temp storage
+        val tempImageId =
+            request.imageId?.let { imageId ->
+                try {
+                    UUID.fromString(imageId)
+                } catch (e: IllegalArgumentException) {
+                    logger.error { "Invalid image ID: $imageId" }
+                    throw IllegalArgumentException("Invalid image ID")
+                }
+            }
+
+        logger.debug { "Temp image ID: $tempImageId" }
+        val tempImageKey = "temp-images/$tempImageId"
+        logger.debug { "Checking if image exists in temp storage: $tempImageKey" }
+
+        if (tempImageId != null) {
+            // check if image exists in temp S3 storage
+            // if it doesn't, throw an error
+            try {
+                s3Client.headObject(
+                    HeadObjectRequest.builder()
+                        .bucket(properties.bucket)
+                        .key(tempImageKey)
+                        .build(),
+                )
+                logger.debug { "Image $tempImageId exists in temp storage" }
+            } catch (e: NoSuchKeyException) {
+                logger.error { "Image $tempImageId not found in temp storage" }
+                throw IllegalArgumentException("Invalid image ID")
+            }
         }
 
         val achievement =
@@ -79,7 +98,40 @@ class AchievementService(
                 app = app,
             )
 
+        logger.debug { "Saving achievement: ${achievement.achievementId}" }
         achievementRepository.save(achievement)
+        logger.info { "Created achievement: ${achievement.achievementId}" }
+
+        if (tempImageId != null) {
+            val achievementImageKey = "apps/${app.id}/achievements/${achievement.achievementId}/$tempImageId"
+            achievement.imageKey = achievementImageKey
+
+            // move image from temp to app's S3 storage
+            val copyObjectRequest =
+                CopyObjectRequest.builder()
+                    .sourceBucket(properties.bucket)
+                    .sourceKey(tempImageKey)
+                    .destinationBucket(properties.bucket)
+                    .destinationKey(achievement.imageKey)
+                    .build()
+
+            logger.debug { "Copying image from temp to app's S3 storage: $copyObjectRequest" }
+            val copyObjectResponse = s3Client.copyObject(copyObjectRequest)
+            logger.debug { "Copied image from temp to app's S3 storage: $copyObjectResponse" }
+
+            // delete image from temp storage
+            logger.debug { "Deleting image from temp storage: $tempImageKey" }
+            s3Client.deleteObject {
+                it.bucket(properties.bucket)
+                it.key(tempImageKey)
+            }
+
+            logger.debug { "Deleted image from temp storage: $tempImageKey" }
+
+            logger.debug { "Saving achievement with image: $achievement" }
+            achievementRepository.save(achievement)
+            logger.info { "Created achievement with image: $achievement" }
+        }
 
         return achievement
     }
@@ -103,6 +155,7 @@ class AchievementService(
         val image = request.image
         val achievement = getAchievementOrThrow(achievementId, app)
 
+        // check if achievement already has an image
         if (achievement.imageKey != null) {
             logger.error { "Achievement ${achievement.achievementId} already has an image" }
             throw ConflictException("Achievement already has an image")

@@ -9,19 +9,28 @@ import com.arsahub.backend.repositories.AppRepository
 import com.arsahub.backend.repositories.AppUserAchievementRepository
 import com.arsahub.backend.repositories.UserRepository
 import com.arsahub.backend.services.AchievementService
+import com.jayway.jsonpath.JsonPath
+import com.ninjasquad.springmockk.MockkBean
+import io.mockk.every
+import io.mockk.verify
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection
 import org.springframework.http.MediaType
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
+import org.springframework.mock.web.MockMultipartFile
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.junit.jupiter.Container
+import software.amazon.awssdk.core.sync.RequestBody
+import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.services.s3.model.PutObjectRequest
+import software.amazon.awssdk.services.s3.model.PutObjectResponse
 
 class AchievementIntegrationTest : BaseIntegrationTest() {
     @Autowired
@@ -38,6 +47,9 @@ class AchievementIntegrationTest : BaseIntegrationTest() {
 
     @Autowired
     private lateinit var userRepository: UserRepository
+
+    @MockkBean
+    private lateinit var s3Client: S3Client
 
     // Delete achievement: Only when no rules are using it and no users have it
     @Test
@@ -164,6 +176,45 @@ class AchievementIntegrationTest : BaseIntegrationTest() {
                     .achievementId!!,
             )
         assertTrue(achievementAfterFailedDelete.isPresent)
+    }
+
+    @Test
+    fun `upload image to temp - success`() {
+        // Arrange S3
+        every {
+            s3Client.putObject(
+                any(PutObjectRequest::class),
+                any<RequestBody>(),
+            )
+        } returns PutObjectResponse.builder().build()
+
+        // Act & Assert HTTP
+        val imageFile = MockMultipartFile("image", "test.jpg", "image/jpeg", "test".toByteArray())
+        val result =
+            mockMvc.performWithAppAuth(
+                multipart("/api/apps/images/upload")
+                    .file(imageFile),
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.id").isString)
+                .andReturn()
+
+        val tempImageUUID = JsonPath.parse(result.response.contentAsString).read<String>("$.id")
+        assertDoesNotThrow { java.util.UUID.fromString(tempImageUUID) }
+
+        // Assert S3
+        verify {
+            s3Client.putObject(
+                match<PutObjectRequest> {
+                    it.bucket() == "arsahub-dev" &&
+                        it.key().startsWith("temp-images/") &&
+                        it.contentType() == "image/jpeg"
+                },
+                match<RequestBody> {
+                    it.optionalContentLength().orElse(0) == 4L
+                },
+            )
+        }
     }
 
     @BeforeEach

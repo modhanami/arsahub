@@ -15,6 +15,7 @@ import {
   RuleCreateRequest,
   RuleResponse,
   RuleUpdateRequest,
+  TempImageUploadResponse,
   TriggerCreateRequest,
   TriggerResponse,
   TriggerSendRequest,
@@ -626,5 +627,22 @@ export async function fetchAnalytics<T>(
       ...makeAppAuthHeader(app),
     },
   });
+  return data;
+}
+
+// upload temp image
+export async function uploadTempImage(app: AppResponse, image: File) {
+  const formData = new FormData();
+  formData.append("image", image);
+
+  const { data } = await instance.post<TempImageUploadResponse>(
+    `${API_URL}/apps/images/upload`,
+    formData,
+    {
+      headers: {
+        ...makeAppAuthHeader(app),
+      },
+    },
+  );
   return data;
 }

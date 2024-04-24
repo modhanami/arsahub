@@ -7,10 +7,7 @@ import com.arsahub.backend.dtos.request.AppUserCreateRequest
 import com.arsahub.backend.dtos.request.AppUserUpdateRequest
 import com.arsahub.backend.dtos.request.TriggerSendRequest
 import com.arsahub.backend.dtos.request.WebhookCreateRequest
-import com.arsahub.backend.dtos.response.AchievementResponse
-import com.arsahub.backend.dtos.response.AchievementWithUnlockCountResponse
-import com.arsahub.backend.dtos.response.TriggerWithTriggerCountResponse
-import com.arsahub.backend.dtos.response.WebhookRequestResponse
+import com.arsahub.backend.dtos.response.*
 import com.arsahub.backend.dtos.socketio.AchievementUnlock
 import com.arsahub.backend.dtos.socketio.LeaderboardUpdate
 import com.arsahub.backend.dtos.socketio.PointsUpdate
@@ -27,6 +24,11 @@ import kotlinx.coroutines.runBlocking
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.web.multipart.MultipartFile
+import software.amazon.awssdk.core.sync.RequestBody
+import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.services.s3.model.PutObjectRequest
+import java.io.File
 import java.time.Instant
 import java.util.*
 
@@ -59,6 +61,8 @@ class AppService(
     private val appUserAchievementRepository: AppUserAchievementRepository,
     private val analyticsRepository: AnalyticsRepository,
     private val webhookRequestRepository: WebhookRequestRepository,
+    private val properties: MyServiceProperties,
+    private val s3Client: S3Client,
 ) {
     private val logger = KotlinLogging.logger {}
 
@@ -567,6 +571,55 @@ class AppService(
     ): List<AppUserPointsHistory> {
         val appUser = getAppUserOrThrow(app, userId)
         return appUserPointsHistoryRepository.findAllByAppAndAppUserOrderByCreatedAtDesc(app, appUser)
+    }
+
+    fun uploadTempImage(image: MultipartFile): TempImageUploadResponse {
+        validateImageOrThrow(image)
+
+        val file = image.originalFilename?.let { File(it) }
+        val uuid = UUID.randomUUID()
+        val key = "temp-images/$uuid"
+        val imageBytes = image.bytes
+        val contentType = image.contentType
+
+        logger.info {
+            "Uploading temp image for achievement $uuid: " +
+                "size=${imageBytes.size}, contentType=$contentType, " +
+                "name=${image.name}, originalFilename=${file?.name}"
+        }
+
+        val metadata = mutableMapOf<String, Any>()
+
+        file?.name?.let { metadata["originalFilename"] = it }
+        contentType?.let { metadata["contentType"] = it }
+        metadata["size"] = imageBytes.size
+
+        val putObjectRequest =
+            PutObjectRequest.builder()
+                .bucket(properties.bucket)
+                .key(key)
+                .contentType(contentType)
+                .metadata(
+                    metadata.mapValues { it.value.toString() },
+                )
+                .build()
+
+        val putObjectResponse = s3Client.putObject(putObjectRequest, RequestBody.fromBytes(imageBytes))
+        logger.debug { "Uploaded temp image $uuid: response=$putObjectResponse" }
+
+        return TempImageUploadResponse(id = uuid.toString())
+    }
+
+    private fun validateImageOrThrow(image: MultipartFile) {
+        if (image.isEmpty) {
+            logger.error { "Image is empty" }
+            throw ConflictException("Image is empty")
+        }
+
+        if (image.contentType?.startsWith("image/") != true) {
+            logger.error { "Invalid image content type: ${image.contentType}" }
+            throw ConflictException("Invalid image content type")
+        }
     }
 
     companion object {

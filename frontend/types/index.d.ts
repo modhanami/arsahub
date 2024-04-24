@@ -95,3 +95,7 @@ export type RewardSetImageRequestClient = Omit<
 > & {
   image: File;
 };
+
+export type ImageUploadRequestClient = {
+  image: File;
+};
