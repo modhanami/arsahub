@@ -24,12 +24,12 @@ import {
 import { toast } from "./ui/use-toast";
 import { useRouter } from "next/navigation";
 import { Icons } from "@/components/icons";
-import { useCreateAchievement, useSetAchievementImage } from "@/hooks";
 import {
-  AchievementResponse,
-  ValidationLengths,
-  ValidationMessages,
-} from "@/types/generated-types";
+  useCreateAchievement,
+  useSetAchievementImage,
+  useTempImageUpload,
+} from "@/hooks";
+import { ValidationLengths, ValidationMessages } from "@/types/generated-types";
 import { isAlphaNumericExtended } from "@/lib/validations";
 import { InputWithCounter } from "@/components/ui/input-with-counter";
 import { TextareaWithCounter } from "@/components/ui/textarea-with-counter";
@@ -63,6 +63,9 @@ export const achievementCreateSchema = z.object({
     .string()
     .max(500, { message: ValidationMessages.DESCRIPTION_LENGTH })
     .optional(),
+});
+
+const imageUploadSchema = z.object({
   image: z
     .custom<FileList>((files) => files instanceof FileList, {
       message: "Image is required",
@@ -92,82 +95,67 @@ export const achievementCreateSchema = z.object({
 });
 
 type FormData = z.infer<typeof achievementCreateSchema>;
+type ImageUploadData = z.infer<typeof imageUploadSchema>;
 
 export function AchievementCreateForm() {
   const router = useRouter();
   const form = useForm<FormData>({
     resolver: zodResolver(achievementCreateSchema),
   });
+  const imageUploadForm = useForm<ImageUploadData>({
+    resolver: zodResolver(imageUploadSchema),
+  });
   const [isOpen, setIsOpen] = React.useState(false);
   const createMutation = useCreateAchievement();
   const setImageMutation = useSetAchievementImage();
   const [preview, setPreview] = React.useState("");
   const isSubmitting = createMutation.isPending || setImageMutation.isPending;
+  const tempImageUpload = useTempImageUpload();
+  const [imageId, setImageId] = React.useState<string | null>(null);
+  const [isImageUploading, setIsImageUploading] = React.useState(false);
+  const isSomeQueryPending = isSubmitting || isImageUploading;
 
-  async function onSubmit(values: FormData) {
-    createMutation.mutate(
-      {
-        title: values.title,
-        description: values.description || null,
-      },
-      {
-        onSuccess: async (data) => {
-          await handleImageUpload(data, values.image);
-
-          toast({
-            title: "Achievement created",
-            description: "Achievement created successfully",
-          });
-
-          setIsOpen(false);
-          form.reset();
-          setPreview("");
-
-          router.refresh();
-        },
-        onError: (error, b, c) => {
-          console.log("error", error);
-          if (isApiValidationError(error)) {
-            // TODO: handle validation errors
-          }
-          if (isApiError(error)) {
-            // root error
-            if (error.response?.status === HttpStatusCode.Conflict) {
-              form.setError("title", {
-                message: error.response.data.message,
-              });
-            }
-          }
-        },
-      },
-    );
+  function resetForms() {
+    setIsOpen(false);
+    form.reset();
+    imageUploadForm.reset();
+    setPreview("");
+    setImageId(null);
   }
 
-  async function handleImageUpload(
-    achievement: AchievementResponse,
-    files: FileList | undefined,
-  ) {
-    // if image is present, upload it, otherwise skip
-    const image = files?.[0];
-    if (!files || !image) {
-      return;
-    }
+  async function onSubmit(values: FormData) {
+    const request = {
+      title: values.title,
+      description: values.description || null,
+      imageId: imageId,
+    };
+    console.log("request", request);
+    createMutation.mutate(request, {
+      onSuccess: async (data) => {
+        toast({
+          title: "Achievement created",
+          description: "Achievement created successfully",
+        });
 
-    return setImageMutation.mutateAsync(
-      {
-        achievementId: achievement.achievementId,
-        image: image,
+        resetForms();
+
+        router.refresh();
       },
-      {
-        onSuccess: () => {},
-        onError: (error) => {
-          console.log("error", error);
-          if (isApiValidationError(error)) {
-            // TODO: handle validation errors
+      onError: (error, b, c) => {
+        console.log("error", error);
+        if (isApiValidationError(error)) {
+          // TODO: handle validation errors
+        }
+        if (isApiError(error)) {
+          // root error
+          if (error.response?.status === HttpStatusCode.Conflict) {
+            form.setError("title", {
+              message: error.response.data.message,
+            });
           }
-        },
+        }
       },
-    );
+    });
   }
 
   function getImageData(event: React.ChangeEvent<HTMLInputElement>) {
@@ -187,6 +175,29 @@ export function AchievementCreateForm() {
     const displayUrl = URL.createObjectURL(event.target.files![0]);
 
     return { files, displayUrl };
+  }
+
+  function handleImageUpload(files?: FileList) {
+    const image = files?.[0];
+    if (!files || !image) {
+      console.log("no files");
+      return;
+    }
+
+    setIsImageUploading(true);
+
+    tempImageUpload.mutate(image, {
+      onSuccess: (data) => {
+        console.log("tempImageUpload success", data);
+        setImageId(data.id);
+      },
+      onError: (error) => {
+        console.log("tempImageUpload error", error);
+      },
+      onSettled: () => {
+        setIsImageUploading(false);
+      },
+    });
   }
 
   return (
@@ -241,7 +252,7 @@ export function AchievementCreateForm() {
                 )}
               />
               <FormField
-                control={form.control}
+                control={imageUploadForm.control}
                 name="image"
                 render={({ field: { onChange, value, ...rest } }) => (
                   <FormItem>
@@ -257,6 +268,7 @@ export function AchievementCreateForm() {
                           console.log("displayUrl", displayUrl);
                           setPreview(displayUrl);
                           onChange(files);
+                          handleImageUpload(files);
                         }}
                       />
                     </FormControl>
@@ -276,8 +288,16 @@ export function AchievementCreateForm() {
                     Cancel
                   </Button>
                 </DialogClose>
-                <Button type="submit" disabled={isSubmitting}>
-                  Create
+                <Button type="submit" disabled={isSomeQueryPending}>
+                  {/*spinning */}
+                  {isSomeQueryPending && (
+                    <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  {isSubmitting
+                    ? "Creating..."
+                    : isImageUploading
+                      ? "Uploading image..."
+                      : "Create"}
                 </Button>
               </div>
             </form>

@@ -36,6 +36,7 @@ import {
   updateRule,
   updateTrigger,
   updateWebhook,
+  uploadTempImage,
 } from "@/api";
 import {
   AchievementCreateRequest,
@@ -557,5 +558,18 @@ export function useAnalytics<T>(options: UseAnalyticsParams) {
     queryKey: ["analytics", options.type, options.start, options.end],
     queryFn: () => currentApp && fetchAnalytics<T>(currentApp, options),
     enabled: !!currentApp && !!options.start && !!options.end,
+  });
+}
+
+export function useTempImageUpload() {
+  const { currentApp } = useCurrentApp();
+  const queryClient = useQueryClient();
+  if (!currentApp) {
+    throw new Error("No current app");
+  }
+
+  return useMutation({
+    mutationFn: (image: File) =>
+      currentApp && uploadTempImage(currentApp, image),
   });
 }
