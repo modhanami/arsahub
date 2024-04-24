@@ -75,14 +75,21 @@ export default function Page() {
                     key={history.id}
                     className="flex gap-4 hover:bg-muted/50 p-2 rounded"
                   >
-                    <div
-                      className={cn("font-bold text-lg", {
-                        "text-green-500": history.points >= 0,
-                        "text-red-500": history.points < 0,
-                      })}
-                    >
-                      {history.points >= 0 ? "+" : "-"}
-                      {numberFormatter.format(history.points)}
+                    {/*  delta */}
+                    <div className="flex flex-col items-end">
+                      <div
+                        className={cn("font-bold text-lg", {
+                          "text-green-500": history.pointsChange >= 0,
+                          "text-red-500": history.pointsChange < 0,
+                        })}
+                      >
+                        {history.points >= 0 ? "+" : "-"}
+                        {numberFormatter.format(history.pointsChange)}
+                      </div>
+                      {/*  total */}
+                      <div className="text-sm text-muted-foreground">
+                        = {numberFormatter.format(history.points)}
+                      </div>
                     </div>
                     <div className="flex flex-col gap-1">
                       <div>
@@ -97,7 +104,7 @@ export default function Page() {
                           "Manual"
                         )}
                       </div>
-                      <div className="text-xs text-gray-600">
+                      <div className="text-xs text-muted-foreground">
                         {datetimeFormatter.format(new Date(history.createdAt))}
                       </div>
                     </div>
@@ -105,7 +112,7 @@ export default function Page() {
                 ))}
               </div>
             )) || (
-              <div className="text-center text-gray-500">
+              <div className="text-center text-muted-foreground">
                 No points history.
               </div>
             )}
