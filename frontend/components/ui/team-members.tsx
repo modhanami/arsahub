@@ -23,7 +23,7 @@ export function UserProfile({
   const tempAvatar = `https://avatar.vercel.sh/${userId}.jpeg`;
 
   return (
-    <Card className="max-w-sm max-h-[500px] overflow-y-auto">
+    <Card className="overflow-y-auto">
       <CardContent className="grid gap-6 mt-8">
         <div className="flex items-center justify-between space-x-4">
           <div className="flex flex-col gap-4 w-full items-center">
@@ -52,11 +52,11 @@ export function UserProfile({
               {achievements?.length}
             </Badge>
           </div>
-          <ul className="space-y-4 my-4">
+          <ul className="my-4">
             {achievements?.length > 0
               ? achievements.map((achievement) => (
                   <li
-                    className="font-medium flex gap-4"
+                    className="font-medium flex gap-4 border-b border-foreground/10 py-4"
                     key={achievement.achievementId}
                   >
                     <Image
@@ -65,10 +65,12 @@ export function UserProfile({
                           getImageUrlFromKey(achievement.imageKey)) ||
                         ""
                       }
-                      width={128}
-                      height={128}
+                      radius="none"
+                      width={64}
+                      classNames={{
+                        wrapper: "mr-2 flex items-start min-w-[64px] ",
+                      }}
                       alt={achievement.title}
-                      radius="full"
                     />
                     <div>
                       <p>{achievement.title}</p>
