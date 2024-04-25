@@ -3,23 +3,55 @@
 import { ContextProps } from "../../../../../types";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import React, { useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useSocket } from "@/lib/socket";
 import { useLeaderboard } from "@/hooks";
 import {
+  Entry,
   LeaderboardResponse,
   LeaderboardUpdate,
 } from "@/types/generated-types";
 import { useDebounceCallback } from "usehooks-ts";
+import { cn, numberFormatter } from "@/lib/utils";
+
+function NewComponent({
+  entry,
+  className,
+  classNameScore,
+}: {
+  entry: Entry;
+  className: string;
+  classNameScore?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex items-center justify-between text-white px-6 py-4",
+        className,
+      )}
+    >
+      <div className="flex gap-4">
+        <Avatar className="h-10 w-10 shadow-md">
+          <AvatarImage
+            src={`https://avatar.vercel.sh/${entry.memberName}.png`}
+            width={64}
+            alt={entry.memberName}
+          />
+          <AvatarFallback>AS</AvatarFallback>
+        </Avatar>
+        <div className="flex flex-col gap-1 drop-shadow-md">
+          <span>{entry.memberName}</span>
+          <span className="text-xs text-muted-foreground">{entry.userId}</span>
+        </div>
+      </div>
+      <p className={cn("text-xl font-semibold drop-shadow-lg", classNameScore)}>
+        {numberFormatter.format(entry.score)}
+      </p>
+    </div>
+  );
+}
 
 export default function LeaderboardEmbedPage({ params }: ContextProps) {
   const [animationLeaderboard] = useAutoAnimate();
@@ -77,29 +109,38 @@ export default function LeaderboardEmbedPage({ params }: ContextProps) {
 
   if (!leaderboard) return "Loading...";
 
+  const entries = leaderboard.entries;
+  const topThree = entries.slice(0, 3);
+  const rest = entries.slice(3);
+
   return (
-    <div className="py-8">
-      <p className="text-2xl font-semibold mb-4 text-center">
+    <div className="py-6">
+      <p className="text-xl font-semibold mb-4 text-center">
         Total Points Leaderboard
       </p>
       <div className="my-8">
         <div className="inline-block min-w-full shadow-md rounded-lg overflow-hidden">
-          <Table className="min-w-full leading-normal">
-            <TableHeader>
-              <TableRow>
-                <TableHead className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  Rank
-                </TableHead>
-                <TableHead className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  Name
-                </TableHead>
-                <TableHead className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  Score
-                </TableHead>
-              </TableRow>
-            </TableHeader>
+          {/* Top 3 horizontal: platinum, gold, silver */}
+          {topThree[0] && (
+            <NewComponent
+              entry={topThree[0]}
+              className="bg-royal"
+              classNameScore="text-amber-200 text-3xl"
+            />
+          )}
+          {topThree[1] && (
+            <NewComponent
+              entry={topThree[1]}
+              className="bg-deep-space"
+              classNameScore="text-2xl"
+            />
+          )}
+          {topThree[2] && (
+            <NewComponent entry={topThree[2]} className="bg-hersheys" />
+          )}
+          <Table className="min-w-full leading-normal mt-4">
             <TableBody ref={animationLeaderboard}>
-              {leaderboard.entries.map((entry) => (
+              {rest.map((entry) => (
                 <TableRow key={entry.memberName} className="border-t">
                   <TableCell className="px-6 py-4">{entry.rank}</TableCell>
                   <TableCell className="px-6 py-4">
@@ -114,7 +155,9 @@ export default function LeaderboardEmbedPage({ params }: ContextProps) {
                       {entry.memberName}
                     </div>
                   </TableCell>
-                  <TableCell className="px-6 py-4">{entry.score}</TableCell>
+                  <TableCell className="px-6 py-4">
+                    {numberFormatter.format(entry.score)}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

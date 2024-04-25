@@ -60,6 +60,8 @@ import { DashboardHeader } from "@/components/header";
 import { SectionTitle } from "@/app/(app)/(app-protected)/rules/shared";
 import { getImageUrlFromKey } from "@/lib/image";
 import { DevTool } from "@hookform/devtools";
+import { KeyText } from "@/app/(app)/(app-protected)/triggers/components/columns";
+import { isApiError } from "@/api";
 
 const actions = [
   {
@@ -85,16 +87,40 @@ const repeatability = [
 
 const addPointsSchema = z.object({
   key: z.literal("add_points"),
-  params: z.object({
-    points: z.coerce.number().optional(),
-    pointsExpression: z.string().optional(),
-  }),
+  params: z
+    .object({
+      points: z.coerce.number({
+        required_error: "Please enter points",
+        invalid_type_error: "Please enter a valid number",
+      }),
+    })
+    .or(
+      z.object({
+        pointsExpression: z.string({
+          required_error: "Please select a field",
+        }),
+      }),
+    )
+    .refine(
+      (value) => {
+        return (
+          (value as any).points !== undefined ||
+          (value as any).pointsExpression !== undefined
+        );
+      },
+      {
+        message: "Please select a points source",
+      },
+    ),
 });
 
 const unlockAchievementSchema = z.object({
   key: z.literal("unlock_achievement"),
   params: z.object({
-    achievementId: z.coerce.number(),
+    achievementId: z.coerce.number({
+      required_error: "Please select an achievement",
+      invalid_type_error: "Please select an achievement",
+    }),
   }),
 });
 
@@ -206,8 +232,15 @@ export default function Page() {
       params:
         data.action.key === "add_points"
           ? form.watch("actionAddPointsMode") === "fixed"
-            ? { points: data.action.params.points }
-            : { pointsExpression: data.action.params.pointsExpression }
+            ? {
+                points:
+                  "points" in data.action.params && data.action.params.points,
+              }
+            : {
+                pointsExpression:
+                  "pointsExpression" in data.action.params &&
+                  data.action.params.pointsExpression,
+              }
           : { achievementId: data.action.params.achievementId },
     };
 
@@ -260,13 +293,22 @@ export default function Page() {
 
     createRule.mutate(payload, {
       onSuccess: () => {
+        toast({
+          title: "Rule created",
+          description: "Your rule was created successfully.",
+        });
         router.push(resolveBasePath(`/rules`));
       },
-    });
-
-    toast({
-      title: "Rule created",
-      description: "Your rule was created successfully.",
+      onError: (error) => {
+        if (isApiError(error)) {
+          toast({
+            title: "Failed to create rule",
+            description: error.response?.data.message || error.message,
+            variant: "destructive",
+          });
+          return;
+        }
+      },
     });
   }
 
@@ -467,17 +509,27 @@ export default function Page() {
                 controlClassnames={
                   rulesModificationDisabled
                     ? undefined
-                    : { queryBuilder: "queryBuilder-branches" }
+                    : {
+                        queryBuilder: "queryBuilder-branches",
+                        value: "!text-black",
+                        fields: "!text-black",
+                        operators: "!text-black",
+                        combinators: "!text-black",
+                      }
                 }
               />
             </QueryBuilderDnD>
             {query.rules.length !== 0 && (
-              <>
-                <h4>Condition Expression</h4>
-                <pre>
-                  <code>{getFormattedCELExpression(query, fields)}</code>
-                </pre>
-              </>
+              <div className="flex flex-col gap-2">
+                <h4 className="font-medium text-sm">
+                  Preview of Condition Expression
+                </h4>
+                <KeyText
+                  variant="outline"
+                  text={getFormattedCELExpression(query, fields)}
+                  title={getFormattedCELExpression(query, fields)}
+                />
+              </div>
             )}
             {/*{accumulatableFields.length > 0 && (*/}
             {/*  <FormField*/}
@@ -762,7 +814,9 @@ export default function Page() {
             />
           </div>
 
-          <Button type="submit">Submit</Button>
+          <Button type="submit" onClick={form.handleSubmit(onSubmit)}>
+            Create Rule
+          </Button>
         </form>
         <DevTool control={form.control} />
       </Form>

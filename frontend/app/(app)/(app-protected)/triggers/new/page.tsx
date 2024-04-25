@@ -31,7 +31,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { isApiError, isApiValidationError } from "@/api";
-import { Label } from "@/components/ui/label";
 import { Icons } from "@/components/icons";
 import { useCreateTrigger } from "@/hooks";
 import { DevTool } from "@hookform/devtools";
@@ -55,6 +54,8 @@ import {
 } from "@/app/(app)/(app-protected)/triggers/new/templates";
 import { resolveBasePath } from "@/lib/base-path";
 import { cx } from "class-variance-authority";
+import { KeyText } from "../components/columns";
+import { Separator } from "@/components/ui/separator";
 
 const triggerCreateSchema = z.object({
   title: z
@@ -192,9 +193,6 @@ export default function Page({}) {
             title: "Trigger created",
             description: "Your trigger was created successfully.",
           });
-          setIsOpen(false);
-
-          form.reset(getEmptyDefaultValues());
           router.push(resolveBasePath(`/triggers`));
         },
         onError: (error, b, c) => {
@@ -250,7 +248,8 @@ export default function Page({}) {
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-4 max-w-2xl"
+            className="flex flex-col gap-2 max-w-2xl"
+            // className="space-y-4 max-w-2xl"
           >
             {form.formState.errors.root?.serverError && (
               <div className="bg-red-100 text-red-600 text-sm px-4 py-2 rounded-md">
@@ -300,29 +299,33 @@ export default function Page({}) {
 
             <FormItem>
               <FormLabel>Auto-generated key</FormLabel>
-              <p className="text-gray-500 text-sm">
+              <p className="text-muted-foreground text-sm">
                 This is the key that you will use for sending triggers for your
-                app users. It will be auto-generated from the title. Does not
-                change once set.
+                app users. It will be auto-generated from the title.{" "}
+                <strong>Does not change once set.</strong>
               </p>
-              <Input
-                value={
-                  form.watch("title") &&
-                  generateTriggerKeyFromTitle(form.watch("title"))
-                }
-                placeholder="This will be auto-generated from the title"
-                readOnly
-                disabled
+              <KeyText
+                text={generateTriggerKeyFromTitle(form.watch("title") || "-")}
+                className="px-3 py-2 m-2 w-fit"
               />
             </FormItem>
 
-            <div className="flex items-center justify-between">
-              <Label>Fields</Label>
+            <div className="flex items-center justify-between mt-4">
+              <div className="flex flex-col gap-2 pr-4">
+                <FormLabel>Fields</FormLabel>
+                <p className="text-muted-foreground text-sm">
+                  Used to send <strong>additional information</strong> with your
+                  trigger. They can be used for defining conditions in your
+                  rules
+                </p>
+              </div>
               <Button
                 variant="outline"
                 onClick={() => addField()}
                 type="button"
+                className="flex gap-2"
               >
+                <Icons.add className="h-4 w-4" />
                 Add field
               </Button>
             </div>
@@ -333,7 +336,7 @@ export default function Page({}) {
                   control={form.control}
                   name={`fields.${index}.key`}
                   render={({ field }) => (
-                    <FormItem className="w-3/6">
+                    <FormItem className="w-3/6 font-mono">
                       <FormControl>
                         <Input placeholder="Key" {...field} />
                       </FormControl>
@@ -391,6 +394,8 @@ export default function Page({}) {
                 </div>
               </div>
             ))}
+
+            <Separator className="mt-4" />
 
             <div className="flex justify-between pt-2">
               <Button type="submit" disabled={mutation.isPending}>

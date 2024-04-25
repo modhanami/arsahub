@@ -29,6 +29,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { resolveBasePath } from "@/lib/base-path";
 import { useRouter } from "next/navigation";
+import { KeyText } from "../../triggers/components/columns";
+import { cn, numberFormatter } from "@/lib/utils";
 
 export const columns: ColumnDef<RuleResponse>[] = [
   {
@@ -70,12 +72,14 @@ export const columns: ColumnDef<RuleResponse>[] = [
           >
             {row.original.trigger?.title}
           </span>
-          <span
-            className="truncate  text-muted-foreground"
-            title={formattedConditions || undefined}
-          >
-            {formattedConditions}
-          </span>
+          {formattedConditions && (
+            <KeyText
+              className="text-muted-foreground"
+              variant="outline"
+              title={formattedConditions}
+              text={formattedConditions}
+            />
+          )}
         </div>
       );
     },
@@ -91,11 +95,13 @@ export const columns: ColumnDef<RuleResponse>[] = [
       let actionSuffix;
       const isAddPoints = row.original.action === "add_points";
       const isUnlockAchievement = row.original.action === "unlock_achievement";
+      const isPointsExpression = !!row.original.actionPointsExpression;
 
       if (isAddPoints) {
         actionLabel = "Add";
         actionParam =
-          row.original.actionPoints || row.original.actionPointsExpression;
+          row.original.actionPoints?.toString() ||
+          row.original.actionPointsExpression;
         actionSuffix = row.original.actionPoints === 1 ? "point" : "points";
       }
       if (isUnlockAchievement) {
@@ -104,9 +110,23 @@ export const columns: ColumnDef<RuleResponse>[] = [
       }
 
       return (
-        <div className="flex space-x-1 max-w-[300px] truncate">
+        <div className="flex max-w-[300px]">
           <span>{actionLabel}</span>
-          <span className="text-muted-foreground truncate">{actionParam}</span>
+          {/*<span className="text-muted-foreground truncate">{actionParam}</span>*/}
+          <KeyText
+            className={cn("bg-muted mx-2", {
+              "text-amber-300": isAddPoints,
+              "text-green-300": isUnlockAchievement,
+              "text-cyan-300": isPointsExpression,
+            })}
+            variant="outline"
+            title={actionParam || undefined}
+            text={
+              isAddPoints && !isPointsExpression
+                ? numberFormatter.format(Number(actionParam))
+                : actionParam
+            }
+          />
           <span>{actionSuffix}</span>
         </div>
       );
@@ -141,7 +161,9 @@ export const columns: ColumnDef<RuleResponse>[] = [
           className="truncate max-w-[100px]"
           title={row.original.repeatability || undefined}
         >
-          {row.original.repeatability}
+          {row.original.repeatability === "once_per_user"
+            ? "Once per user"
+            : "Unlimited"}
         </span>
       );
     },
