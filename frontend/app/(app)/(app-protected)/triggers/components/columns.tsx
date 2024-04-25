@@ -47,22 +47,24 @@ import { cn } from "@/lib/utils";
 interface KeyTextProps {
   text: string | undefined | null;
   variant?: "outline" | "solid";
+  className?: string;
 }
 
-export function KeyText({ text, variant }: KeyTextProps) {
+export function KeyText({ text, variant, className }: KeyTextProps) {
   const variantClass =
     variant === "outline"
       ? "border border-muted-foreground/50 text-primary/80"
       : "bg-muted border border-muted-foreground/50 text-muted-foreground";
   return (
-    <span
+    <div
       className={cn(
         " truncate font-medium text-sm font-mono px-2 py-0.5  rounded-md",
         variantClass,
+        className,
       )}
     >
       {text}
-    </span>
+    </div>
   );
 }
 
