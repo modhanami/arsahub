@@ -48,9 +48,10 @@ interface KeyTextProps {
   text: string | undefined | null;
   variant?: "outline" | "solid";
   className?: string;
+  title?: string;
 }
 
-export function KeyText({ text, variant, className }: KeyTextProps) {
+export function KeyText({ text, variant, className, title }: KeyTextProps) {
   const variantClass =
     variant === "outline"
       ? "border border-muted-foreground/50 text-primary/80"
@@ -58,10 +59,11 @@ export function KeyText({ text, variant, className }: KeyTextProps) {
   return (
     <div
       className={cn(
-        " truncate font-medium text-sm font-mono px-2 py-0.5  rounded-md",
+        " font-medium text-sm font-mono px-2 py-0.5  rounded-md",
         variantClass,
         className,
       )}
+      title={title}
     >
       {text}
     </div>
