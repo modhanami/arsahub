@@ -1,4 +1,4 @@
-import { ChangeEvent, ChangeEventHandler, useState } from "react";
+import { ChangeEvent, ChangeEventHandler, useEffect, useState } from "react";
 
 type TextInputElement = HTMLInputElement | HTMLTextAreaElement;
 
@@ -21,6 +21,10 @@ export const useCharCountWithColor = (
       }
     };
   };
+
+  useEffect(() => {
+    setCharCount(initialValue.length);
+  }, [initialValue]);
 
   const getColor = () => {
     const ratio = charCount / maxLength;
