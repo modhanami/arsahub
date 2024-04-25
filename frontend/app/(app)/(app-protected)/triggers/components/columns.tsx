@@ -42,6 +42,29 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
+
+interface KeyTextProps {
+  text: string | undefined | null;
+  variant?: "outline" | "solid";
+}
+
+export function KeyText({ text, variant }: KeyTextProps) {
+  const variantClass =
+    variant === "outline"
+      ? "border border-muted-foreground/50 text-primary/80"
+      : "bg-muted border border-muted-foreground/50 text-muted-foreground";
+  return (
+    <span
+      className={cn(
+        " truncate font-medium text-sm font-mono px-2 py-0.5  rounded-md",
+        variantClass,
+      )}
+    >
+      {text}
+    </span>
+  );
+}
 
 export const columns: ColumnDef<TriggerResponse>[] = [
   // {
@@ -74,10 +97,11 @@ export const columns: ColumnDef<TriggerResponse>[] = [
       <DataTableColumnHeader column={column} title="Key" />
     ),
     cell: ({ row }) => {
-      const key = (row.getValue("key") as TriggerResponse["key"]) || undefined;
+      const key = (row.getValue("key") as TriggerResponse["key"])!;
       return (
-        <div className="flex flex-col max-w-[400px] gap-2" title={key}>
-          <span className=" truncate font-medium">{key}</span>
+        //   Monospace
+        <div className="flex max-w-[400px] gap-2 justify-start" title={key}>
+          <KeyText text={key} />
         </div>
       );
     },
@@ -125,7 +149,7 @@ export const columns: ColumnDef<TriggerResponse>[] = [
           {/* Should first two fields. If more than that, show eye icon to show full fields using dialog */}
           {firstTwoFields.map((field) => (
             <div key={field.key} className="flex gap-2">
-              <span className="truncate font-medium">{field.key}</span>
+              <KeyText text={field.key} variant="outline" />
               <span className="truncate text-muted-foreground">
                 {field.type}
               </span>
