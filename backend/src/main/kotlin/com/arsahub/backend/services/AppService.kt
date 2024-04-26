@@ -20,7 +20,9 @@ import com.arsahub.backend.services.actionhandlers.ActionResult
 import com.arsahub.backend.services.ruleengine.RuleEngine
 import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.validation.Valid
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -176,8 +178,16 @@ class AppService(
                 }
 
                 val appWebhooks = webhookRepository.findByApp(app)
-                webhookDeliveryService.publishWebhookEvents(app, appWebhooks, appUser, actionResult)
+
                 broadcastActionResult(actionResult, app, appUser.userId!!)
+
+                withContext(Dispatchers.IO) {
+                    runCatching {
+                        webhookDeliveryService.publishWebhookEvents(app, appWebhooks, appUser, actionResult)
+                    }.onFailure {
+                        logger.error(it) { "Failed to deliver webhook events" }
+                    }
+                }
             }
         }
     }

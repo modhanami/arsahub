@@ -1,19 +1,9 @@
 package com.arsahub.backend.services
 
-import com.arsahub.backend.dtos.request.Action
-import com.arsahub.backend.dtos.request.ActionDefinition
-import com.arsahub.backend.dtos.request.AddPointsAction
-import com.arsahub.backend.dtos.request.AddPointsExpressionAction
-import com.arsahub.backend.dtos.request.RuleCreateRequest
-import com.arsahub.backend.dtos.request.RuleUpdateRequest
-import com.arsahub.backend.dtos.request.UnlockAchievementAction
+import com.arsahub.backend.dtos.request.*
 import com.arsahub.backend.exceptions.ConflictException
 import com.arsahub.backend.exceptions.NotFoundException
-import com.arsahub.backend.models.App
-import com.arsahub.backend.models.Rule
-import com.arsahub.backend.models.RuleRepeatability
-import com.arsahub.backend.models.Trigger
-import com.arsahub.backend.models.TriggerField
+import com.arsahub.backend.models.*
 import com.arsahub.backend.repositories.RuleProgressRepository
 import com.arsahub.backend.repositories.RuleRepository
 import com.arsahub.backend.services.ruleengine.RuleEngine
@@ -92,7 +82,7 @@ class RuleService(
         rule.action = parsedAction.key
         when (parsedAction) {
             is AddPointsAction -> {
-                require(parsedAction.points > 0) { "Points must be greater than 0" }
+                require(parsedAction.points != 0) { "Points must not be zero" }
                 rule.actionPoints = parsedAction.points
             }
 
