@@ -42,6 +42,7 @@ import {
 import { Image } from "@nextui-org/react";
 import { getImageUrlFromKey } from "@/lib/image";
 import { KeyText } from "@/app/(app)/(app-protected)/triggers/components/columns";
+import { textColors } from "@/lib/textColors";
 
 const FormSchema = z.object({
   title: z
@@ -216,6 +217,7 @@ function UpdateRuleForm({ rule }: UpdateRuleFormProps) {
               </h4>
               <KeyText
                 variant="outline"
+                className={`${textColors.conditionExpression}`}
                 text={rule.conditionExpression ?? "-"}
                 title={rule.conditionExpression ?? "-"}
               />
@@ -240,10 +242,11 @@ function UpdateRuleForm({ rule }: UpdateRuleFormProps) {
 
             {rule.action == "add_points" &&
               (rule.actionPointsExpression ? (
-                <FormItem>
+                <FormItem className="flex flex-col items-start">
                   <FormLabel>Points Expression</FormLabel>
                   <KeyText
                     variant="outline"
+                    className={`${textColors.pointsExpression}`}
                     text={rule.actionPointsExpression}
                     title={rule.actionPointsExpression}
                   />
