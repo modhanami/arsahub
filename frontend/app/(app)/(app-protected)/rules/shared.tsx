@@ -30,3 +30,33 @@ export function SectionTitle({ number, title, isOptional }: SectionTitleProps) {
     </div>
   );
 }
+
+export const actions = [
+  {
+    label: "Add points",
+    key: "add_points",
+  },
+  {
+    label: "Unlock achievement",
+    key: "unlock_achievement",
+  },
+];
+
+export function getActionLabel(action: string) {
+  return actions.find((a) => a.key === action)?.label;
+}
+
+export const repeatabilities = [
+  {
+    label: "Once per user",
+    value: "once_per_user",
+  },
+  {
+    label: "Unlimited",
+    value: "unlimited",
+  },
+];
+
+export function getRepeatabilityLabel(repeatabilityValue: string) {
+  return repeatabilities.find((a) => a.value === repeatabilityValue)?.label;
+}

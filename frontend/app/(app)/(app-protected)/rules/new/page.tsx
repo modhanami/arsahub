@@ -57,33 +57,15 @@ import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { DashboardShell } from "@/components/shell";
 import { DashboardHeader } from "@/components/header";
-import { SectionTitle } from "@/app/(app)/(app-protected)/rules/shared";
+import {
+  actions,
+  repeatabilities,
+  SectionTitle,
+} from "@/app/(app)/(app-protected)/rules/shared";
 import { getImageUrlFromKey } from "@/lib/image";
 import { DevTool } from "@hookform/devtools";
 import { KeyText } from "@/app/(app)/(app-protected)/triggers/components/columns";
 import { isApiError } from "@/api";
-
-const actions = [
-  {
-    label: "Add points",
-    key: "add_points",
-  },
-  {
-    label: "Unlock achievement",
-    key: "unlock_achievement",
-  },
-];
-
-const repeatability = [
-  {
-    label: "Once per user",
-    value: "once_per_user",
-  },
-  {
-    label: "Unlimited",
-    value: "unlimited",
-  },
-];
 
 const addPointsSchema = z.object({
   key: z.literal("add_points"),
@@ -796,7 +778,7 @@ export default function Page() {
                         />
                       </SelectTrigger>
                       <SelectContent className="w-full">
-                        {repeatability.map((repeatability) => (
+                        {repeatabilities.map((repeatability) => (
                           <SelectItem
                             key={repeatability.value}
                             value={repeatability.value}
