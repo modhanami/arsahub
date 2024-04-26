@@ -83,7 +83,7 @@ export default function Page() {
                           "text-red-500": history.pointsChange < 0,
                         })}
                       >
-                        {history.points >= 0 ? "+" : "-"}
+                        {history.points >= 0 ? "+" : ""}
                         {numberFormatter.format(history.pointsChange)}
                       </div>
                       {/*  total */}

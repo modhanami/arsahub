@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Dialog } from "@/components/ui/dialog";
 import { AppUserEditForm } from "@/app/(app)/(app-protected)/users/app-user-edit-form";
+import { numberFormatter } from "@/lib/utils";
 
 export const columns: ColumnDef<AppUserResponse>[] = [
   {
@@ -69,9 +70,10 @@ export const columns: ColumnDef<AppUserResponse>[] = [
       <DataTableColumnHeader column={column} title="Points" />
     ),
     cell: ({ row }) => {
+      const formattedNumber = numberFormatter.format(row.getValue("points"));
       return (
-        <div className="max-w-[200px]" title={row.getValue("points")}>
-          <span className="truncate">{row.getValue("points")}</span>
+        <div className="max-w-[200px]" title={formattedNumber}>
+          <span className="truncate">{formattedNumber}</span>
         </div>
       );
     },
