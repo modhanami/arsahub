@@ -115,9 +115,9 @@ export const columns: ColumnDef<RuleResponse>[] = [
           {/*<span className="text-muted-foreground truncate">{actionParam}</span>*/}
           <KeyText
             className={cn("bg-muted mx-2", {
-              "text-amber-300": isAddPoints,
-              "text-green-300": isUnlockAchievement,
-              "text-cyan-300": isPointsExpression,
+              "dark:text-amber-300 text-amber-600": isAddPoints,
+              "dark:text-green-300 text-green-500": isUnlockAchievement,
+              "dark:text-cyan-300 text-cyan-500": isPointsExpression,
             })}
             variant="outline"
             title={actionParam || undefined}
