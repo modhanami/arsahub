@@ -444,7 +444,10 @@ class AppService(
         webhookId: Long,
     ) {
         val webhook = webhookRepository.findByAppAndId(app, webhookId) ?: throw NotFoundException("Webhook not found")
-        webhookRepository.delete(webhook)
+
+        webhook.markAsDeleted()
+
+        webhookRepository.save(webhook)
     }
 
     fun getWebhookRequests(
