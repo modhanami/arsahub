@@ -52,6 +52,7 @@ import {
   getFieldTypeExample,
   getFieldTypeLabel,
 } from "@/app/(app)/(app-protected)/triggers/shared";
+import { RuleAction } from "@/app/(app)/(app-protected)/rules/components/columns";
 
 type FormData = z.infer<typeof playgroundTriggerSchema>;
 
@@ -441,7 +442,6 @@ export function PlaygroundTriggerForm() {
                             name={`params.${index}.value`}
                             render={({ field }) => (
                               <div className="flex space-x-2 items-center">
-                                {/*<FormLabel>{param.key}</FormLabel>*/}
                                 <FormLabel>
                                   <div className="flex flex-col gap-1 min-w-[200px]">
                                     <KeyText
@@ -505,6 +505,10 @@ export function PlaygroundTriggerForm() {
                         {dryTriggerReferencingRules.map((rule) => (
                           <li className="text-sm font-medium " key={rule.id}>
                             {rule.title}
+                            <RuleAction
+                              rule={rule}
+                              className="pl-10 pt-1 pb-2 text-sm"
+                            />
                           </li>
                         ))}
                       </ul>
