@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSelectedLayoutSegment } from "next/navigation";
 
@@ -21,7 +22,16 @@ interface MainNavProps {
 export function MainNav({ items, children }: MainNavProps) {
   const segment = useSelectedLayoutSegment();
   const [showMobileMenu, setShowMobileMenu] = React.useState<boolean>(false);
-  const { theme } = useTheme();
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <div className="flex gap-6 md:gap-10">
@@ -33,7 +43,7 @@ export function MainNav({ items, children }: MainNavProps) {
       >
         <Image
           src={
-            theme === "light"
+            resolvedTheme === "light"
               ? resolveBasePath("/logo-dark.png")
               : resolveBasePath("/logo-light.png")
           }

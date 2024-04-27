@@ -12,7 +12,7 @@ import {
   StyledEngineProvider,
   ThemeProvider as MUIThemeProvider,
 } from "@mui/material/styles";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTheme } from "next-themes";
 
 const queryClient = new QueryClient();
@@ -30,6 +30,16 @@ export function Providers({ children }: { children: React.ReactNode }) {
       }),
     [nextTheme],
   );
+
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <MUIThemeProvider theme={theme}>
