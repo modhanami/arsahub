@@ -1,570 +1,551 @@
 /* tslint:disable */
 /* eslint-disable */
 
-// Generated using typescript-generator version 3.2.1263 on 2024-04-24 19:32:05.
+// Generated using typescript-generator version 3.2.1263 on 2024-04-27 13:08:32.
 
 export interface AchievementCreateRequest {
-  title: string;
-  description: string | null;
-  imageId: string | null;
+    title: string;
+    description: string | null;
+    imageId: string | null;
 }
 
 export interface AchievementSetImageRequest {
-  achievementId: number;
-  image: MultipartFile;
+    achievementId: number;
+    image: MultipartFile;
+}
+
+export interface AchievementUpdateRequest {
+    title: string | null;
+    description: string | null;
+    imageId: string | null;
 }
 
 export interface Action {
-  key: string;
+    key: string;
 }
 
 export interface AddPointsAction extends Action {
-  points: number;
+    points: number;
 }
 
 export interface AddPointsExpressionAction extends Action {
-  pointsExpression: string;
+    pointsExpression: string;
 }
 
 export interface AppUserCreateRequest {
-  uniqueId: string;
-  displayName: string;
+    uniqueId: string;
+    displayName: string;
 }
 
 export interface AppUserUpdateRequest {
-  displayName: string;
+    displayName: string;
 }
 
 export interface CustomUnitCreateRequest {
-  name: string;
-  key: string;
+    name: string;
+    key: string;
 }
 
 export interface FieldDefinition {
-  key: string | null;
-  type: string | null;
-  label: string | null;
+    key: string | null;
+    type: string | null;
+    label: string | null;
 }
 
 export interface KeyAndParams {
-  params: { [index: string]: any } | null;
-  key: string | null;
+    params: { [index: string]: any } | null;
+    key: string | null;
 }
 
 export interface RewardCreateRequest {
-  price: number | null;
-  quantity: number | null;
-  maxUserRedemptions: number | null;
-  name: string | null;
-  description: string | null;
+    price: number | null;
+    quantity: number | null;
+    maxUserRedemptions: number | null;
+    name: string | null;
+    description: string | null;
 }
 
 export interface RewardRedeemRequest {
-  rewardId: number;
-  userId: string;
+    rewardId: number;
+    userId: string;
 }
 
 export interface RewardSetImageRequest {
-  rewardId: number;
-  image: MultipartFile;
+    rewardId: number;
+    image: MultipartFile;
 }
 
 export interface RuleCreateRequest {
-  trigger: KeyAndParams;
-  action: KeyAndParams;
-  conditionExpression: string | null;
-  title: string | null;
-  description: string | null;
-  repeatability: string | null;
-  accumulatedFields: string[] | null;
+    trigger: KeyAndParams;
+    action: KeyAndParams;
+    conditionExpression: string | null;
+    title: string | null;
+    description: string | null;
+    repeatability: string | null;
+    accumulatedFields: string[] | null;
 }
 
-export interface RuleCreateRequestKt {}
+export interface RuleCreateRequestKt {
+}
 
 export interface RuleUpdateRequest {
-  title: string | null;
-  description: string | null;
+    title: string | null;
+    description: string | null;
 }
 
 export interface TriggerCreateRequest {
-  fields: FieldDefinition[] | null;
-  title: string | null;
-  description: string | null;
+    fields: FieldDefinition[] | null;
+    title: string | null;
+    description: string | null;
 }
 
 export interface TriggerSendRequest {
-  params: { [index: string]: any } | null;
-  key: string | null;
-  userId: string | null;
+    params: { [index: string]: any } | null;
+    key: string | null;
+    userId: string | null;
 }
 
 export interface TriggerUpdateRequest {
-  title: string | null;
-  description: string | null;
+    title: string | null;
+    description: string | null;
 }
 
 export interface UnlockAchievementAction extends Action {
-  achievementId: number;
+    achievementId: number;
 }
 
 export interface UserLoginRequest {
-  email: string;
-  password: string;
+    email: string;
+    password: string;
 }
 
 export interface UserSignupRequest {
-  email: string;
-  password: string;
+    email: string;
+    password: string;
 }
 
 export interface WebhookCreateRequest {
-  url: string | null;
+    url: string | null;
 }
 
 export interface AchievementResponse {
-  achievementId: number;
-  title: string;
-  description: string | null;
-  imageKey: string | null;
-  imageMetadata: { [index: string]: any } | null;
+    achievementId: number;
+    title: string;
+    description: string | null;
+    imageKey: string | null;
+    imageMetadata: { [index: string]: any } | null;
 }
 
 export interface AchievementWithUnlockCount {
-  achievement: Achievement;
-  count: number;
+    achievement: Achievement;
+    count: number;
 }
 
 export interface AchievementWithUnlockCountResponse {
-  achievement: AchievementResponse;
-  count: number;
+    achievement: AchievementResponse;
+    count: number;
 }
 
 export interface ApiError {
-  message: string;
+    message: string;
 }
 
 export interface ApiValidationError {
-  message: string;
-  errors: { [index: string]: string };
+    message: string;
+    errors: { [index: string]: string };
 }
 
 export interface AppResponse {
-  id: number;
-  name: string;
-  apiKey: string;
+    id: number;
+    name: string;
+    apiKey: string;
 }
 
 export interface AppUserPointsHistoryResponse {
-  id: number;
-  appId: number;
-  points: number;
-  pointsChange: number;
-  fromRule: RuleResponse | null;
-  createdAt: Date;
+    id: number;
+    appId: number;
+    points: number;
+    pointsChange: number;
+    fromRule: RuleResponse | null;
+    createdAt: Date;
 }
 
 export interface AppUserResponse {
-  userId: string;
-  displayName: string;
-  points: number;
-  achievements: AchievementResponse[];
-  createdAt: Date | null;
-  updatedAt: Date | null;
+    userId: string;
+    displayName: string;
+    points: number;
+    achievements: AchievementResponse[];
+    createdAt: Date | null;
+    updatedAt: Date | null;
 }
 
 export interface AppWithAPIToken {
-  app: App;
-  apiKey: string;
+    app: App;
+    apiKey: string;
 }
 
 export interface LeaderboardResponse {
-  leaderboard: string;
-  entries: Entry[];
+    leaderboard: string;
+    entries: Entry[];
 }
 
 export interface Entry {
-  rank: number;
-  userId: string;
-  memberName: string;
-  score: number;
+    rank: number;
+    userId: string;
+    memberName: string;
+    score: number;
 }
 
 export interface LoginResponse {
-  accessToken: string;
+    accessToken: string;
 }
 
 export interface RewardResponse {
-  id: number | null;
-  name: string | null;
-  description: string | null;
-  price: number | null;
-  quantity: number | null;
-  maxUserRedemptions: number | null;
-  imageKey: string | null;
-  imageMetadata: { [index: string]: any } | null;
+    id: number | null;
+    name: string | null;
+    description: string | null;
+    price: number | null;
+    quantity: number | null;
+    maxUserRedemptions: number | null;
+    imageKey: string | null;
+    imageMetadata: { [index: string]: any } | null;
 }
 
 export interface RewardResponseWithCount {
-  reward: RewardResponse;
-  count: number;
+    reward: RewardResponse;
+    count: number;
 }
 
 export interface RewardWithCount {
-  reward: Reward;
-  count: number;
+    reward: Reward;
+    count: number;
 }
 
 export interface RuleResponse {
-  createdAt: Date | null;
-  updatedAt: Date | null;
-  title: string | null;
-  description: string | null;
-  trigger: TriggerResponse | null;
-  action: string | null;
-  actionPoints: number | null;
-  actionPointsExpression: string | null;
-  actionAchievement: AchievementResponse | null;
-  id: number | null;
-  repeatability: string | null;
-  conditionExpression: string | null;
-  accumulatedFields: string[] | null;
+    createdAt: Date | null;
+    updatedAt: Date | null;
+    title: string | null;
+    description: string | null;
+    trigger: TriggerResponse | null;
+    action: string | null;
+    actionPoints: number | null;
+    actionPointsExpression: string | null;
+    actionAchievement: AchievementResponse | null;
+    id: number | null;
+    repeatability: string | null;
+    conditionExpression: string | null;
+    accumulatedFields: string[] | null;
 }
 
 export interface SignupResponse {
-  accessToken: string;
+    accessToken: string;
 }
 
 export interface TempImageUploadResponse {
-  id: string;
+    id: string;
 }
 
 export interface TransactionResponse {
-  id: number | null;
-  pointsSpent: number | null;
-  createdAt: number | null;
-  referenceNumber: string | null;
+    id: number | null;
+    pointsSpent: number | null;
+    createdAt: number | null;
+    referenceNumber: string | null;
 }
 
 export interface TriggerResponse {
-  createdAt: Date | null;
-  updatedAt: Date | null;
-  title: string | null;
-  description: string | null;
-  key: string | null;
-  id: number | null;
-  fields: FieldDefinition[] | null;
+    createdAt: Date | null;
+    updatedAt: Date | null;
+    title: string | null;
+    description: string | null;
+    key: string | null;
+    id: number | null;
+    fields: FieldDefinition[] | null;
 }
 
 export interface TriggerWithTriggerCount {
-  trigger: Trigger;
-  count: number;
+    trigger: Trigger;
+    count: number;
 }
 
 export interface TriggerWithTriggerCountResponse {
-  trigger: TriggerResponse;
-  count: number;
+    trigger: TriggerResponse;
+    count: number;
 }
 
 export interface UserResponse {
-  userId: number;
-  internalUserId: number;
-  externalUserId: string;
-  googleUserId: string | null;
-  email: string;
-  name: string;
+    userId: number;
+    internalUserId: number;
+    externalUserId: string;
+    googleUserId: string | null;
+    email: string;
+    name: string;
 }
 
 export interface WebhookPayload {
-  id: string;
-  appId: number;
-  webhookUrl: string;
-  event: string;
-  appUserId: string;
-  payload: { [index: string]: any };
+    id: string;
+    appId: number;
+    webhookUrl: string;
+    event: string;
+    appUserId: string;
+    payload: { [index: string]: any };
 }
 
 export interface WebhookRequestResponse {
-  id: number;
-  webhookId: number;
-  requestBody: { [index: string]: any };
-  statusId: number;
-  statusName: string;
-  signature: string;
-  appId: number;
+    id: number;
+    webhookId: number;
+    requestBody: { [index: string]: any };
+    statusId: number;
+    statusName: string;
+    signature: string;
+    appId: number;
 }
 
 export interface WebhookResponse {
-  id: number;
-  url: string;
-  secretKey: string | null;
+    id: number;
+    url: string;
+    secretKey: string | null;
 }
 
 export interface AchievementUnlock extends AppUpdate {
-  userId: string;
-  achievement: AchievementResponse;
+    userId: string;
+    achievement: AchievementResponse;
 }
 
-export interface AppUpdate {}
+export interface AppUpdate {
+}
 
 export interface LeaderboardUpdate extends AppUpdate {
-  leaderboard: LeaderboardResponse;
+    leaderboard: LeaderboardResponse;
 }
 
 export interface PointsUpdate extends AppUpdate {
-  userId: string;
-  points: number;
+    userId: string;
+    points: number;
 }
 
 export interface SupabaseIdentity {
-  supabaseUserId: string;
-  googleUserId: string | null;
-  email: string;
-  name: string;
+    supabaseUserId: string;
+    googleUserId: string | null;
+    email: string;
+    name: string;
 }
 
 export interface UserIdentity {
-  internalUserId: number;
-  externalUserId: string;
-  googleUserId: string | null;
-  email: string;
-  name: string;
+    internalUserId: number;
+    externalUserId: string;
+    googleUserId: string | null;
+    email: string;
+    name: string;
 }
 
 export interface MultipartFile extends InputStreamSource {
-  name: string;
-  bytes: any;
-  empty: boolean;
-  resource: Resource;
-  size: number;
-  contentType: string;
-  originalFilename: string;
+    contentType: string;
+    originalFilename: string;
+    name: string;
+    bytes: any;
+    empty: boolean;
+    resource: Resource;
+    size: number;
 }
 
-export interface Achievement
-  extends AuditedEntity,
-    ManagedEntity,
-    PersistentAttributeInterceptable,
-    ExtendedSelfDirtinessTracker {
-  title: string;
-  description: string | null;
-  appUserAchievements: AppUserAchievement[];
-  app: App | null;
-  imageKey: string | null;
-  imageMetadata: { [index: string]: any } | null;
-  achievementId: number | null;
+export interface Achievement extends AuditedEntity, ManagedEntity, PersistentAttributeInterceptable, ExtendedSelfDirtinessTracker {
+    title: string;
+    description: string | null;
+    appUserAchievements: AppUserAchievement[];
+    app: App | null;
+    imageKey: string | null;
+    imageMetadata: { [index: string]: any } | null;
+    achievementId: number | null;
 }
 
-export interface App
-  extends AuditedEntity,
-    ManagedEntity,
-    PersistentAttributeInterceptable,
-    SelfDirtinessTracker {
-  title: string | null;
-  description: string | null;
-  apiKey: string | null;
-  owner: User | null;
-  id: number | null;
+export interface App extends AuditedEntity, ManagedEntity, PersistentAttributeInterceptable, SelfDirtinessTracker {
+    title: string | null;
+    description: string | null;
+    apiKey: string | null;
+    owner: User | null;
+    id: number | null;
 }
 
-export interface Reward
-  extends AuditedEntity,
-    ManagedEntity,
-    PersistentAttributeInterceptable,
-    ExtendedSelfDirtinessTracker {
-  app: App | null;
-  name: string | null;
-  description: string | null;
-  price: number | null;
-  type: RewardType | null;
-  data: { [index: string]: any } | null;
-  quantity: number | null;
-  imageKey: string | null;
-  imageMetadata: { [index: string]: any } | null;
-  maxUserRedemptions: number | null;
-  id: number | null;
+export interface Reward extends AuditedEntity, ManagedEntity, PersistentAttributeInterceptable, ExtendedSelfDirtinessTracker {
+    app: App | null;
+    name: string | null;
+    description: string | null;
+    price: number | null;
+    type: RewardType | null;
+    data: { [index: string]: any } | null;
+    quantity: number | null;
+    imageKey: string | null;
+    imageMetadata: { [index: string]: any } | null;
+    maxUserRedemptions: number | null;
+    id: number | null;
 }
 
-export interface Trigger
-  extends AuditedEntity,
-    ManagedEntity,
-    PersistentAttributeInterceptable,
-    ExtendedSelfDirtinessTracker {
-  title: string | null;
-  description: string | null;
-  rules: Rule[];
-  key: string | null;
-  app: App | null;
-  fields: TriggerField[];
-  id: number | null;
+export interface Trigger extends AuditedEntity, ManagedEntity, PersistentAttributeInterceptable, ExtendedSelfDirtinessTracker {
+    title: string | null;
+    description: string | null;
+    rules: Rule[];
+    key: string | null;
+    app: App | null;
+    fields: TriggerField[];
+    id: number | null;
 }
 
 export interface Resource extends InputStreamSource {
-  open: boolean;
-  file: any;
-  readable: boolean;
-  url: URL;
-  description: string;
-  filename: string;
-  uri: URI;
-  contentAsByteArray: any;
+    file: any;
+    readable: boolean;
+    url: URL;
+    description: string;
+    filename: string;
+    uri: URI;
+    contentAsByteArray: any;
+    open: boolean;
 }
 
 export interface InputStreamSource {
-  inputStream: any;
+    inputStream: any;
 }
 
-export interface AppUserAchievement
-  extends ManagedEntity,
-    PersistentAttributeInterceptable,
-    SelfDirtinessTracker {
-  achievement: Achievement | null;
-  appUser: AppUser | null;
-  completedAt: Date | null;
-  app: App | null;
-  id: number | null;
+export interface AppUserAchievement extends ManagedEntity, PersistentAttributeInterceptable, SelfDirtinessTracker {
+    achievement: Achievement | null;
+    appUser: AppUser | null;
+    completedAt: Date | null;
+    app: App | null;
+    id: number | null;
 }
 
 export interface AuditedEntity extends ManagedMappedSuperclass {
-  createdAt: Date | null;
-  updatedAt: Date | null;
+    createdAt: Date | null;
+    updatedAt: Date | null;
 }
 
-export interface ManagedEntity extends Managed {}
-
-export interface PersistentAttributeInterceptable
-  extends PrimeAmongSecondarySupertypes {}
-
-export interface ExtendedSelfDirtinessTracker extends SelfDirtinessTracker {}
-
-export interface User
-  extends AuditedEntity,
-    ManagedEntity,
-    PersistentAttributeInterceptable,
-    SelfDirtinessTracker {
-  externalUserId: string | null;
-  email: string | null;
-  googleUserId: string | null;
-  name: string | null;
-  userId: number | null;
+export interface ManagedEntity extends Managed {
 }
 
-export interface SelfDirtinessTracker extends PrimeAmongSecondarySupertypes {}
-
-export interface RewardType
-  extends ManagedEntity,
-    PersistentAttributeInterceptable,
-    SelfDirtinessTracker {
-  id: number | null;
-  key: string | null;
-  name: string | null;
+export interface PersistentAttributeInterceptable extends PrimeAmongSecondarySupertypes {
 }
 
-export interface Rule
-  extends AuditedEntity,
-    ManagedEntity,
-    PersistentAttributeInterceptable,
-    ExtendedSelfDirtinessTracker {
-  title: string | null;
-  description: string | null;
-  trigger: Trigger | null;
-  triggerParams: { [index: string]: any } | null;
-  app: App | null;
-  action: string | null;
-  actionPoints: number | null;
-  actionAchievement: Achievement | null;
-  repeatability: string | null;
-  conditionExpression: string | null;
-  deletedAt: Date | null;
-  accumulatedFields: string[] | null;
-  actionPointsExpression: string | null;
-  id: number | null;
+export interface ExtendedSelfDirtinessTracker extends SelfDirtinessTracker {
 }
 
-export interface TriggerField
-  extends ManagedEntity,
-    PersistentAttributeInterceptable,
-    SelfDirtinessTracker {
-  key: string | null;
-  type: string | null;
-  label: string | null;
-  trigger: Trigger | null;
-  id: number | null;
+export interface User extends AuditedEntity, ManagedEntity, PersistentAttributeInterceptable, SelfDirtinessTracker {
+    externalUserId: string | null;
+    email: string | null;
+    googleUserId: string | null;
+    name: string | null;
+    userId: number | null;
 }
 
-export interface URL extends Serializable {}
-
-export interface URI extends Comparable<URI>, Serializable {}
-
-export interface AppUser
-  extends AuditedEntity,
-    ManagedEntity,
-    PersistentAttributeInterceptable,
-    ExtendedSelfDirtinessTracker {
-  userId: string | null;
-  displayName: string | null;
-  app: App | null;
-  points: number | null;
-  achievements: AppUserAchievement[];
-  user: User | null;
-  id: number | null;
+export interface SelfDirtinessTracker extends PrimeAmongSecondarySupertypes {
 }
 
-export interface ManagedMappedSuperclass extends Managed {}
+export interface RewardType extends ManagedEntity, PersistentAttributeInterceptable, SelfDirtinessTracker {
+    id: number | null;
+    key: string | null;
+    name: string | null;
+}
 
-export interface Managed extends PrimeAmongSecondarySupertypes {}
+export interface Rule extends AuditedEntity, ManagedEntity, PersistentAttributeInterceptable, ExtendedSelfDirtinessTracker {
+    title: string | null;
+    description: string | null;
+    trigger: Trigger | null;
+    triggerParams: { [index: string]: any } | null;
+    app: App | null;
+    action: string | null;
+    actionPoints: number | null;
+    actionAchievement: Achievement | null;
+    repeatability: string | null;
+    conditionExpression: string | null;
+    deletedAt: Date | null;
+    accumulatedFields: string[] | null;
+    actionPointsExpression: string | null;
+    id: number | null;
+}
 
-export interface PrimeAmongSecondarySupertypes {}
+export interface TriggerField extends ManagedEntity, PersistentAttributeInterceptable, SelfDirtinessTracker {
+    key: string | null;
+    type: string | null;
+    label: string | null;
+    trigger: Trigger | null;
+    id: number | null;
+}
 
-export interface Serializable {}
+export interface URL extends Serializable {
+}
 
-export interface Comparable<T> {}
+export interface URI extends Comparable<URI>, Serializable {
+}
+
+export interface AppUser extends AuditedEntity, ManagedEntity, PersistentAttributeInterceptable, ExtendedSelfDirtinessTracker {
+    userId: string | null;
+    displayName: string | null;
+    app: App | null;
+    points: number | null;
+    achievements: AppUserAchievement[];
+    user: User | null;
+    id: number | null;
+}
+
+export interface ManagedMappedSuperclass extends Managed {
+}
+
+export interface Managed extends PrimeAmongSecondarySupertypes {
+}
+
+export interface PrimeAmongSecondarySupertypes {
+}
+
+export interface Serializable {
+}
+
+export interface Comparable<T> {
+}
 
 export const enum AnalyticsConstants {
-  TOTAL_UNLOCKED_ACHIEVEMENTS = "total-unlocked-achievements",
-  TOP_10_ACHIEVEMENTS = "top-10-achievements",
-  TOP_10_TRIGGERS = "top-10-triggers",
-  TOTAL_APP_USERS = "total-app-users",
-  TOTAL_POINTS_EARNED = "total-points-earned",
+    TOTAL_UNLOCKED_ACHIEVEMENTS = "total-unlocked-achievements",
+    TOP_10_ACHIEVEMENTS = "top-10-achievements",
+    TOP_10_TRIGGERS = "top-10-triggers",
+    TOTAL_APP_USERS = "total-app-users",
+    TOTAL_POINTS_EARNED = "total-points-earned",
 }
 
 export const enum ValidationLengths {
-  TITLE_MIN_LENGTH = 4,
-  TITLE_MAX_LENGTH = 200,
-  NAME_MIN_LENGTH = 4,
-  NAME_MAX_LENGTH = 200,
-  DESCRIPTION_MAX_LENGTH = 500,
-  KEY_MIN_LENGTH = 4,
-  KEY_MAX_LENGTH = 200,
-  PASSWORD_MIN_LENGTH = 8,
-  PASSWORD_MAX_LENGTH = 50,
-  LABEL_MIN_LENGTH = 4,
-  LABEL_MAX_LENGTH = 200,
-  APP_USER_UID_MIN_LENGTH = 4,
-  APP_USER_UID_MAX_LENGTH = 200,
-  APP_USER_DISPLAY_NAME_MIN_LENGTH = 4,
-  APP_USER_DISPLAY_NAME_MAX_LENGTH = 200,
+    TITLE_MIN_LENGTH = 4,
+    TITLE_MAX_LENGTH = 200,
+    NAME_MIN_LENGTH = 4,
+    NAME_MAX_LENGTH = 200,
+    DESCRIPTION_MAX_LENGTH = 500,
+    KEY_MIN_LENGTH = 4,
+    KEY_MAX_LENGTH = 200,
+    PASSWORD_MIN_LENGTH = 8,
+    PASSWORD_MAX_LENGTH = 50,
+    LABEL_MIN_LENGTH = 4,
+    LABEL_MAX_LENGTH = 200,
+    APP_USER_UID_MIN_LENGTH = 4,
+    APP_USER_UID_MAX_LENGTH = 200,
+    APP_USER_DISPLAY_NAME_MIN_LENGTH = 4,
+    APP_USER_DISPLAY_NAME_MAX_LENGTH = 200,
 }
 
 export const enum ValidationMessages {
-  TITLE_REQUIRED = "Title is required",
-  TITLE_LENGTH = "Title must be between 4 and 200 characters",
-  TITLE_PATTERN = "Title must contain only alphanumeric characters, spaces, underscores, and dashes",
-  NAME_REQUIRED = "Name is required",
-  NAME_LENGTH = "Name must be between 4 and 200 characters",
-  NAME_PATTERN = "Name must contain only alphanumeric characters, spaces, underscores, and dashes",
-  DESCRIPTION_LENGTH = "Description cannot be longer than 500 characters",
-  KEY_REQUIRED = "Key is required",
-  KEY_LENGTH = "Key must be between 4 and 200 characters",
-  KEY_PATTERN = "Key must contain only alphanumeric characters, underscores, and dashes",
-  PASSWORD_REQUIRED = "Password is required",
-  PASSWORD_LENGTH = "Password must be between 8 and 50 characters",
-  TYPE_REQUIRED = "Type is required",
-  LABEL_LENGTH = "Label must be between 4 and 200 characters",
-  REPEATABILITY_REQUIRED = "Repeatability is required",
-  APP_USER_UID_REQUIRED = "App user UID is required",
-  APP_USER_UID_LENGTH = "UID must be between 4 and 200 characters",
-  APP_USER_UID_PATTERN = "UID must contain only alphanumeric characters, underscores, and dashes",
-  APP_USER_DISPLAY_NAME_REQUIRED = "Display name is required",
-  APP_USER_DISPLAY_NAME_LENGTH = "Display name must be between 4 and 200 characters",
-  APP_USER_DISPLAY_NAME_PATTERN = "Display name must contain only alphanumeric characters, underscores, and dashes",
+    TITLE_REQUIRED = "Title is required",
+    TITLE_LENGTH = "Title must be between 4 and 200 characters",
+    TITLE_PATTERN = "Title must contain only alphanumeric characters, spaces, underscores, and dashes",
+    NAME_REQUIRED = "Name is required",
+    NAME_LENGTH = "Name must be between 4 and 200 characters",
+    NAME_PATTERN = "Name must contain only alphanumeric characters, spaces, underscores, and dashes",
+    DESCRIPTION_LENGTH = "Description cannot be longer than 500 characters",
+    KEY_REQUIRED = "Key is required",
+    KEY_LENGTH = "Key must be between 4 and 200 characters",
+    KEY_PATTERN = "Key must contain only alphanumeric characters, underscores, and dashes",
+    PASSWORD_REQUIRED = "Password is required",
+    PASSWORD_LENGTH = "Password must be between 8 and 50 characters",
+    TYPE_REQUIRED = "Type is required",
+    LABEL_LENGTH = "Label must be between 4 and 200 characters",
+    REPEATABILITY_REQUIRED = "Repeatability is required",
+    APP_USER_UID_REQUIRED = "App user UID is required",
+    APP_USER_UID_LENGTH = "UID must be between 4 and 200 characters",
+    APP_USER_UID_PATTERN = "UID must contain only alphanumeric characters, underscores, and dashes",
+    APP_USER_DISPLAY_NAME_REQUIRED = "Display name is required",
+    APP_USER_DISPLAY_NAME_LENGTH = "Display name must be between 4 and 200 characters",
+    APP_USER_DISPLAY_NAME_PATTERN = "Display name must contain only alphanumeric characters, underscores, and dashes",
 }

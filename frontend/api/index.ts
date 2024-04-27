@@ -1,6 +1,7 @@
 import {
   AchievementCreateRequest,
   AchievementResponse,
+  AchievementUpdateRequest,
   ApiError,
   ApiValidationError,
   AppResponse,
@@ -109,6 +110,23 @@ export async function createAchievement(
   const { data } = await instance.post<AchievementResponse>(
     `${API_URL}/apps/achievements`,
     newAchievement,
+    {
+      headers: {
+        ...makeAppAuthHeader(app),
+      },
+    },
+  );
+  return data;
+}
+
+export async function updateAchievement(
+  app: AppResponse,
+  achievementId: number,
+  updateRequest: AchievementUpdateRequest,
+) {
+  const { data } = await instance.patch<AchievementResponse>(
+    `${API_URL}/apps/achievements/${achievementId}`,
+    updateRequest,
     {
       headers: {
         ...makeAppAuthHeader(app),

@@ -27,6 +27,8 @@ import { useDeleteAchievement } from "@/hooks";
 import { isApiError } from "@/api";
 import { DataTableRowActionsProps } from "@/app/(app)/examples/tasks/components/data-table-row-actions";
 import { getImageUrlFromKey } from "@/lib/image";
+import { Dialog } from "@/components/ui/dialog";
+import { AchievementEditForm } from "@/components/edit-achievement";
 
 export const columns: ColumnDef<AchievementResponse>[] = [
   {
@@ -47,31 +49,23 @@ export const columns: ColumnDef<AchievementResponse>[] = [
               radius="none"
             />
           )}
-          <span className="max-w-[400px] truncate font-medium">
-            {row.getValue("title")}
-          </span>
-        </div>
-      );
-    },
-  },
-  {
-    accessorKey: "description",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Description" />
-    ),
-    cell: ({ row }) => {
-      return (
-        <div className="flex space-x-2">
-          <span className="max-w-[400px] truncate font-medium">
-            {row.getValue("description")}
-          </span>
+          <div className="flex flex-col gap-2 max-w-[60vw]">
+            <span className="truncate font-medium">
+              {row.getValue("title")}
+            </span>
+            <span className="truncate text-muted-foreground">
+              {row.original["description"]}
+            </span>
+          </div>
         </div>
       );
     },
   },
   {
     id: "actions",
-    cell: ({ row }) => <AchievementRowActions row={row} />,
+    cell: ({ row }) => (
+      <AchievementRowActions row={row} key={row.original.achievementId} />
+    ),
   },
 ];
 
@@ -130,7 +124,12 @@ export function AchievementRowActions({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {/*<Dialog open={showEditDialog} onOpenChange={setShowEditDialog}></Dialog>*/}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <AchievementEditForm
+          achievement={row.original}
+          onUpdated={() => setShowEditDialog(false)}
+        />
+      </Dialog>
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
