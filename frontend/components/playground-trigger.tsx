@@ -48,6 +48,10 @@ import { useDebounceCallback } from "usehooks-ts";
 import { KeyText } from "@/app/(app)/(app-protected)/triggers/components/columns";
 import { Icons } from "./icons";
 import { Separator } from "@/components/ui/separator";
+import {
+  getFieldTypeExample,
+  getFieldTypeLabel,
+} from "@/app/(app)/(app-protected)/triggers/shared";
 
 type FormData = z.infer<typeof playgroundTriggerSchema>;
 
@@ -410,10 +414,10 @@ export function PlaygroundTriggerForm() {
                                   }}
                                 >
                                   <KeyText variant="outline" text={field.key} />
-                                  &nbsp;
-                                  <span className="text-muted-foreground">
-                                    {field.type}
-                                  </span>
+                                  <div className="text-muted-foreground ml-2">
+                                    {getFieldTypeLabel(field.type)} - Ex.{" "}
+                                    {getFieldTypeExample(field.type)}
+                                  </div>
                                 </DropdownMenuCheckboxItem>
                               );
                             })}
@@ -439,11 +443,17 @@ export function PlaygroundTriggerForm() {
                               <div className="flex space-x-2 items-center">
                                 {/*<FormLabel>{param.key}</FormLabel>*/}
                                 <FormLabel>
-                                  <KeyText variant="outline" text={param.key} />{" "}
-                                  &nbsp;
-                                  <span className="text-muted-foreground">
-                                    {triggerField?.type}
-                                  </span>
+                                  <div className="flex flex-col gap-1 min-w-[200px]">
+                                    <KeyText
+                                      variant="outline"
+                                      text={param.key}
+                                    />
+                                    <div className="text-muted-foreground">
+                                      {getFieldTypeLabel(triggerField?.type)} -
+                                      Ex.{" "}
+                                      {getFieldTypeExample(triggerField?.type)}
+                                    </div>
+                                  </div>
                                 </FormLabel>
                                 <FormControl>
                                   <Input

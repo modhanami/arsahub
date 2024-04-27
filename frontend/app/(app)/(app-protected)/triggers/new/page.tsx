@@ -43,6 +43,7 @@ import { toast } from "@/components/ui/use-toast";
 import {
   FieldTypeEnum,
   generateTriggerKeyFromTitle,
+  getFieldTypeExample,
   getFieldTypeLabel,
 } from "@/app/(app)/(app-protected)/triggers/shared";
 import { DashboardHeader } from "@/components/header";
@@ -364,14 +365,19 @@ export default function Page({}) {
                               className="w-1"
                             />
                           </SelectTrigger>
-                          <SelectContent className="w-full">
+                          <SelectContent className="w-full" position="popper">
                             {FieldTypeEnum.options.map((type) => (
                               <SelectItem
                                 key={type}
                                 value={type}
                                 className="flex items-center justify-between w-full"
                               >
-                                {getFieldTypeLabel(type)}
+                                <div className="flex flex-col gap-1">
+                                  <div>{getFieldTypeLabel(type)}</div>
+                                  <div className="text-xs text-muted-foreground">
+                                    Ex. {getFieldTypeExample(type)}
+                                  </div>
+                                </div>
                               </SelectItem>
                             ))}
                           </SelectContent>

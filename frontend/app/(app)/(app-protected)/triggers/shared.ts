@@ -22,6 +22,21 @@ export function getFieldTypeLabel(fieldType: string): string | undefined {
   }
 }
 
+export function getFieldTypeExample(fieldType: string): string | undefined {
+  switch (fieldType) {
+    case "text":
+      return "Hello, World!";
+    case "integer":
+      return "27";
+    case "integerSet":
+      return "27, 28, 29";
+    case "textSet":
+      return "Hello, World, !";
+    default:
+      return fieldType;
+  }
+}
+
 export function generateTriggerKeyFromTitle(title: string): string | undefined {
   const regex = /[a-zA-Z0-9_-]+/g;
   const matches = title.match(regex);
