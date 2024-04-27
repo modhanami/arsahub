@@ -2,7 +2,7 @@ name: Prod CI
 
 on:
   workflow_dispatch:
-  push:
+  pull_request:
     branches:
       - main
 
@@ -32,6 +32,7 @@ jobs:
           echo "Image Tags: $IMAGE_TAGS"
 
   build-and-push-backend:
+    if: false
     permissions:
       packages: write
     runs-on: ubuntu-latest
@@ -62,7 +63,7 @@ jobs:
     environment: prod
     strategy:
       matrix:
-        component: [ database, frontend, reverse-proxy ]
+        component: [ frontend ]
     permissions:
       packages: write
     steps:

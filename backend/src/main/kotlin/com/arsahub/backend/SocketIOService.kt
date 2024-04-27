@@ -7,7 +7,6 @@ import com.arsahub.backend.dtos.socketio.PointsUpdate
 import com.arsahub.backend.models.App
 import com.corundumstudio.socketio.AckRequest
 import com.corundumstudio.socketio.SocketIOClient
-import com.corundumstudio.socketio.SocketIONamespace
 import com.corundumstudio.socketio.SocketIOServer
 import com.corundumstudio.socketio.listener.ConnectListener
 import com.corundumstudio.socketio.listener.DisconnectListener
@@ -15,13 +14,11 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
 @Component
-class SocketIOService(val server: SocketIOServer) {
-    private final val defaultNamespace: SocketIONamespace by lazy { server.addNamespace("/default") }
-
+class SocketIOService(private final val server: SocketIOServer) {
     init {
-        defaultNamespace.addConnectListener(onConnected())
-        defaultNamespace.addDisconnectListener(onDisconnected())
-        defaultNamespace.addEventListener(
+        server.addConnectListener(onConnected())
+        server.addDisconnectListener(onDisconnected())
+        server.addEventListener(
             "subscribe-activity",
             Long::class.java,
         ) { client: SocketIOClient, data: Long, ackSender: AckRequest ->
@@ -29,7 +26,7 @@ class SocketIOService(val server: SocketIOServer) {
             client.joinRoom(getAppRoomName(data))
             ackSender.sendAckData("OK")
         }
-        defaultNamespace.addEventListener(
+        server.addEventListener(
             "subscribe-user",
             String::class.java,
         ) { client: SocketIOClient, rawUserId: String?, ackSender: AckRequest ->
@@ -49,7 +46,7 @@ class SocketIOService(val server: SocketIOServer) {
         data: AppUpdate,
     ) {
         val appId = app.id!!
-        val activityRoom = defaultNamespace.getRoomOperations(getAppRoomName(appId))
+        val activityRoom = server.getRoomOperations(getAppRoomName(appId))
         val type =
             when (data) {
                 is PointsUpdate -> "points-update"
@@ -72,7 +69,7 @@ class SocketIOService(val server: SocketIOServer) {
         userId: String,
         data: AppUpdate,
     ) {
-        val userRoom = defaultNamespace.getRoomOperations(getUserRoomName(userId))
+        val userRoom = server.getRoomOperations(getUserRoomName(userId))
         val type =
             when (data) {
                 is PointsUpdate -> "points-update"

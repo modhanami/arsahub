@@ -10,9 +10,11 @@ export function useSocket() {
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    const socket = io(`${SOCKET_IO_URL}/default`, {
+    const socket = io(`${SOCKET_IO_URL}`, {
       // forceNew: true,
-      timestampRequests: true,
+      rejectUnauthorized: false,
+      secure: true,
+      reconnection: true,
       path: resolveBasePath("/socket.io"),
     });
 
