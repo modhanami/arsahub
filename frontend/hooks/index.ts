@@ -32,6 +32,7 @@ import {
   sendTrigger,
   setAchievementImage,
   setRewardImage,
+  updateAchievement,
   updateAppUser,
   updateRule,
   updateTrigger,
@@ -41,6 +42,7 @@ import {
 import {
   AchievementCreateRequest,
   AchievementResponse,
+  AchievementUpdateRequest,
   AppUserCreateRequest,
   AppUserUpdateRequest,
   RewardCreateRequest,
@@ -104,6 +106,32 @@ export function useCreateAchievement() {
     mutationKey: ["achievements"],
     mutationFn: (newAchievement: AchievementCreateRequest) =>
       createAchievement(currentApp, newAchievement),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["achievements"] });
+    },
+  });
+}
+
+export interface EditAchievementParams {
+  achievementId: number;
+  updateRequest: AchievementUpdateRequest;
+}
+
+export function useEditAchievement() {
+  const { currentApp } = useCurrentApp();
+  const queryClient = useQueryClient();
+  if (!currentApp) {
+    throw new Error("No current app");
+  }
+
+  return useMutation({
+    mutationKey: ["achievements"],
+    mutationFn: (request: EditAchievementParams) =>
+      updateAchievement(
+        currentApp,
+        request.achievementId,
+        request.updateRequest,
+      ),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["achievements"] });
     },

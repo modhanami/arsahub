@@ -27,6 +27,8 @@ import { useDeleteAchievement } from "@/hooks";
 import { isApiError } from "@/api";
 import { DataTableRowActionsProps } from "@/app/(app)/examples/tasks/components/data-table-row-actions";
 import { getImageUrlFromKey } from "@/lib/image";
+import { Dialog } from "@/components/ui/dialog";
+import { AchievementEditForm } from "@/components/edit-achievement";
 
 export const columns: ColumnDef<AchievementResponse>[] = [
   {
@@ -71,7 +73,9 @@ export const columns: ColumnDef<AchievementResponse>[] = [
   },
   {
     id: "actions",
-    cell: ({ row }) => <AchievementRowActions row={row} />,
+    cell: ({ row }) => (
+      <AchievementRowActions row={row} key={row.original.achievementId} />
+    ),
   },
 ];
 
@@ -130,7 +134,12 @@ export function AchievementRowActions({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {/*<Dialog open={showEditDialog} onOpenChange={setShowEditDialog}></Dialog>*/}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <AchievementEditForm
+          achievement={row.original}
+          onUpdated={() => setShowEditDialog(false)}
+        />
+      </Dialog>
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>

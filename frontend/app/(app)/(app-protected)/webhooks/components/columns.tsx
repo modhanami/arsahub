@@ -68,7 +68,7 @@ export const columns: ColumnDef<WebhookResponse>[] = [
   },
   {
     id: "actions",
-    cell: ({ row }) => <WebhookRowActions row={row} />,
+    cell: ({ row }) => <WebhookRowActions row={row} key={row.original.id} />,
   },
 ];
 
