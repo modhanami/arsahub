@@ -12,7 +12,9 @@ export function useSocket() {
   useEffect(() => {
     const socket = io(`${SOCKET_IO_URL}`, {
       // forceNew: true,
-      timestampRequests: true,
+      rejectUnauthorized: false,
+      secure: true,
+      reconnection: true,
       path: resolveBasePath("/socket.io"),
     });
 
