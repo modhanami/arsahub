@@ -11,7 +11,7 @@ import { MobileNav } from "@/components/mobile-nav";
 import { CreateAppForm } from "./create-app";
 import { resolveBasePath } from "@/lib/base-path";
 import { useTheme } from "next-themes";
-import Image from "next/image";
+import { Image } from "@nextui-org/react";
 
 interface MainNavProps {
   items?: MainNavItem[];
@@ -37,10 +37,9 @@ export function MainNav({ items, children }: MainNavProps) {
               ? resolveBasePath("/logo-dark.png")
               : resolveBasePath("/logo-light.png")
           }
-          alt="logo"
-          className="h-4"
           width={100}
           height={24}
+          alt={"logo"}
         />
       </Link>
       {items?.length ? (
