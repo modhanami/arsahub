@@ -2,7 +2,7 @@ name: Prod CI
 
 on:
   workflow_dispatch:
-  push:
+  pull_request:
     branches:
       - main
 
@@ -62,7 +62,7 @@ jobs:
     environment: prod
     strategy:
       matrix:
-        component: [ database, frontend, reverse-proxy ]
+        component: [ frontend ]
     permissions:
       packages: write
     steps:
