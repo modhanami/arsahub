@@ -369,6 +369,7 @@ create table webhook
     created_at timestamp with time zone default now() not null,
     updated_at timestamp with time zone,
     secret_key text                                   not null,
+    deleted_at timestamp with time zone,
     constraint webhook_pk_2
         unique (app_id, url)
 );
@@ -452,5 +453,24 @@ create table webhook_request
             references app,
     constraint webhook_request_pk_2
         unique (app_id, signature)
+);
+
+create table embed_token
+(
+    embed_token_id bigserial
+        constraint embed_token_pk
+            primary key,
+    app_id         bigint                   not null
+        constraint embed_token_app_app_id_fk
+            references app,
+    app_user_id    bigint                   not null
+        constraint embed_token_app_user_app_user_id_fk
+            references app_user,
+    token          text                     not null,
+    type           text                     not null,
+    created_at     timestamp with time zone not null,
+    valid_until    timestamp with time zone not null,
+    constraint embed_token_pk_2
+        unique (app_id, token)
 );
 

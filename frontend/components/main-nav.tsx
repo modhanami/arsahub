@@ -5,12 +5,13 @@ import Link from "next/link";
 import { useSelectedLayoutSegment } from "next/navigation";
 
 import { MainNavItem } from "types";
-import { siteConfig } from "@/config/site";
 import { cn } from "@/lib/utils";
 import { Icons } from "@/components/icons";
 import { MobileNav } from "@/components/mobile-nav";
 import { CreateAppForm } from "./create-app";
 import { resolveBasePath } from "@/lib/base-path";
+import { useTheme } from "next-themes";
+import Image from "next/image";
 
 interface MainNavProps {
   items?: MainNavItem[];
@@ -20,6 +21,7 @@ interface MainNavProps {
 export function MainNav({ items, children }: MainNavProps) {
   const segment = useSelectedLayoutSegment();
   const [showMobileMenu, setShowMobileMenu] = React.useState<boolean>(false);
+  const { theme } = useTheme();
 
   return (
     <div className="flex gap-6 md:gap-10">
@@ -29,11 +31,17 @@ export function MainNav({ items, children }: MainNavProps) {
         href={resolveBasePath("/")}
         className="hidden items-center space-x-2 md:flex"
       >
-        {/*<Icons.logo/>*/}
-        <span className="text-xl">👽</span>
-        <span className="hidden font-bold sm:inline-block">
-          {siteConfig.name}
-        </span>
+        <Image
+          src={
+            theme === "light"
+              ? resolveBasePath("/logo-dark.png")
+              : resolveBasePath("/logo-light.png")
+          }
+          alt="logo"
+          className="h-4"
+          width={100}
+          height={24}
+        />
       </Link>
       {items?.length ? (
         <nav className="hidden gap-6 md:flex">

@@ -34,9 +34,15 @@ import { useRouter } from "next/navigation";
 import { DashboardHeader } from "@/components/header";
 import { DashboardShell } from "@/components/shell";
 import { Separator } from "@/components/ui/separator";
-import { SectionTitle } from "@/app/(app)/(app-protected)/rules/shared";
+import {
+  getActionLabel,
+  getRepeatabilityLabel,
+  SectionTitle,
+} from "@/app/(app)/(app-protected)/rules/shared";
 import { Image } from "@nextui-org/react";
 import { getImageUrlFromKey } from "@/lib/image";
+import { KeyText } from "@/app/(app)/(app-protected)/triggers/components/columns";
+import { textColors } from "@/lib/textColors";
 
 const FormSchema = z.object({
   title: z
@@ -204,9 +210,18 @@ function UpdateRuleForm({ rule }: UpdateRuleFormProps) {
           {/*  Config Condition */}
           <div className="space-y-4">
             <SectionTitle number={2} title="If" isOptional />
-            <p className="text-muted-foreground">
-              {rule.conditionExpression ?? "-"}
-            </p>
+
+            <div className="flex flex-col gap-2">
+              <h4 className="font-medium text-sm">
+                Preview of Condition Expression
+              </h4>
+              <KeyText
+                variant="outline"
+                className={`${textColors.conditionExpression}`}
+                text={rule.conditionExpression ?? "-"}
+                title={rule.conditionExpression ?? "-"}
+              />
+            </div>
           </div>
           <Separator />
 
@@ -217,23 +232,36 @@ function UpdateRuleForm({ rule }: UpdateRuleFormProps) {
               <FormLabel>Action</FormLabel>
               <Select>
                 <SelectTrigger disabled>
-                  <SelectValue placeholder={rule.action ?? "-"} />
+                  <SelectValue
+                    placeholder={getActionLabel(rule.action || "")}
+                  />
                 </SelectTrigger>
               </Select>
               <FormMessage />
             </FormItem>
 
-            {rule.action == "add_points" && (
-              <FormItem>
-                <FormLabel>Points</FormLabel>
-                <Input
-                  placeholder="Points"
-                  type="number"
-                  disabled
-                  value={rule.actionPoints ?? 0}
-                />
-              </FormItem>
-            )}
+            {rule.action == "add_points" &&
+              (rule.actionPointsExpression ? (
+                <FormItem className="flex flex-col items-start">
+                  <FormLabel>Points Expression</FormLabel>
+                  <KeyText
+                    variant="outline"
+                    className={`${textColors.pointsExpression}`}
+                    text={rule.actionPointsExpression}
+                    title={rule.actionPointsExpression}
+                  />
+                </FormItem>
+              ) : (
+                <FormItem>
+                  <FormLabel>Points</FormLabel>
+                  <Input
+                    placeholder="Points"
+                    type="number"
+                    disabled
+                    value={rule.actionPoints ?? 0}
+                  />
+                </FormItem>
+              ))}
 
             {rule.action == "unlock_achievement" && (
               <FormItem>
@@ -274,7 +302,9 @@ function UpdateRuleForm({ rule }: UpdateRuleFormProps) {
                 <SelectTrigger>
                   <SelectValue
                     className="flex items-center justify-between w-full"
-                    placeholder={rule.repeatability ?? "-"}
+                    placeholder={getRepeatabilityLabel(
+                      rule.repeatability || "",
+                    )}
                   />
                 </SelectTrigger>
               </Select>

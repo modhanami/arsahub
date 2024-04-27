@@ -1,16 +1,7 @@
 package com.arsahub.backend.services.ruleengine
 
 import com.arsahub.backend.dtos.request.TriggerSendRequest
-import com.arsahub.backend.models.App
-import com.arsahub.backend.models.AppUser
-import com.arsahub.backend.models.Rule
-import com.arsahub.backend.models.RuleProgress
-import com.arsahub.backend.models.RuleRepeatability
-import com.arsahub.backend.models.RuleTriggerFieldState
-import com.arsahub.backend.models.Trigger
-import com.arsahub.backend.models.TriggerField
-import com.arsahub.backend.models.TriggerFieldType
-import com.arsahub.backend.models.TriggerLog
+import com.arsahub.backend.models.*
 import com.arsahub.backend.repositories.RuleProgressRepository
 import com.arsahub.backend.repositories.RuleTriggerFieldStateRepository
 import com.arsahub.backend.repositories.TriggerLogRepository
@@ -20,11 +11,7 @@ import com.arsahub.backend.services.actionhandlers.ActionHandlerRegistry
 import com.arsahub.backend.services.actionhandlers.ActionResult
 import com.arsahub.backend.services.getAccumulatableFields
 import dev.cel.checker.CelCheckerLegacyImpl
-import dev.cel.common.CelFunctionDecl
-import dev.cel.common.CelOptions
-import dev.cel.common.CelOverloadDecl
-import dev.cel.common.CelValidationResult
-import dev.cel.common.CelVarDecl
+import dev.cel.common.*
 import dev.cel.common.types.CelType
 import dev.cel.common.types.ListType
 import dev.cel.common.types.SimpleType
@@ -173,9 +160,13 @@ class RuleEngine(
 
             return@filter (
                 // check repeatability
-                validateRepeatability(rule, app, appUser) &&
+                validateRepeatability(rule, app, appUser).also {
+                    logger.debug { "Repeatability result: $it" }
+                } &&
                     // check the condition expression, if any
-                    validateConditionExpression(rule, preprocessedParams, appUser)
+                    validateConditionExpression(rule, preprocessedParams, appUser).also {
+                        logger.debug { "Condition expression result: $it" }
+                    }
             )
         }
     }
@@ -374,19 +365,20 @@ class RuleEngine(
     ): Boolean {
         logger.debug { "Checking condition expression" }
         val conditionExpression = rule.conditionExpression
-        if (conditionExpression.isNullOrEmpty()) {
-            logger.debug { "No condition expression, params=$params" }
-            return true
-        }
 
         val isPointsReachedTrigger = rule.trigger?.key == "points_reached"
         if (isPointsReachedTrigger) {
             logger.info { "Workaround for points_reached: Checking points" }
             // TODO: fix this hacky regex
-            val pointsThreshold = rule.conditionExpression?.let { "\\d+".toRegex().find(it)?.value?.toInt() }
+            val pointsThreshold = conditionExpression?.let { "\\d+".toRegex().find(it)?.value?.toInt() }
             logger.info { "Checking points: appUserPoints=${appUser.points}, pointsThreshold=$pointsThreshold" }
             val appUserPoints = appUser.points
             return pointsThreshold != null && appUserPoints != null && appUserPoints >= pointsThreshold
+        }
+
+        if (conditionExpression.isNullOrEmpty()) {
+            logger.debug { "No condition expression, params=$params" }
+            return true
         }
 
         if (params.isNullOrEmpty()) {
