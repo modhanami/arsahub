@@ -65,13 +65,13 @@ function createSideNavItems(): SidebarNavItem[] {
       appProtected: true,
       icon: "achievement",
     },
-    {
-      type: "item",
-      title: "Rewards",
-      href: resolveBasePath("/rewards"),
-      appProtected: true,
-      icon: "reward",
-    },
+    // {
+    //   type: "item",
+    //   title: "Rewards",
+    //   href: resolveBasePath("/rewards"),
+    //   appProtected: true,
+    //   icon: "reward",
+    // },
     // {
     //   type: "item",
     //   title: "Points Shop",

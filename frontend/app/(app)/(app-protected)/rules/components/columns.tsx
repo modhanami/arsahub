@@ -90,48 +90,7 @@ export const columns: ColumnDef<RuleResponse>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Action" />
     ),
-    cell: ({ row }) => {
-      let actionLabel;
-      let actionParam;
-      let actionSuffix;
-      const isAddPoints = row.original.action === "add_points";
-      const isUnlockAchievement = row.original.action === "unlock_achievement";
-      const isPointsExpression = !!row.original.actionPointsExpression;
-
-      if (isAddPoints) {
-        actionLabel = "Add";
-        actionParam =
-          row.original.actionPoints?.toString() ||
-          row.original.actionPointsExpression;
-        actionSuffix = row.original.actionPoints === 1 ? "point" : "points";
-      }
-      if (isUnlockAchievement) {
-        actionLabel = "Unlock";
-        actionParam = row.original.actionAchievement?.title;
-      }
-
-      return (
-        <div className="flex max-w-[300px]">
-          <span>{actionLabel}</span>
-          {/*<span className="text-muted-foreground truncate">{actionParam}</span>*/}
-          <KeyText
-            className={cn("bg-muted mx-2", {
-              [textColors.points]: isAddPoints,
-              [textColors.achievements]: isUnlockAchievement,
-              [textColors.pointsExpression]: isPointsExpression,
-            })}
-            variant="outline"
-            title={actionParam || undefined}
-            text={
-              isAddPoints && !isPointsExpression
-                ? numberFormatter.format(Number(actionParam))
-                : actionParam
-            }
-          />
-          <span>{actionSuffix}</span>
-        </div>
-      );
-    },
+    cell: ({ row }) => <RuleAction rule={row.original} />,
   },
   // {
   //   accessorKey: "createdAt",
@@ -255,5 +214,50 @@ export function RuleRowActions({
         </AlertDialogContent>
       </AlertDialog>
     </>
+  );
+}
+
+interface RuleActionProps {
+  rule: RuleResponse;
+  className?: string;
+}
+
+export function RuleAction({ rule, className }: RuleActionProps) {
+  let actionLabel;
+  let actionParam;
+  let actionSuffix;
+  const isAddPoints = rule.action === "add_points";
+  const isUnlockAchievement = rule.action === "unlock_achievement";
+  const isPointsExpression = !!rule.actionPointsExpression;
+
+  if (isAddPoints) {
+    actionLabel = "Add";
+    actionParam = rule.actionPoints?.toString() || rule.actionPointsExpression;
+    actionSuffix = rule.actionPoints === 1 ? "point" : "points";
+  }
+  if (isUnlockAchievement) {
+    actionLabel = "Unlock";
+    actionParam = rule.actionAchievement?.title;
+  }
+
+  return (
+    <div className={cn("flex max-w-[300px]", className)}>
+      <span>{actionLabel}</span>
+      <KeyText
+        className={cn("bg-muted mx-2", {
+          [textColors.points]: isAddPoints,
+          [textColors.achievements]: isUnlockAchievement,
+          [textColors.pointsExpression]: isPointsExpression,
+        })}
+        variant="outline"
+        title={actionParam || undefined}
+        text={
+          isAddPoints && !isPointsExpression
+            ? numberFormatter.format(Number(actionParam))
+            : actionParam
+        }
+      />
+      <span>{actionSuffix}</span>
+    </div>
   );
 }
