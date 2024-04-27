@@ -45,6 +45,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { resolveBasePath } from "@/lib/base-path";
 import { useDebounceCallback } from "usehooks-ts";
+import { KeyText } from "@/app/(app)/(app-protected)/triggers/components/columns";
+import { Icons } from "./icons";
+import { Separator } from "@/components/ui/separator";
 
 type FormData = z.infer<typeof playgroundTriggerSchema>;
 
@@ -167,58 +170,61 @@ export function PlaygroundTriggerForm() {
     return <div>Loading...</div>;
   }
 
+  function getRequest(values: FormData) {
+    return {
+      key: values.trigger.key,
+      userId: values.userId,
+      params: values.params.reduce((acc, param) => {
+        const triggerField = triggerFields.find(
+          (field) => field.key === param.key,
+        );
+
+        if (!triggerField) {
+          return acc;
+        }
+
+        if (
+          triggerField.type === "text" &&
+          typeof param.value === "string" &&
+          param.value.length !== 0
+        ) {
+          acc[param.key] = param.value;
+        } else if (
+          triggerField.type === "textSet" &&
+          typeof param.value === "string" &&
+          param.value.length !== 0
+        ) {
+          acc[param.key] = parseArrayOfStrings(param.value);
+        } else if (
+          triggerField.type === "integer" &&
+          typeof param.value !== "string"
+        ) {
+          acc[param.key] = param.value;
+        } else if (
+          triggerField.type === "integerSet" &&
+          typeof param.value === "string"
+        ) {
+          acc[param.key] = parseArrayOfStringIntegers(param.value);
+        }
+        return acc;
+      }, {} as SendTriggerParams),
+    };
+  }
+
   async function onSubmit(values: FormData) {
     console.log("submit", values);
 
-    sendTriggerMutation.mutate(
-      {
-        key: values.trigger.key,
-        userId: values.userId,
-        params: values.params.reduce((acc, param) => {
-          const triggerField = triggerFields.find(
-            (field) => field.key === param.key,
-          );
+    const request = getRequest(values);
 
-          if (!triggerField) {
-            return acc;
-          }
-
-          if (
-            triggerField.type === "text" &&
-            typeof param.value === "string" &&
-            param.value.length !== 0
-          ) {
-            acc[param.key] = param.value;
-          } else if (
-            triggerField.type === "textSet" &&
-            typeof param.value === "string" &&
-            param.value.length !== 0
-          ) {
-            acc[param.key] = parseArrayOfStrings(param.value);
-          } else if (
-            triggerField.type === "integer" &&
-            typeof param.value !== "string"
-          ) {
-            acc[param.key] = param.value;
-          } else if (
-            triggerField.type === "integerSet" &&
-            typeof param.value === "string"
-          ) {
-            acc[param.key] = parseArrayOfStringIntegers(param.value);
-          }
-          return acc;
-        }, {} as SendTriggerParams),
+    sendTriggerMutation.mutate(request, {
+      onSuccess: () => {
+        toast({
+          title: "Trigger sent",
+          description: "Trigger sent successfully",
+        });
       },
-      {
-        onSuccess: () => {
-          toast({
-            title: "Trigger sent",
-            description: "Trigger sent successfully",
-          });
-        },
-        // TODO: handle error
-      },
-    );
+      // TODO: handle error
+    });
   }
 
   function addParam(triggerField: FieldDefinition) {
@@ -283,7 +289,7 @@ export function PlaygroundTriggerForm() {
   return (
     <>
       <div className="flex gap-4">
-        <Card className="w-1/2 self-start">
+        <Card className="w-2/3 self-start">
           <CardHeader>
             <CardTitle>Send trigger</CardTitle>
           </CardHeader>
@@ -367,18 +373,21 @@ export function PlaygroundTriggerForm() {
                     />
 
                     {/*Params: Select from possible trigger fields (triggerFields)*/}
+                    <Separator className="mt-4" />
+
                     <div className="mt-4">
                       {selectedTrigger && (
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button
-                              variant="outline"
+                              variant="secondary"
                               className="ml-auto"
                               disabled={
                                 triggerFields.length ===
                                 form.getValues("params").length
                               }
                             >
+                              <Icons.add className="mr-2 h-4 w-4" />
                               Add a param
                             </Button>
                           </DropdownMenuTrigger>
@@ -400,7 +409,11 @@ export function PlaygroundTriggerForm() {
                                     addParam(field);
                                   }}
                                 >
-                                  {field.key}
+                                  <KeyText variant="outline" text={field.key} />
+                                  &nbsp;
+                                  <span className="text-muted-foreground">
+                                    {field.type}
+                                  </span>
                                 </DropdownMenuCheckboxItem>
                               );
                             })}
@@ -424,7 +437,14 @@ export function PlaygroundTriggerForm() {
                             name={`params.${index}.value`}
                             render={({ field }) => (
                               <div className="flex space-x-2 items-center">
-                                <FormLabel>{param.key}</FormLabel>
+                                {/*<FormLabel>{param.key}</FormLabel>*/}
+                                <FormLabel>
+                                  <KeyText variant="outline" text={param.key} />{" "}
+                                  &nbsp;
+                                  <span className="text-muted-foreground">
+                                    {triggerField?.type}
+                                  </span>
+                                </FormLabel>
                                 <FormControl>
                                   <Input
                                     {...field}
@@ -457,6 +477,8 @@ export function PlaygroundTriggerForm() {
                       );
                     })}
 
+                    <Separator className="mt-4" />
+
                     <div className="mt-4">
                       <Button disabled={isCreating}>Send trigger</Button>
                     </div>
@@ -465,37 +487,43 @@ export function PlaygroundTriggerForm() {
 
                 <div className="my-6  ">
                   <div>
-                    <p className="font-semibold mb-2">
+                    <p className="text-muted-foreground mb-2">
                       Will trigger these rules
                     </p>
-                    <ul className="space-y-1 list-disc list-inside text-muted-foreground">
-                      {dryTriggerReferencingRules?.length > 0 &&
-                        dryTriggerReferencingRules.map((rule) => (
+                    {(dryTriggerReferencingRules?.length > 0 && (
+                      <ul className="space-y-1 list-disc list-inside">
+                        {dryTriggerReferencingRules.map((rule) => (
                           <li className="text-sm font-medium " key={rule.id}>
                             {rule.title}
                           </li>
                         ))}
-                    </ul>
+                      </ul>
+                    )) || (
+                      <p className="text-sm">No rules will be triggered.</p>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
+
+            <div>
+              <p className="text-muted-foreground mb-2">Raw Request</p>
+              <pre className="text-sm bg-primary-foreground p-4 rounded-lg">
+                {JSON.stringify(getRequest(form.getValues()), null, 2)}
+              </pre>
+            </div>
           </CardContent>
         </Card>
 
-        <div className="w-1/2 h-[500px]">
-          {selectedUserId && (
-            <iframe
-              src={resolveBasePath(
-                `/embed/apps/${appId}/users/${selectedUserId}`,
-              )}
-              width="100%"
-              height="100%"
-              allowFullScreen={true}
-              className="overflow-hidden border-none sticky top-0"
-            />
-          )}
-        </div>
+        {selectedUserId && (
+          <iframe
+            src={resolveBasePath(
+              `/embed/apps/${appId}/users/${selectedUserId}`,
+            )}
+            className="overflow-hidden border-none sticky top-0 w-[400px] h-[600px]"
+            frameBorder={0}
+          />
+        )}
       </div>
     </>
   );
