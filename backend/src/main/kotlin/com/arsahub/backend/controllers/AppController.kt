@@ -393,21 +393,6 @@ class AppController(
         return achievementService.createAchievement(app, request).let { AchievementResponse.fromEntity(it) }
     }
 
-    @PostMapping("/achievements/{achievementId}/image", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
-    fun setImageForAchievement(
-        @CurrentApp app: App,
-        @PathVariable achievementId: Long,
-        @RequestPart("image") image: MultipartFile,
-    ): AchievementResponse {
-        return achievementService.setImageForAchievement(
-            app,
-            AchievementSetImageRequest(
-                achievementId = achievementId,
-                image = image,
-            ),
-        ).let { AchievementResponse.fromEntity(it) }
-    }
-
     @Operation(
         summary = "List achievements",
         responses = [
@@ -430,6 +415,16 @@ class AppController(
         @PathVariable achievementId: Long,
     ) {
         achievementService.deleteAchievement(app, achievementId)
+    }
+
+    @PatchMapping("/achievements/{achievementId}")
+    fun updateAchievement(
+        @PathVariable achievementId: Long,
+        @Valid @RequestBody request: AchievementUpdateRequest,
+        @CurrentApp app: App,
+    ): AchievementResponse {
+        return achievementService.updateAchievement(app, achievementId, request)
+            .let { AchievementResponse.fromEntity(it) }
     }
 
     @Operation(
