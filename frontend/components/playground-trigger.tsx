@@ -175,8 +175,8 @@ export function PlaygroundTriggerForm() {
     return <div>Loading...</div>;
   }
 
-  function getRequest(values: FormData) {
-    return {
+  function getRequest(values: FormData, triggerFields: FieldDefinition[]) {
+    const newVar = {
       key: values.trigger.key,
       userId: values.userId,
       params: values.params.reduce((acc, param) => {
@@ -185,6 +185,7 @@ export function PlaygroundTriggerForm() {
         );
 
         if (!triggerField) {
+          console.error("Trigger field not found", param.key);
           return acc;
         }
 
@@ -200,26 +201,34 @@ export function PlaygroundTriggerForm() {
           param.value.length !== 0
         ) {
           acc[param.key] = parseArrayOfStrings(param.value);
-        } else if (
-          triggerField.type === "integer" &&
-          typeof param.value !== "string"
-        ) {
-          acc[param.key] = param.value;
+        } else if (triggerField.type === "integer") {
+          acc[param.key] = Number(param.value);
         } else if (
           triggerField.type === "integerSet" &&
           typeof param.value === "string"
         ) {
           acc[param.key] = parseArrayOfStringIntegers(param.value);
         }
+        console.log("acc", acc, param.key, param.value, triggerField);
+        console.log(
+          "triggerField",
+          "type",
+          triggerField.type,
+          "typeof",
+          typeof param.value,
+        );
         return acc;
       }, {} as SendTriggerParams),
     };
+    console.log("params", values.params);
+    console.log("getRequest", values, triggerFields, newVar);
+    return newVar;
   }
 
   async function onSubmit(values: FormData) {
     console.log("submit", values);
 
-    const request = getRequest(values);
+    const request = getRequest(values, triggerFields);
 
     sendTriggerMutation.mutate(request, {
       onSuccess: () => {
@@ -416,8 +425,8 @@ export function PlaygroundTriggerForm() {
                                 >
                                   <KeyText variant="outline" text={field.key} />
                                   <div className="text-muted-foreground ml-2">
-                                    {getFieldTypeLabel(field.type)} - Ex.{" "}
-                                    {getFieldTypeExample(field.type)}
+                                    {getFieldTypeLabel(field.type!)} - Ex.{" "}
+                                    {getFieldTypeExample(field.type!)}
                                   </div>
                                 </DropdownMenuCheckboxItem>
                               );
@@ -449,9 +458,9 @@ export function PlaygroundTriggerForm() {
                                       text={param.key}
                                     />
                                     <div className="text-muted-foreground">
-                                      {getFieldTypeLabel(triggerField?.type)} -
+                                      {getFieldTypeLabel(triggerField?.type!)} -
                                       Ex.{" "}
-                                      {getFieldTypeExample(triggerField?.type)}
+                                      {getFieldTypeExample(triggerField?.type!)}
                                     </div>
                                   </div>
                                 </FormLabel>
@@ -523,7 +532,11 @@ export function PlaygroundTriggerForm() {
             <div>
               <p className="text-muted-foreground mb-2">Raw Request</p>
               <pre className="text-sm bg-primary-foreground p-4 rounded-lg">
-                {JSON.stringify(getRequest(form.getValues()), null, 2)}
+                {JSON.stringify(
+                  getRequest(form.getValues(), triggerFields),
+                  null,
+                  2,
+                )}
               </pre>
             </div>
           </CardContent>
