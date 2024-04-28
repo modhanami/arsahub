@@ -337,7 +337,13 @@ export function PlaygroundTriggerForm() {
                                       value={String(member.userId) || ""}
                                       className="flex items-center justify-between w-full"
                                     >
-                                      {member.displayName}
+                                      <div className="flex gap-2 items-center">
+                                        <div>{member.displayName}</div>
+                                        <KeyText
+                                          text={member.userId}
+                                          variant="outline"
+                                        />
+                                      </div>
                                     </SelectItem>
                                   ))}
                                 </SelectGroup>
