@@ -12,6 +12,16 @@ import { useCurrentApp } from "@/lib/current-app";
 import { cn, datetimeFormatter, numberFormatter } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Icons } from "@/components/icons";
+import { toast } from "@/components/ui/use-toast";
+import { Textarea } from "@/components/ui/textarea";
 
 export default function Page() {
   const { currentApp, isLoading: isAppLoading } = useCurrentApp();
@@ -24,13 +34,58 @@ export default function Page() {
 
   if (isLoading || !users || isAppLoading || !currentApp) return "Loading...";
 
+  const iframeTemplate = resolveBasePath(
+    `/embed/apps/${currentApp.id}/users/<userId>`,
+  );
+
+  const url = new URL(iframeTemplate, window.location.origin).toString();
+
+  const iframeCode = `<iframe src="${decodeURIComponent(
+    url,
+  )}" width="100%" height="100%" frameBorder="0" />`;
+
   return (
     <DashboardShell>
       <DashboardHeader
         heading="App Users"
         text="Create and manage your app users."
       >
-        <UserCreateForm />
+        <div className="flex gap-2">
+          <UserCreateForm />
+          <Dialog>
+            <DialogTrigger>
+              <Button variant="secondary">
+                <Icons.code className="w-4 h-4 mr-2" />
+                <span>Embed</span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <div className="flex gap-4 items-center">
+                  <h2 className="text-lg font-bold">Embed Code</h2>
+                  <Button
+                    size="sm"
+                    onClick={() =>
+                      navigator.clipboard.writeText(iframeCode).then(() => {
+                        toast({
+                          title: "Copied to clipboard",
+                        });
+                      })
+                    }
+                  >
+                    <Icons.copy className="w-4 h-4" />
+                  </Button>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Copy, modify{" "}
+                  <span className="font-semibold">{"<userId>"}</span>, and paste
+                  the code below to embed this user profile
+                </p>
+              </DialogHeader>
+              <Textarea value={iframeCode} readOnly />
+            </DialogContent>
+          </Dialog>
+        </div>
       </DashboardHeader>
       {/*<div className="grid lg:grid-cols-[1fr_400px] gap-8">*/}
       <div
