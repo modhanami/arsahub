@@ -66,13 +66,14 @@ export const columns: ColumnDef<RuleResponse>[] = [
       const formattedConditions = row.original.conditionExpression;
 
       return (
-        <div className="max-w-[300px] flex flex-col space-y-2">
-          <span
-            className="truncate"
+        <div className="max-w-[300px] flex flex-col space-y-4">
+          <div
+            className="flex flex-col gap-1 items-start"
             title={row.original.trigger?.title || undefined}
           >
-            {row.original.trigger?.title}
-          </span>
+            <div>{row.original.trigger?.title}</div>
+            <KeyText text={row.original.trigger?.key} />
+          </div>
           {formattedConditions && (
             <KeyText
               className={`text-muted-foreground ${textColors.conditionExpression}`}

@@ -420,7 +420,10 @@ export default function Page() {
                               value={trigger.key!!}
                               className="flex items-center justify-between w-full"
                             >
-                              {trigger.title}
+                              <div className="flex gap-2 items-center">
+                                <div>{trigger.title}</div>
+                                <KeyText text={trigger.key} />
+                              </div>
                             </SelectItem>
                           ))}
                         </SelectGroup>
