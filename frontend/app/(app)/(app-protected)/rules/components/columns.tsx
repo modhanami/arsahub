@@ -31,7 +31,7 @@ import { resolveBasePath } from "@/lib/base-path";
 import { useRouter } from "next/navigation";
 import { KeyText } from "../../triggers/components/columns";
 import { cn, numberFormatter } from "@/lib/utils";
-import { textColors } from "@/lib/textColors";
+import { textColors } from "@/lib/classes/textColors";
 
 export const columns: ColumnDef<RuleResponse>[] = [
   {

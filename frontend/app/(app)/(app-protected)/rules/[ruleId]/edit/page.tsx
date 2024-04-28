@@ -42,7 +42,7 @@ import {
 import { Image } from "@nextui-org/react";
 import { getImageUrlFromKey } from "@/lib/image";
 import { KeyText } from "@/app/(app)/(app-protected)/triggers/components/columns";
-import { textColors } from "@/lib/textColors";
+import { textColors } from "@/lib/classes/textColors";
 
 const FormSchema = z.object({
   title: z
