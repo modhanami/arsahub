@@ -62,7 +62,7 @@ jobs:
     environment: prod
     strategy:
       matrix:
-        component: [ ]
+        component: [ frontend ]
     permissions:
       packages: write
     steps:
