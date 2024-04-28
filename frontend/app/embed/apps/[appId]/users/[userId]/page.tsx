@@ -69,7 +69,7 @@ export default function Page({ params }: ContextProps) {
 
   return (
     <main>
-      {isConnected ? "Connected" : "Disconnected"}
+      {/*{isConnected ? "Connected" : "Disconnected"}*/}
       {data && (
         <UserProfile
           points={points}
