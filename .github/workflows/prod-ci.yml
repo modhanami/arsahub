@@ -32,7 +32,6 @@ jobs:
           echo "Image Tags: $IMAGE_TAGS"
 
   build-and-push-backend:
-    if: false
     permissions:
       packages: write
     runs-on: ubuntu-latest
@@ -63,7 +62,7 @@ jobs:
     environment: prod
     strategy:
       matrix:
-        component: [ frontend ]
+        component: [ ]
     permissions:
       packages: write
     steps:
