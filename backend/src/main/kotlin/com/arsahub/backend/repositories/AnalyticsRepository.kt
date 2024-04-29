@@ -60,7 +60,7 @@ interface AnalyticsRepository : JpaRepository<Transaction, Long>, AnalyticsRepos
 
     // total points earned in a time range
     @Query(
-        "SELECT SUM(t.points) " +
+        "SELECT SUM(t.pointsChange) " +
             "FROM AppUserPointsHistory t " +
             "WHERE t.app = :app " +
             "AND t.createdAt >= :#{#timeRange.startInclusive} AND t.createdAt < :#{#timeRange.endExclusive}",

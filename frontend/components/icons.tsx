@@ -5,7 +5,9 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  Code,
   Command,
+  Copy,
   CreditCard,
   Crown,
   Cuboid,
@@ -108,4 +110,6 @@ export const Icons = {
   eye: Eye,
   eyeOff: EyeOffIcon,
   analytics: LineChart,
+  code: Code,
+  copy: Copy,
 };
