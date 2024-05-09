@@ -33,7 +33,6 @@ class AppAuthenticationFilter(
                 AntPathRequestMatcher("/v3/api-docs/**"),
                 AntPathRequestMatcher("/v3/api-docs.yaml"),
                 AntPathRequestMatcher("/api/auth/**"),
-                AntPathRequestMatcher("/api/apps/invitations/*/*"),
                 AntPathRequestMatcher("/error"),
             )
 

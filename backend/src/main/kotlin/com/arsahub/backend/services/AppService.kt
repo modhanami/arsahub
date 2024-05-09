@@ -256,10 +256,6 @@ class AppService(
         }
     }
 
-    class AppInvitationNotFoundException : NotFoundException("Invitation not found")
-
-    class AppInvitationNotInPendingStateException : ConflictException("Invitation is not pending")
-
     fun deleteAppUser(
         app: App,
         userId: String,
