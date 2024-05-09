@@ -76,7 +76,6 @@ class RuleService(
                 triggerParams = request.trigger.params?.toMutableMap(),
                 repeatability = ruleRepeatability.key,
                 conditionExpression = request.conditionExpression,
-                accumulatedFields = request.accumulatedFields?.toTypedArray(),
             )
 
         rule.action = parsedAction.key

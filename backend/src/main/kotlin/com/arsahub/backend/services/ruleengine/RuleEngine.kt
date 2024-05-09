@@ -8,7 +8,6 @@ import com.arsahub.backend.services.RuleService
 import com.arsahub.backend.services.TriggerService
 import com.arsahub.backend.services.actionhandlers.ActionHandlerRegistry
 import com.arsahub.backend.services.actionhandlers.ActionResult
-import com.arsahub.backend.services.getAccumulatableFields
 import dev.cel.checker.CelCheckerLegacyImpl
 import dev.cel.common.*
 import dev.cel.common.types.CelType
@@ -190,15 +189,6 @@ class RuleEngine(
         }
 
         return actionResults
-    }
-
-    private fun getAccumulatedFields(
-        rule: Rule,
-        trigger: Trigger,
-    ): List<String> {
-        return trigger.fields.getAccumulatableFields().map { it.key!! }.filter {
-            rule.accumulatedFields?.contains(it) == true
-        }
     }
 
     @Transactional

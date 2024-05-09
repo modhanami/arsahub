@@ -29,8 +29,7 @@ create table app
     updated_at  timestamp with time zone default now() not null,
     owner_id    bigint                                 not null
         constraint app_user_user_id_fk
-            references "user",
-    timezone    text
+            references "user"
 );
 
 create table achievement
@@ -94,7 +93,6 @@ create table rule
     repeatability            text                                   not null,
     condition_expression     text,
     deleted_at               timestamp with time zone,
-    accumulatedfields        text[],
     action_points_expression text,
     constraint rule_pk
         unique (app_id, title)
