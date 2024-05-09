@@ -45,12 +45,6 @@ class RuleEngineIntegrationTest : BaseIntegrationTest() {
     private lateinit var triggerRepository: TriggerRepository
 
     @Autowired
-    private lateinit var appInvitationStatusRepository: AppInvitationStatusRepository
-
-    @Autowired
-    private lateinit var appInvitationRepository: AppInvitationRepository
-
-    @Autowired
     private lateinit var appRepository: AppRepository
 
     @Autowired

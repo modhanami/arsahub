@@ -11,7 +11,6 @@ import com.arsahub.backend.dtos.response.*
 import com.arsahub.backend.dtos.socketio.AchievementUnlock
 import com.arsahub.backend.dtos.socketio.LeaderboardUpdate
 import com.arsahub.backend.dtos.socketio.PointsUpdate
-import com.arsahub.backend.dtos.supabase.UserIdentity
 import com.arsahub.backend.exceptions.ConflictException
 import com.arsahub.backend.exceptions.NotFoundException
 import com.arsahub.backend.models.*
@@ -23,7 +22,6 @@ import jakarta.validation.Valid
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile
@@ -54,8 +52,6 @@ class AppService(
     private val leaderboardService: LeaderboardService,
     private val ruleEngine: RuleEngine,
     private val userRepository: UserRepository,
-    private val appInvitationStatusRepository: AppInvitationStatusRepository,
-    private val appInvitationRepository: AppInvitationRepository,
     private val appUserPointsHistoryRepository: AppUserPointsHistoryRepository,
     private val webhookRepository: WebhookRepository,
     private val webhookDeliveryService: WebhookDeliveryService,
@@ -263,32 +259,6 @@ class AppService(
     class AppInvitationNotFoundException : NotFoundException("Invitation not found")
 
     class AppInvitationNotInPendingStateException : ConflictException("Invitation is not pending")
-
-    private fun assertCanAcceptInvitationOrThrow(invitation: AppInvitation) {
-        if (invitation.invitationStatus?.status != "pending") {
-            throw AppInvitationNotInPendingStateException()
-        }
-    }
-
-    private fun assertCanDeclineInvitationOrThrow(invitation: AppInvitation) {
-        if (invitation.invitationStatus?.status != "pending") {
-            throw AppInvitationNotInPendingStateException()
-        }
-    }
-
-    private fun getInvitationOrThrow(id: Long): AppInvitation {
-        return appInvitationRepository.findByIdOrNull(id)
-            ?: throw AppInvitationNotFoundException()
-    }
-
-    private fun assertInvitationIsForUserOrThrow(
-        invitation: AppInvitation,
-        identity: UserIdentity,
-    ) {
-        if (invitation.user?.userId != identity.internalUserId) {
-            throw AppInvitationNotFoundException()
-        }
-    }
 
     fun deleteAppUser(
         app: App,
