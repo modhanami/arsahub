@@ -44,7 +44,6 @@ class AppController(
     private val triggerService: TriggerService,
     private val ruleService: RuleService,
     private val achievementService: AchievementService,
-    private val shopService: ShopService,
 ) {
     private val logger = KotlinLogging.logger {}
 
@@ -446,111 +445,6 @@ class AppController(
         @PathVariable userId: String,
     ): AppUserResponse {
         return appService.getAppUserOrThrow(appId, userId).let { AppUserResponse.fromEntity(it) }
-    }
-
-    @Operation(
-        summary = "Get rewards",
-        responses = [
-            ApiResponse(
-                responseCode = "200",
-            ),
-        ],
-    )
-    @GetMapping("/shop/rewards")
-    fun getRewards(
-        @CurrentApp app: App,
-    ): List<RewardResponse> {
-        return shopService.getRewards(app).map { RewardResponse.fromEntity(it) }
-    }
-
-    @GetMapping("/users/{userId}/rewards")
-    fun getRewardsForUser(
-        @CurrentApp app: App,
-        @PathVariable userId: String,
-    ): List<RewardResponseWithCount> {
-        return shopService.getRewardsForUser(app, userId).map { RewardResponseWithCount.fromEntity(it) }
-    }
-
-    @Operation(
-        summary = "Redeem a reward",
-        responses = [
-            ApiResponse(
-                responseCode = "200",
-            ),
-        ],
-    )
-    @PostMapping("/shop/rewards/redeem")
-    fun redeemReward(
-        @CurrentApp app: App,
-        @Valid @RequestBody request: RewardRedeemRequest,
-    ): TransactionResponse {
-        return shopService.redeemReward(app, request).let { TransactionResponse.fromEntity(it) }
-    }
-
-    @Operation(
-        summary = "Create a reward",
-        responses = [
-            ApiResponse(
-                responseCode = "201",
-            ),
-        ],
-    )
-    @PostMapping("/shop/rewards")
-    @ResponseStatus(HttpStatus.CREATED)
-    fun createReward(
-        @CurrentApp app: App,
-        @Valid @RequestBody request: RewardCreateRequest,
-    ): RewardResponse {
-        return shopService.createReward(app, request).let { RewardResponse.fromEntity(it) }
-    }
-
-    @PostMapping("/shop/rewards/{rewardId}/image", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
-    fun setImageForReward(
-        @CurrentApp app: App,
-        @PathVariable rewardId: Long,
-        @RequestPart("image") image: MultipartFile,
-    ): RewardResponse {
-        return shopService.setImageForReward(
-            app,
-            RewardSetImageRequest(
-                rewardId = rewardId,
-                image = image,
-            ),
-        ).let { RewardResponse.fromEntity(it) }
-    }
-
-    data class InviteUserRequest(
-        @NotEmpty
-        val email: String,
-    )
-
-    @PostMapping("/invitations")
-    @ResponseStatus(HttpStatus.CREATED)
-    fun inviteUser(
-        @CurrentApp app: App,
-        @Valid @RequestBody request: InviteUserRequest,
-    ) {
-        appService.inviteUser(app, request)
-    }
-
-    // user accepts
-    @PostMapping("/invitations/{invitationId}/accept")
-    @ResponseStatus(HttpStatus.CREATED)
-    fun acceptInvitation(
-        @PathVariable invitationId: Long,
-        @SupabaseUserIdentityPrincipal identity: UserIdentity,
-    ) {
-        appService.acceptInvitation(invitationId, identity)
-    }
-
-    // user declines
-    @PostMapping("/invitations/{invitationId}/decline")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    fun declineInvitation(
-        @PathVariable invitationId: Long,
-        @SupabaseUserIdentityPrincipal identity: UserIdentity,
-    ) {
-        appService.declineInvitation(invitationId, identity)
     }
 
     @PostMapping("/webhooks")
