@@ -37,6 +37,6 @@ class AppAuthenticationFilter(
                 AntPathRequestMatcher("/error"),
             )
 
-        setRequestMatcher(NegatedRequestMatcher(OrRequestMatcher(matchers)))
+        requestMatcher = NegatedRequestMatcher(OrRequestMatcher(matchers))
     }
 }

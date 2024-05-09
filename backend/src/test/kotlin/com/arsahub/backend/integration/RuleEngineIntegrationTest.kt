@@ -10,7 +10,6 @@ import com.arsahub.backend.repositories.*
 import com.arsahub.backend.services.TriggerService
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.github.tomakehurst.wiremock.WireMockServer
-import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.*
 import com.jayway.jsonpath.JsonPath
 import kotlinx.coroutines.delay
@@ -32,7 +31,7 @@ import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.junit.jupiter.Container
 import java.util.*
 
-class RuleEngineIntegrationTest() : BaseIntegrationTest() {
+class RuleEngineIntegrationTest : BaseIntegrationTest() {
     @Autowired
     private lateinit var webhookRepository: WebhookRepository
 
@@ -323,7 +322,7 @@ class RuleEngineIntegrationTest() : BaseIntegrationTest() {
 
         // Arrange webhook
         stubFor(
-            WireMock.post(urlEqualTo("/webhook")).willReturn(
+            post(urlEqualTo("/webhook")).willReturn(
                 aResponse()
                     .withHeader("Content-Type", "text/plain")
                     .withBody("Well received"),
@@ -1227,7 +1226,7 @@ class RuleEngineIntegrationTest() : BaseIntegrationTest() {
     @Test
     fun testWireMock() {
         stubFor(
-            WireMock.get(urlEqualTo("/resource")).willReturn(
+            get(urlEqualTo("/resource")).willReturn(
                 aResponse()
                     .withHeader("Content-Type", "text/plain").withBody("Hello World!"),
             ),
