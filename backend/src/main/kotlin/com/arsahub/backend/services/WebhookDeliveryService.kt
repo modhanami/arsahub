@@ -131,7 +131,7 @@ class WebhookDeliveryService(
         requireNotNull(app) { "App not found for ID $appId" }
         val webhook =
             withContext(Dispatchers.IO) {
-                webhookRepository.findByAppAndUrl(app!!, webhookUrl.toString())
+                webhookRepository.findByAppAndUrl(app, webhookUrl.toString())
             }
         requireNotNull(webhook) { "Webhook not found for app ID $appId: $webhookUrl" }
         val secretKey = webhook.secretKey

@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
 @Component
-class SocketIOService(private final val server: SocketIOServer) {
+class SocketIOService(private val server: SocketIOServer) {
     init {
         server.addConnectListener(onConnected())
         server.addDisconnectListener(onDisconnected())

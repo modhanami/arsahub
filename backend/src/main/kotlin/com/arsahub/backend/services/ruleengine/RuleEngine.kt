@@ -3,13 +3,11 @@ package com.arsahub.backend.services.ruleengine
 import com.arsahub.backend.dtos.request.TriggerSendRequest
 import com.arsahub.backend.models.*
 import com.arsahub.backend.repositories.RuleProgressRepository
-import com.arsahub.backend.repositories.RuleTriggerFieldStateRepository
 import com.arsahub.backend.repositories.TriggerLogRepository
 import com.arsahub.backend.services.RuleService
 import com.arsahub.backend.services.TriggerService
 import com.arsahub.backend.services.actionhandlers.ActionHandlerRegistry
 import com.arsahub.backend.services.actionhandlers.ActionResult
-import com.arsahub.backend.services.getAccumulatableFields
 import dev.cel.checker.CelCheckerLegacyImpl
 import dev.cel.common.*
 import dev.cel.common.types.CelType
@@ -49,7 +47,6 @@ class RuleEngine(
     private val actionHandlerRegistry: ActionHandlerRegistry,
     private val triggerLogRepository: TriggerLogRepository,
     private val ruleProgressRepository: RuleProgressRepository,
-    private val ruleTriggerFieldStateRepository: RuleTriggerFieldStateRepository,
     private val triggerService: TriggerService,
     private val ruleService: RuleService,
 ) {
@@ -192,88 +189,6 @@ class RuleEngine(
         }
 
         return actionResults
-    }
-
-    private fun getAccumulatedFields(
-        rule: Rule,
-        trigger: Trigger,
-    ): List<String> {
-        return trigger.fields.getAccumulatableFields().map { it.key!! }.filter {
-            rule.accumulatedFields?.contains(it) == true
-        }
-    }
-
-    private fun updateRuleTriggerFieldStateForRule(
-        app: App,
-        appUser: AppUser,
-        rule: Rule,
-        trigger: Trigger,
-        params: Map<String, Any>?,
-    ): List<RuleTriggerFieldState> {
-        val accumulatedFields = getAccumulatedFields(rule, trigger)
-
-        logger.debug { "Accumulated fields: $accumulatedFields" }
-        if (accumulatedFields.isEmpty()) {
-            return emptyList()
-        }
-
-        return accumulatedFields.map { accumulatedField ->
-            val value = params?.get(accumulatedField)
-            if (value == null) {
-                logger.debug { "No value for accumulated field $accumulatedField, skipping" }
-                return@map null
-            }
-
-            val triggerField = trigger.fields.first { it.key == accumulatedField }
-            val triggerFieldType = TriggerFieldType.fromString(triggerField.type!!)
-
-            logger.debug { "Updating accumulated field $accumulatedField" }
-            val state =
-                ruleTriggerFieldStateRepository.findByAppAndAppUserAndRuleAndTriggerField(
-                    app,
-                    appUser,
-                    rule,
-                    triggerField,
-                )
-                    ?: RuleTriggerFieldState(
-                        app = app,
-                        appUser = appUser,
-                        rule = rule,
-                        triggerField = triggerField,
-                    )
-
-            when (triggerFieldType) {
-                TriggerFieldType.INTEGER_SET -> {
-                    if (!(value is List<*> && value.all { it is Int })) {
-                        logger.error { "Value for accumulated field $accumulatedField is not a list of integers" }
-                        return@map null
-                    }
-
-                    if (state.stateIntSet == null) {
-                        state.stateIntSet = intArrayOf()
-                    }
-
-                    val prevState = state.stateIntSet!!
-                    val newState =
-                        prevState
-                            .toMutableSet()
-                            .apply { addAll(value.filterIsInstance<Int>()) }
-                            .toIntArray()
-
-                    state.stateIntSet = newState
-                    logger.debug {
-                        "${TriggerFieldType.INTEGER_SET}: value: $value, " +
-                            "prevState: ${prevState.toList()}, newState: ${newState.toList()}"
-                    }
-                    return@map ruleTriggerFieldStateRepository.save(state)
-                }
-
-                else -> {
-                    logger.error { "Unsupported trigger field type: $triggerFieldType" }
-                    return@map null
-                }
-            }
-        }.filterNotNull()
     }
 
     @Transactional

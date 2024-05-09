@@ -35,7 +35,6 @@ data class RuleResponse(
                 id = rule.id,
                 repeatability = rule.repeatability,
                 conditionExpression = rule.conditionExpression,
-                accumulatedFields = rule.accumulatedFields,
             )
         }
     }

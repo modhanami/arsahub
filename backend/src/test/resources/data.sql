@@ -1,8 +1,3 @@
-insert into app_invitation_status (status)
-values ('pending'),
-       ('accepted'),
-       ('declined');
-
 -- Built-in triggers
 with points_reached_trigger as (
     insert into trigger (title, description, key, app_id) values ('Points Reached', null, 'points_reached',

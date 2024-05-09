@@ -2,9 +2,9 @@ package com.arsahub.backend.repositories
 
 import com.arsahub.backend.dtos.response.AchievementWithUnlockCount
 import com.arsahub.backend.dtos.response.TriggerWithTriggerCount
+import com.arsahub.backend.models.Achievement
 import com.arsahub.backend.models.App
 import com.arsahub.backend.models.QAppUserAchievement
-import com.arsahub.backend.models.Transaction
 import com.querydsl.jpa.impl.JPAQuery
 import jakarta.persistence.EntityManager
 import org.springframework.data.jpa.repository.JpaRepository
@@ -17,7 +17,7 @@ class TimeRange(
     val endExclusive: Instant,
 )
 
-interface AnalyticsRepository : JpaRepository<Transaction, Long>, AnalyticsRepositoryCustom {
+interface AnalyticsRepository : JpaRepository<Achievement, Long>, AnalyticsRepositoryCustom {
     @Query(
         "SELECT NEW com.arsahub.backend.dtos.response.AchievementWithUnlockCount(t.achievement, COUNT(t)) " +
             "FROM AppUserAchievement t " +
